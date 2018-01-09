@@ -77,7 +77,7 @@ def data_as_mesh(path, round=0, distance=np.Inf):
     return raw_mesh
 
 
-def reduce_mesh(mesh, tol=1E-12):
+def prune_mesh(mesh, tol=1E-12):
     '''
     Produce cells that represent mesh with the isolated components removed. 
     Isolated in the sense that the neuron is supposed to be one electric 
@@ -160,17 +160,19 @@ if __name__ == '__main__':
     path = 'L5_TTPC1_cADpyr232_1_geometry.npz'
 
     distance = 175
+    nreduced = 0
+    
     raw_mesh = data_as_mesh(path, round=8, distance=distance)
 
     # As a result of cliping the mesh at this point might have some
     # branches which are not connected to the rest.
     if distance < np.inf:
-        graph = reduce_mesh(raw_mesh)
+        graph = prune_mesh(raw_mesh)
         # Viz it
         f = CellFunction('size_t', raw_mesh, 0)
         f.array()[graph] = 1
 
-        File('results/cc_graph.pvd') << f
+        File('results/cc_graph_reduced%d_d%g.pvd' % (nreduced, distance)) << f
         # New we can build a mesh as a submesh
         mesh = SubMesh(raw_mesh, f, 1)
         mesh.type_info = raw_mesh.type_info[mesh.data().array('parent_cell_indices', 1)]
@@ -186,7 +188,7 @@ if __name__ == '__main__':
     diam_info = Function(V)
     diam_info.vector().set_local(mesh.diam_info[dof_to_vertex_map(V)])
 
-    File('results/segment_types.pvd') << segment_types
-    File('results/diam_info.pvd') << diam_info
+    File('results/segment_types_reduced%d_d%g.pvd' % (nreduced, distance)) << segment_types
+    File('results/diam_info_reduced%d_d%g.pvd' % (nreduced, distance)) << diam_info
 
     # FIXME: build gmsh file which represents the neuron

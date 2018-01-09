@@ -1,5 +1,4 @@
-import subprocess
-import os
+import subprocess, os
 
 
 def convert(msh_file, h5_file):
@@ -33,17 +32,34 @@ def convert(msh_file, h5_file):
 
     return subprocess.call([cmd], shell=True)
 
+
+def cleanup(files=None, exts=()):
+    '''Get rid of xml'''
+    if files is not None:
+        return map(os.remove, files)
+    else:
+        files = filter(lambda f: any(map(f.endswith, exts)), os.listdir('.'))
+        print 'Removing', files
+        return cleanup(files)
+                    
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
     from dolfin import Mesh, MeshFunction, HDF5File, mpi_comm_world
     from dolfin import FacetFunction, CellFunction, File
-    import sys
+    import argparse
+
+
+    parser = argparse.ArgumentParser(description='Convert msh file to h5')
+    parser.add_argument('io', type=str, nargs='+', help='input [output]')
+    parser.add_argument('--cleanup', type=str, nargs='+',
+                        help='extensions to delete', default=())
+    args = parser.parse_args()
 
     try:
-        msh_file, h5_file = sys.argv[1:3]
+        msh_file, h5_file = args.io[:2]
     except ValueError:
-        msh_file = sys.argv[1]
+        msh_file = args.io[0]
 
         root, ext = os.path.splitext(msh_file)
         h5_file = '.'.join([root, 'h5'])
@@ -60,5 +76,7 @@ if __name__ == '__main__':
     volumes = CellFunction('size_t', mesh)
     h5.read(volumes, 'physical')
 
-    File('results/simple_surf.pvd') << surfaces
-    File('results/simple_vols.pvd') << volumes
+    File('results/%s_surf.pvd' % root) << surfaces
+    File('results/%s_vols.pvd' % root) << volumes    
+
+    cleanup(exts=args.cleanup)
