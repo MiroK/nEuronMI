@@ -13,6 +13,7 @@ def convert(msh_file, h5_file):
 
     cmd = '''from dolfin import Mesh, HDF5File;\
              mesh=Mesh('%(xml_file)s');\
+             assert mesh.topology().dim() == 3;\
              out=HDF5File(mesh.mpi_comm(), '%(h5_file)s', 'w');\
              out.write(mesh, 'mesh');''' % {'xml_file': xml_file,
                                              'h5_file': h5_file}
@@ -52,6 +53,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Convert msh file to h5')
     parser.add_argument('io', type=str, nargs='+', help='input [output]')
+
+    parser.add_argument('--save', type=int, help='save as pvd', default=0)
+  
     parser.add_argument('--cleanup', type=str, nargs='+',
                         help='extensions to delete', default=())
     args = parser.parse_args()
@@ -79,7 +83,8 @@ if __name__ == '__main__':
     volumes = CellFunction('size_t', mesh)
     h5.read(volumes, 'physical')
 
-    File('results/%s_surf.pvd' % root) << surfaces
-    File('results/%s_vols.pvd' % root) << volumes    
+    if args.save:
+        File('results/%s_surf.pvd' % root) << surfaces
+        File('results/%s_vols.pvd' % root) << volumes    
 
     cleanup(exts=args.cleanup)
