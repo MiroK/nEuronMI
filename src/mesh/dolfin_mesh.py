@@ -150,7 +150,7 @@ def prune_mesh(mesh, tol=1E-12):
                                     if tuple(sorted(ts)) in circuit_branches))
 
     return list(circuit_cells)
-    
+        
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
