@@ -154,119 +154,39 @@ def reduce_mesh(mesh, tol=1E-12):
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from dolfin import File, CellFunction, SubMesh
+    from dolfin import (File, CellFunction, SubMesh, Function, FunctionSpace,
+                        dof_to_vertex_map)
     
     path = 'L5_TTPC1_cADpyr232_1_geometry.npz'
 
     distance = 175
     raw_mesh = data_as_mesh(path, round=8, distance=distance)
+
     # As a result of cliping the mesh at this point might have some
     # branches which are not connected to the rest.
     if distance < np.inf:
         graph = reduce_mesh(raw_mesh)
         # Viz it
-        f = CellFunction('bool', raw_mesh, 0)
+        f = CellFunction('size_t', raw_mesh, 0)
         f.array()[graph] = 1
 
         File('cc_graph.pvd') << f
         # New we can build a mesh as a submesh
-        mesh = 
+        mesh = SubMesh(raw_mesh, f, 1)
+        mesh.type_info = raw_mesh.type_info[mesh.data().array('parent_cell_indices', 1)]
+        mesh.diam_info = raw_mesh.diam_info[mesh.data().array('parent_vertex_indices', 0)]
+        
+        raw_mesh = mesh
     
-    # Look for branches in the mesh that are isolated
-    # These should be removed
-    # if center_distance is not None:
-    #     continue
-    #     terminals, branches = find_branches(mesh)
-    #     # Figure out which branch is the soma
-    #     soma_branch = set(cell.index() for cell in SubsetIterator(mesh.type_info, 1))
-        
-    #     remove_branch = set()
-    #     for i, (v0, v1) in enumerate(terminals):
-    #         others = map(list, terminals[:i]) + map(list, terminals[i+1:])
-    #         others = set(sum(others, []))
-    #         # Will remove soma branch
-    #         if v0 not in others and v1 not in others:
-    #             remove_branch.add(i)
-    #     # One of them is some
-    #     soma_branch = set([i for i in remove_branch if branches[i] == soma_branch])
-    #     assert soma_branch
-    #     remove_branch = remove_branch - soma_branch
-    #     f = CellFunction('size_t', mesh, 0)
-        
-    #     for branch in remove_branch:
-    #         for cell in branches[branch]: f[int(cell)] = 1
+    # Represent *_info as functions. To be used for mesh generation
+    segment_types = CellFunction('size_t', mesh, 0)
+    segment_types.set_values(mesh.type_info)
+    # P1 for plotting
+    V = FunctionSpace(mesh, 'CG', 1)
+    diam_info = Function(V)
+    diam_info.vector().set_local(mesh.diam_info[dof_to_vertex_map(V)])
 
-    #     File('f.pvd') << f
-            
-    #     new_vertices, new_vertex_data = [], []
-        
-    #     new_cells, new_cell_values = [], []
-            
-    #     c2v = mesh.topology()(1, 0)
-    #     for cell in imap(op.methodcaller('index'), SubsetIterator(f, 0)):
-    #         v0, v1 = c2v(cell)
-    #         print (v0, v1)
-    #         print v0, v0 in new_vertices
-    #         try:
-    #             v0 = new_vertices.index(v0)
-    #         except ValueError:
-    #             new_vertices.append(v0)
-    #             v0 = len(new_vertices) - 1
-    #         print v0
+    File('segment_types.pvd') << segment_types
+    File('diam_info.pvd') << diam_info
 
-    #         print v1, v1 in new_vertices
-    #         try:
-    #             v1 = new_vertices.index(v1)
-    #         except ValueError:
-    #             new_vertices.append(v1)
-    #             v1 = len(new_vertices) - 1
-    #         print v1
-            
-    #         new_cells.append((v0, v1))
-    #         new_cell_values.append(mesh.type_info[cell])
-            
-    #     # FIXME:
-
-    #     x = mesh.coordinates()
-    #     # Mesh wthout islands
-    #     tdim = 1  # intervals
-    #     gdim = 3  # embedded in R^3
-    #     # Let's build the mesh
-    #     meshr = Mesh()
-    #     editor = MeshEditor()
-    #     editor.open(meshr, 'interval', tdim, gdim)
-    #     editor.init_vertices(len(new_vertices))
-    #     editor.init_cells(len(new_cells))
-
-    #     for i, v in enumerate(new_vertices):
-    #         xi = x[v]
-    #         editor.add_vertex(i, xi)
-    #         new_vertex_data.append(mesh.diam_info(xi))
-
-    #     for i, c in enumerate(new_cells): editor.add_cell(i, *c)
-
-    #     editor.close()
-
-    #     # Preserve type info
-    #     f_values = np.array(new_cell_values, dtype='uintp')
-    #     f = MeshFunction('size_t', meshr, tdim, 0)
-    #     f.set_values(f_values)
-    #     meshr.type_info = f
-
-    #     # Preserve vertex info
-    #     new_vertex_data = np.array(new_vertex_data, dtype=float)
-    #     V = FunctionSpace(meshr, 'CG', 1)
-    #     f = Function(V)
-    #     f.vector().set_local(new_vertex_data[dof_to_vertex_map(V)])
-    #     meshr.diam_info = f
-
-    #     # how/doc
-    #     # ---------
-    #     # Simple case
-    #     # Ellipse fit
-    #     # The real deal
-        
-    #     File('bar.pvd') << meshr.diam_info
-    # # We have the geometry + data representing the radii associated with
-    # # vertices + data representing the type associated with each cell
-    # File('test.pvd') << raw_mesh
+    # FIXME: build gmsh file which represents the neuron
