@@ -170,7 +170,7 @@ if __name__ == '__main__':
         f = CellFunction('size_t', raw_mesh, 0)
         f.array()[graph] = 1
 
-        File('cc_graph.pvd') << f
+        File('results/cc_graph.pvd') << f
         # New we can build a mesh as a submesh
         mesh = SubMesh(raw_mesh, f, 1)
         mesh.type_info = raw_mesh.type_info[mesh.data().array('parent_cell_indices', 1)]
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     diam_info = Function(V)
     diam_info.vector().set_local(mesh.diam_info[dof_to_vertex_map(V)])
 
-    File('segment_types.pvd') << segment_types
-    File('diam_info.pvd') << diam_info
+    File('results/segment_types.pvd') << segment_types
+    File('results/diam_info.pvd') << diam_info
 
     # FIXME: build gmsh file which represents the neuron
