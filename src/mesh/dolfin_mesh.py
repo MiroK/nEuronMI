@@ -1,4 +1,5 @@
-from common import VertexCounter, mesh_from_vc_data, find_branches
+from common import (VertexCounter, mesh_from_vc_data, find_branches, fit_circle)
+import operator as op
 import networkx as nx
 import numpy as np
 
@@ -76,11 +77,11 @@ def data_as_mesh(path, round=0, distance=np.Inf):
     return raw_mesh
 
 
-def prune_mesh(mesh, tol=1E-12):
+def reduce_mesh(mesh, tol=1E-12):
     '''
-    A mesh with the isolated components removed. Isolated in the sense 
-    that the neuron is supposed to be one electric circuit but clipping 
-    the mesh might violate this assumption.
+    Produce cells that represent mesh with the isolated components removed. 
+    Isolated in the sense that the neuron is supposed to be one electric 
+    circuit but clipping the mesh might violate this assumption.
     '''
     terminals, branches = find_branches(mesh)
     # Figure out which branch is the soma
@@ -89,7 +90,7 @@ def prune_mesh(mesh, tol=1E-12):
     assert len(soma_branch) == 1
     soma_branch = soma_branch.pop()
     
-    # Fit ellipsoid to soma to figure out which branches would be connected
+    # Fit circle to soma to figure out which branches would be connected
     # to it. NOTE: This assmes that soma data is @ z = 0
     x = mesh.coordinates()
     c2v = mesh.topology()(1, 0)
@@ -98,34 +99,29 @@ def prune_mesh(mesh, tol=1E-12):
         #  o----t----o
         #       | dt
         #     o-b-o
-        # Also extended in z direction
         top_x, bottom_x = x[c2v(cell)]
         assert abs(top_x[-1] < tol) and abs(bottom_x[-1] < tol)
         dt = top_x - bottom_x
         # Perpendicular dir
         dt_perp = np.array([-dt[1], dt[0], 0.]); dt_perp /= np.linalg.norm(dt_perp)
-        plane_normal = np.array([0, 0, 1.])
         # Add points o
         top_r, bottom_r = mesh.diam_info[c2v(cell)]
         soma_points.extend([top_x - 0.5*top_r*dt_perp,
                             top_x + 0.5*top_r*dt_perp,
-                            top_x - 0.5*top_r*plane_normal,
-                            top_x + 0.5*top_r*plane_normal,
                             bottom_x - 0.5*bottom_r*dt_perp,
-                            bottom_x + 0.5*bottom_r*dt_perp,
-                            bottom_x - 0.5*bottom_r*plane_normal,
-                            bottom_x + 0.5*bottom_r*plane_normal])
-        
-    A, b, c = ellipse_fit(np.array(soma_points))
-    # FIXME
-    # Ellipse is x'*A*x + b'x + c = 0. With <= 0 these are points inside
-    inside_ellipse = lambda x: np.dot(x, A.dot(x)) + np.dot(b, x) + c <= tol
-    # FIXME
-    # A sanity check, top_x and bottom_x should be inside the ellipse
+                            bottom_x + 0.5*bottom_r*dt_perp])
+
+    (center_x, center_y), radius = fit_circle(np.array(soma_points)[:, :2])
+
+    # These are the branches
+    # Center_z is - 
+    is_inside_sphere = lambda x: (x[0]-center_x)**2 + (x[1]-center_y)**2 + x[2]**2 - radius**2 < tol
+    # A sanity check, top_x and bottom_x should be inside the ellipse    
+    assert all(is_inside_sphere(xi) for cell in branches[soma_branch] for xi in x[c2v(cell)])
 
     insiders = set()
     for branch in (set(range(len(branches))) - set([soma_branch])):
-        is_inside = [inside_ellipse(xi) for xi in x[terminals[branch]]]
+        is_inside = [is_inside_sphere(x[vi]) for vi in terminals[branch]]
         if any(is_inside):
             assert not all(is_inside)
             # Collect the inside points
@@ -138,33 +134,43 @@ def prune_mesh(mesh, tol=1E-12):
     # In reality these branches are connected so we introduce there connections
     # to the graph as well
     for i, v0 in enumerate(insiders):
-        for v1 in insides[i+1:]:
+        for v1 in insiders[i+1:]:
             terminals_ext.append((v0, v1))
     
     # What we are after now is the largest connected component of the graph
     G = nx.Graph()
     G.add_edges_from(terminals_ext)
     G = max(nx.connected_component_subgraphs(G), key=len)
-    
-    # FIXME: build the mesh
+    # These are candidates (because of the extra artif soma connects)
+    circuit_branches = map(lambda x: tuple(sorted(x)), G.edges())
 
+    # Collect all the cells of the ciruit
+    circuit_cells = reduce(op.or_, (branches[branch]
+                                    for branch, ts in enumerate(terminals)
+                                    if tuple(sorted(ts)) in circuit_branches))
+
+    return list(circuit_cells)
     
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from dolfin import File, CellFunction, SubsetIterator
-    from common import find_branches, branch_terminals
-    from itertools import imap
-    import operator as op
+    from dolfin import File, CellFunction, SubMesh
     
     path = 'L5_TTPC1_cADpyr232_1_geometry.npz'
 
-    distance = 50
+    distance = 175
     raw_mesh = data_as_mesh(path, round=8, distance=distance)
     # As a result of cliping the mesh at this point might have some
     # branches which are not connected to the rest.
     if distance < np.inf:
-        graph = prune_mesh(raw_mesh)
+        graph = reduce_mesh(raw_mesh)
+        # Viz it
+        f = CellFunction('bool', raw_mesh, 0)
+        f.array()[graph] = 1
+
+        File('cc_graph.pvd') << f
+        # New we can build a mesh as a submesh
+        mesh = 
     
     # Look for branches in the mesh that are isolated
     # These should be removed
@@ -263,4 +269,4 @@ if __name__ == '__main__':
     #     File('bar.pvd') << meshr.diam_info
     # # We have the geometry + data representing the radii associated with
     # # vertices + data representing the type associated with each cell
-    # File('test.pvd') << mesh.diam_info
+    # File('test.pvd') << raw_mesh

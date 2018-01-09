@@ -134,4 +134,64 @@ def mesh_from_vc_data(vertices, cells, tol=0):
     return mesh
 
 
-def fit_ellipse(x, y
+def fit_circle(pts, method='enclose', ax=None):
+    '''Find ellpse encloses/fits the points (Least-Squares CircleRandy Bullock)'''
+
+    npts, dim = pts.shape
+    assert dim == 2
+
+    assert method in ('fit', 'enclose')
+
+    x, y = pts.T
+    xmean, ymean = np.mean(x), np.mean(y)
+
+    if method == 'enclose':
+        center = np.array([xmean, ymean])
+        radius = np.sqrt(np.max(np.sum((pts - center)**2, 1)))
+
+    else:
+        u = x - xmean
+        v = y - ymean
+
+        cu, cv = np.linalg.solve(np.array([[np.sum(u*u), np.sum(u*v)],
+                                           [np.sum(v*u), np.sum(v*v)]]),
+                                 np.array([0.5*(np.sum(u*u*u) + np.sum(u*v*v)),
+                                           0.5*(np.sum(v*v*v) + np.sum(v*u*u))]))
+
+        center = np.array([cu + xmean, cv + ymean])
+
+        radius = np.sqrt(cu**2 + cv**2 + (np.sum(u*u) + np.sum(v*v))/npts)
+
+    if ax is not None:
+        theta = np.linspace(0, 2*np.pi, 200)
+        pts = np.c_[center[0] + radius*np.cos(theta),
+                    center[1] + radius*np.sin(theta)]
+        ax.plot(x, y, marker='x', linestyle='none')
+        ax.plot(pts[:, 0], pts[:, 1], '-b')
+        ax.plot(center[0], center[1], 'rx')
+
+    return center, radius
+
+# --------------------------------------------------------------------
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
+    npts = 400
+    x0, y0, r = 1, 2, 3.5
+    theta = np.linspace(0, 2*np.pi, npts)
+    
+    pts0 = np.c_[x0 + r*np.cos(theta), y0 + r*np.sin(theta)]
+    noise = np.random.rand(npts, 2)*r/20.
+
+    pts0 += noise
+    
+    x0, y0, r = fit_circle(pts0)
+    pts = np.c_[x0 + r*np.cos(theta), y0 + r*np.sin(theta)]
+    
+
+    plt.figure()
+    plt.plot(pts0[:, 0], pts0[:, 1], marker='x', linestyle='none')
+    plt.plot(pts[:, 0], pts[:, 1], '-b')
+    plt.axis('equal')
+    plt.show()
