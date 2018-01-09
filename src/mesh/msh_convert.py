@@ -56,6 +56,9 @@ if __name__ == '__main__':
                         help='extensions to delete', default=())
     args = parser.parse_args()
 
+    # Protecting self
+    assert not(set(('geo', '.geo')) & set(args.cleanup))
+    
     try:
         msh_file, h5_file = args.io[:2]
     except ValueError:

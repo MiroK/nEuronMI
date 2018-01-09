@@ -4,4 +4,4 @@
 
 *.pyc
 
-/results
+results/
