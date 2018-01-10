@@ -1,5 +1,5 @@
+from common import find_branches, mesh_from_vc_data
 from collections import defaultdict
-from common import find_branches
 import networkx as nx
 import numpy as np
 
@@ -12,8 +12,6 @@ def graph_analysis(terminals):
     # vertex -> branches
     v2b = defaultdict(list)
     [v2b[v].append(branch) for branch in not_loops for v in terminals[branch]]
-    print terminals
-    print v2b
     end_points = [v for (v, b) in v2b.iteritems() if len(b) == 1]
 
     # As a map which knows about the connected branches
@@ -28,7 +26,11 @@ def simplify_branch(mesh, branch):
     assert mesh.topology().dim() == 1
 
     branch, (start, stop) = branch
-    
+
+    # A single cell note cannot by simplified any further
+    if len(branch) == 1:
+        return [start, stop], mesh.type_info[int(next(iter(branch)))]
+
     branch = map(int, branch)
     branch_type = set(mesh.type_info[branch])
     assert len(branch_type) == 1
@@ -38,17 +40,18 @@ def simplify_branch(mesh, branch):
     G = nx.Graph()
     G.add_edges_from((c2v(c) for c in branch))
     # Walk the branch
-    path = [v for v in nx.algorithms.shortest_path(G)]
+    path = [v for v in nx.algorithms.shortest_path(G, start, stop)]
     assert G.number_of_nodes() == len(path)
+    
     # Skip
-    path = path[::2]
-    if len(path) % 2 == 0: path.append(stop)
+    path = path[::2] + ([stop] if len(path) % 2 == 0 else [])
 
-    assert path[0] == start and path[-1] == stop
+    assert path[0] == start and path[-1] == stop, ((path[0], start), (path[-1], stop), path, G.edges())
 
     return path, branch_type
 
-
+# FIXME: collisions? - just detect and bailout
+#        be aware of identities, i.e. detect states that cannot be simplified
 def simplify_mesh(mesh, ntimes=0):
     '''Straighten branches by skiping points'''
     assert ntimes >= 0
@@ -63,15 +66,71 @@ def simplify_mesh(mesh, ntimes=0):
 
     end_points, branch_points = analysis_data['end_points'], analysis_data['branch_points']
 
+    vertex_indices = []  # index(new mesh) -> old-mesh-index
+    next_index = 0
+    
+    cells = []           # of new mesh in new mesh index ordering
+    cell_data = []
+    # Gather data for simplified mesh
     for i, branch in enumerate(branches):
-        G = simplify_branch(mesh, (branches, terminals[i]))
+        G, btype = simplify_branch(mesh, (branch, terminals[i]))
+        # Figure out vertex indexing
+        Gstart = G[0]
+        Ginterior = G[1:-1]
+        Gstop = G[-1]
 
-    # FIXME: finish this/demo
-    # FIXME: geo for branch
+        # Local
+        branch_vertex_indices = []
 
+        # I do this in order of points (might be better for sparsity)
+        if Gstart in end_points: # Guaranteed to be unique
+            vertex_indices.append(Gstart)
+            
+            branch_vertex_indices.append(next_index)
+            next_index += 1
+        else:
+            # Need to look it up
+            assert Gstart in branch_points
+            try:
+                branch_vertex_indices.append(vertex_indices.index(Gstart))
+            except ValueError:
+                vertex_indices.append(Gstart)
+                
+                branch_vertex_indices.append(next_index)
+                next_index += 1
 
+        # All the interior points are unique
+        vertex_indices.extend(Ginterior)
+        # Local
+        branch_vertex_indices.extend(range(next_index, next_index + len(Ginterior)))
+        next_index += len(Ginterior)
+
+        if Gstop in end_points: # Guaranteed to be unique
+            vertex_indices.append(Gstop)
+            
+            branch_vertex_indices.append(next_index)
+            next_index += 1
+        else:
+            # Need to look it up
+            assert Gstop in branch_points
+            try:
+                branch_vertex_indices.append(vertex_indices.index(Gstop))
+            except ValueError:
+                vertex_indices.append(Gstop)
+
+                branch_vertex_indices.append(next_index)
+                next_index += 1
+        # With the computed vertex numbering we can make cells
+        cells.extend([(v0, v1) for v0, v1 in zip(branch_vertex_indices[:-1],
+                                                 branch_vertex_indices[1:])])
+        cell_data.extend([btype]*(len(G)-1))
+    # New
+    simplified_mesh = mesh_from_vc_data(mesh.coordinates()[vertex_indices], cells)
+    simplified_mesh.diam_info = mesh.diam_info[vertex_indices]
+    simplified_mesh.type_info = np.array(cell_data, dtype='uintp')
+    
     # Recurse
-    return simplify_mesh(mesh, ntimes-1)
+    return simplify_mesh(simplified_mesh, ntimes-1)
 
 
 # -------------------------------------------------------------------
@@ -108,4 +167,11 @@ if __name__ == '__main__':
         
     analysis_data = graph_analysis(terminals)
 
-    G = simplify_branch(mesh, (branches[1], terminals[1]))
+    f = CellFunction('size_t', mesh, 0); f.set_values(mesh.type_info)
+    File('before.pvd') << f
+
+    mesh = simplify_mesh(mesh, ntimes=4)
+
+    f = CellFunction('size_t', mesh, 0); f.set_values(mesh.type_info)
+    File('after.pvd') << f
+
