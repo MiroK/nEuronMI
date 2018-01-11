@@ -52,7 +52,10 @@ DefineConstant[
   y_shift = {0.0, Name "y coord of probe centerline"}
   z_shift = {0.0, Name "z coord of probe tip"}
   rad_probe = {0.2, Min 0, Name "Probe radius"}
-];
+  neuron_mesh_size = {0.1, Min 0, Name "Char mesh size on neuron";
+  probe_mesh_size = {0.1, Min 0, Name "Char mesh size on probe";
+  rest_mesh_size = {0.3; , Min 0, Name "Char mesh size elsewhere";}
+]
 
 // ------------------------------------------------------------------
 
@@ -119,16 +122,16 @@ Physical Volume(2) = {outside[]};
   
 // Mesh size on neuron
 Field[1] = MathEval;
-Field[1].F = "0.1";
+Field[1].F = Sprintf("%g", neuron_mesh_size);
 
 Field[2] = Restrict;
 Field[2].IField = 1;
 Field[2].FacesList = {neuron_surface[]};
 
 If(with_probe)
-  // Mesh size on Probe
+// Mesh size on Probe
   Field[3] = MathEval;
-  Field[3].F = "0.1";
+  Field[3].F = Sprintf("%g", probe_mesh_size);
 
   Field[4] = Restrict;
   Field[4].IField = 3;
@@ -136,7 +139,7 @@ If(with_probe)
   
   // Mesh size everywhere else
   Field[5] = MathEval;
-  Field[5].F = "0.25";
+  Field[5].F = Sprintf("%g", rest_mesh_size);
   
   Field[6] = Min;
   Field[6].FieldsList = {2, 4, 5};
@@ -144,7 +147,7 @@ If(with_probe)
 Else
   // Mesh size everywhere else
   Field[3] = MathEval;
-  Field[3].F = "0.25";
+  Field[3].F = Sprintf("%g", rest_mesh_size);
 
   Field[4] = Min;
   Field[4].FieldsList = {2, 3};
