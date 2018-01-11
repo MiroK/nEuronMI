@@ -57,7 +57,7 @@ DefineConstant[
   rest_mesh_size = {0.3, Min 0, Name "Char mesh size elsewhere"}
 ];
 
-// ------------------------------------------------------------------
+//!//!----------------------------------------------------------------
 
 SetFactory("OpenCASCADE");
 
@@ -100,16 +100,21 @@ dz_box = z1 - z0;
 bbox = newv;
 Box(bbox) = {x0, y0, z0, dx_box, dy_box, dz_box};
 
+//
+
 If(with_probe)
   // Probe
   probe = newv;
   Cylinder(probe) = {rad_soma+x_shift+rad_probe, y_shift, z_shift,
-                   0, 0, Abs(z_shift)+z1+1, // Longer to make the isection work
-                   rad_probe};
+                     0, 0, Abs(z_shift)+z1+1, // Longer to make the isection work
+                     rad_probe};
 
   // Make the hole
   bbox_probe() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{probe}; Delete;};
   outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+
+  outside_surface() = Boundary{ Volume{outside()}; };
+  Printf("%g", outside_surface[0]);
   
   // Probe surfaces
   Physical Surface(4) = {12};
