@@ -52,10 +52,10 @@ DefineConstant[
   y_shift = {0.0, Name "y coord of probe centerline"}
   z_shift = {0.0, Name "z coord of probe tip"}
   rad_probe = {0.2, Min 0, Name "Probe radius"}
-  neuron_mesh_size = {0.1, Min 0, Name "Char mesh size on neuron";
-  probe_mesh_size = {0.1, Min 0, Name "Char mesh size on probe";
-  rest_mesh_size = {0.3; , Min 0, Name "Char mesh size elsewhere";}
-]
+  neuron_mesh_size = {0.1, Min 0, Name "Char mesh size on neuron"}
+  probe_mesh_size = {0.1, Min 0, Name "Char mesh size on probe"}
+  rest_mesh_size = {0.3, Min 0, Name "Char mesh size elsewhere"}
+];
 
 // ------------------------------------------------------------------
 

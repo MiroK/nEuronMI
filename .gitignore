@@ -4,4 +4,7 @@
 
 *.pyc
 
+*.xml
+*.h5
+
 results/

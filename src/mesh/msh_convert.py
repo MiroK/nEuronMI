@@ -27,7 +27,7 @@ def convert(msh_file, h5_file):
                        out.write(f, '%(name)s');\
                        ''' % {'r_xml_file': r_xml_file, 'name': name}
         
-        cmd = ''.join([cmd, cmd_r])
+            cmd = ''.join([cmd, cmd_r])
 
     cmd = 'python -c "%s"' % cmd
 
