@@ -29,6 +29,10 @@
 // The probe extends from the (z)top of the bbox to z = probe_z. It is 
 // a cylinder with radius rad_probe whose centerline is at x = (probe_x, probe_y)
 // is marked as surface 41 while the side are marked as 40.
+//
+// Domain boundaries:
+// Boundaries not intersecting probe are 5. The top surface (intersecting
+// the probe) is 6.
 
 probe = newv;
 Cylinder(probe) = {probe_x, probe_y, probe_z,
@@ -48,3 +52,7 @@ probe_surface[] = {12, 13};
 
 // Physical
 Physical Volume(2) = {outside[]};  
+
+// Boundaries is of the 2 volume
+Physical Surface(5) = {6, 7, 9, 11, 10};
+Physical Surface(6) = {8};
