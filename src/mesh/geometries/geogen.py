@@ -135,14 +135,14 @@ neuron = MainenNeuron({'rad_soma': 1,
                        'rad_axon': 0.2, 'length_axon': 4,
                        'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
 
-probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 0.75, 'probe_y': 0, 'probe_z': 0})
+probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 
 probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
-                  'probe_x': 0.8, 'probe_y': 0, 'probe_z': 0})
+                  'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 
 sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 
-out = geofile(neuron, sizes, probe=None)
+out = geofile(neuron, sizes, probe=probe)
 
 subprocess.call(['gmsh %s' % out], shell=True)
 
