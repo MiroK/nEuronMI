@@ -121,7 +121,6 @@ Physical Volume(2) = {outside[]};
 
 from shapes import SphereNeuron, MainenNeuron
 from shapes import CylinderProbe, BoxProbe
-import subprocess
 
 # neuron = SphereNeuron({'rad_soma': 0.5,
 #                        'rad_dend': 0.3, 'length_dend': 1,
@@ -144,6 +143,7 @@ sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 
 out = geofile(neuron, sizes, probe=probe)
 
+import subprocess
 subprocess.call(['gmsh %s' % out], shell=True)
 
 # FIXME: the fancy probe

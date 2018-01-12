@@ -40,6 +40,23 @@ class Neuron(object):
         '''String encoding used to loopup correct geo file'''
         raise NotImplementedError
 
+    def plot(self, ax, npoints=50000):
+        '''Plot the neuron in x[i]=c by bombarding with npoints'''
+        #
+        #from mpl_toolkits.mplot3d import Axes3D
+        #import matplotlib.pyplot as plt
+        #
+        x, y = self.geom_bbox.x, self.geom_bbox.y
+        dx = y - x
+        pts = np.random.rand(npoints, 3)
+
+        pts = x + pts*dx
+        pts = pts[map(self.is_inside, pts)].T
+
+        ax.scatter(pts[0], pts[1], pts[2])
+
+        return ax
+
     
 class Probe(object):
     '''Base class for gmsh probe'''
@@ -113,13 +130,13 @@ class SphereNeuron(Neuron):
 
         # Top cylinder
         if base_dend - tol < x[2] < top_dend + tol:
-            return x[0]**2 + x[1]**1 < self.rad_dend**2 + tol
+            return x[0]**2 + x[1]**2 < self.rad_dend**2 + tol
         # Middle sphere
         elif -base_axon - tol < x[2] < base_dend + tol:
-            return x[0]**2 + x[1]**1 < self.rad_soma**2 + tol
+            return x[0]**2 + x[1]**2 < self.rad_soma**2 + tol
         # Bottom cylinder
         elif bot_axon - tol < x[2] < -base_axon + tol:
-            return x[0]**2 + x[1]**1 < self.rad_axon**2 + tol
+            return x[0]**2 + x[1]**2 < self.rad_axon**2 + tol
         else:
             return False
 
@@ -183,21 +200,21 @@ class MainenNeuron(Neuron):
         
         # Top cylinder
         if base_dend - tol < x[2] < top_dend + tol:
-            return x[0]**2 + x[1]**1 < self.rad_dend**2 + tol
+            return x[0]**2 + x[1]**2 < self.rad_dend**2 + tol
         # Then cone
-        elif base_hilox_d - tol < x[1] < base_dend + tol:
+        elif base_hilox_d - tol < x[2] < base_dend + tol:
             rad = self.rad_dend + dr_d*abs(base_dend-x[2])/self.length_hilox_d
-            return x[0]**2 + x[1]**1 < rad**2 + tol
+            return x[0]**2 + x[1]**2 < rad**2 + tol
         # Middle sphere
         elif -base_hilox_a - tol < x[2] < base_hilox_d + tol:
-            return x[0]**2 + x[1]**1 < self.rad_soma**2 + tol
+            return x[0]**2 + x[1]**2 < self.rad_soma**2 + tol
         # Then cone
-        elif -base_axon - tol < x[1] < -base_hilox_a + tol:
-            rad = self.rad_axons + dr_a*abs(-base_axon-x[2])/self.length_hilox_a
-            return x[0]**2 + x[1]**1 < rad**2 + tol
+        elif -base_axon - tol < x[2] < -base_hilox_a + tol:
+            rad = self.rad_axon + dr_a*abs(-base_axon-x[2])/self.length_hilox_a
+            return x[0]**2 + x[1]**2 < rad**2 + tol
         # Bottom cylinder
         elif bot_axon - tol < x[2] < -base_axon + tol:
-            return x[0]**2 + x[1]**1 < self.rad_axon**2 + tol
+            return x[0]**2 + x[1]**2 < self.rad_axon**2 + tol
         else:
             return False
         
