@@ -119,13 +119,21 @@ Physical Volume(2) = {outside[]};
 
 # -------------------------------------------------------------------
 
-from shapes import SphereNeuron, CylinderProbe, BoxProbe
+from shapes import SphereNeuron, MainenNeuron
+from shapes import CylinderProbe, BoxProbe
 import subprocess
 
-neuron = SphereNeuron({'rad_soma': 0.5,
-                       'rad_dend': 0.3, 'length_dend': 1,
-                       'rad_axon': 0.2, 'length_axon': 1,
-                       'dxp': 0.5, 'dxn': 0.25, 'dy': 0.2, 'dz': 0.2})
+# neuron = SphereNeuron({'rad_soma': 0.5,
+#                        'rad_dend': 0.3, 'length_dend': 1,
+#                        'rad_axon': 0.2, 'length_axon': 1,
+#                        'dxp': 0.5, 'dxn': 0.25, 'dy': 0.2, 'dz': 0.2})
+
+neuron = MainenNeuron({'rad_soma': 1,
+                       'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
+                       'rad_dend': 0.3, 'length_dend': 2,
+                       'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
+                       'rad_axon': 0.2, 'length_axon': 4,
+                       'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
 
 probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 0.75, 'probe_y': 0, 'probe_z': 0})
 
@@ -134,9 +142,9 @@ probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
 
 sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 
-out = geofile(neuron, sizes, probe=probe)
+out = geofile(neuron, sizes, probe=None)
 
-# subprocess.call(['gmsh %s' % out], shell=True)
+subprocess.call(['gmsh %s' % out], shell=True)
 
 # FIXME: the fancy probe
 #
