@@ -87,23 +87,33 @@ def geofile(neuron, sizes, probe=None):
     # Code gen
     # Definition of all the fields
     header = header_code(neuron, sizes, probe)
+
+    # Special defs of the neuron which may not be user params
+    neuron_defs = neuron.definitions()
+    
     # The neuron - relies on defined vars
     neuron_code = read_code(str(neuron))
     # Code when probe included
     if probe is not None:
+        # Special defs of the neuron which may not be user params
+        probe_defs = probe.definitions()
+        
         neuron_probe_code = read_code('_'.join(map(str, (neuron, probe))))
         
         size_code = mesh_size_code(True)
     else:
+        probe_defs = ''
+        
         neuron_probe_code = '''
 outside() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{neuron};};
 Physical Volume(2) = {outside[]};  
 '''
-        
         size_code = mesh_size_code(False)
 
     delim = '\n' + '//----' + '\n'
-    code = '//\n'.join([header, neuron_code, neuron_probe_code, size_code])
+    code = '//\n'.join([header,
+                        neuron_defs, neuron_code,
+                        probe_defs, neuron_probe_code, size_code])
     
     # File
     geo_file = hashlib.sha1()
@@ -120,25 +130,33 @@ Physical Volume(2) = {outside[]};
 # -------------------------------------------------------------------
 
 from shapes import SphereNeuron, MainenNeuron
-from shapes import CylinderProbe, BoxProbe
+from shapes import CylinderProbe, BoxProbe, WedgeProbe
 
-# neuron = SphereNeuron({'rad_soma': 0.5,
-#                        'rad_dend': 0.3, 'length_dend': 1,
-#                        'rad_axon': 0.2, 'length_axon': 1,
-#                        'dxp': 0.5, 'dxn': 0.25, 'dy': 0.2, 'dz': 0.2})
+neuron = SphereNeuron({'rad_soma': 0.5,
+                       'rad_dend': 0.3, 'length_dend': 1,
+                       'rad_axon': 0.2, 'length_axon': 1,
+                       'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
 
-neuron = MainenNeuron({'rad_soma': 1,
-                       'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
-                       'rad_dend': 0.3, 'length_dend': 2,
-                       'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
-                       'rad_axon': 0.2, 'length_axon': 4,
-                       'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
+# neuron = MainenNeuron({'rad_soma': 1,
+#                        'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
+#                        'rad_dend': 0.3, 'length_dend': 2,
+#                        'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
+#                        'rad_axon': 0.2, 'length_axon': 4,
+#                        'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
 
-probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
+#probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 
-probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
-                  'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
+#probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
+#                  'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 
+from math import pi
+
+contact_pts = [(0, 0.7), (0, 1.0), (0, 1.3)]#, (0, 0.3)]
+probe = WedgeProbe({'alpha': pi/4,
+                    'probe_z': 0, 'probe_x': 1.5, 'probe_y': 0,
+                    'probe_width': 0.5, 'probe_thick': 0.3,
+                    'contact_points': contact_pts, 'contact_rad': 0.05})
+ 
 sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 
 out = geofile(neuron, sizes, probe=probe)

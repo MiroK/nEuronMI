@@ -1,4 +1,4 @@
-from math import sqrt
+from math import sqrt, tan, atan
 import numpy as np
 
 
@@ -36,6 +36,10 @@ class Neuron(object):
         '''Is x inside the bounding box of the geometry'''
         return self.geom_bbox.is_inside(x, tol)
 
+    def definitions(self):
+        '''Addtional code for geo file'''
+        return ''
+
     def __str__(self):
         '''String encoding used to loopup correct geo file'''
         raise NotImplementedError
@@ -68,6 +72,10 @@ class Probe(object):
     def control_points(self):
         '''Control points of the probe'''
         raise NotImplementedError
+
+    def definitions(self):
+        '''Addtional code for geo file'''
+        return ''
 
     def __str__(self):
         '''String encoding used to loopup correct geo file'''
@@ -140,6 +148,7 @@ class SphereNeuron(Neuron):
         else:
             return False
 
+        
 class MainenNeuron(Neuron):
     '''
     Neuron made of a spherical soma at 0, 0, 0 with 2 cylinders in z
@@ -269,3 +278,115 @@ class BoxProbe(Probe):
                 x0 + 0.5*np.array([self.probe_dx, -self.probe_dy, 0]))
 
     def __str__(self): return 'box_probe'
+
+    
+class WedgeProbe(Probe):
+    '''
+    In the plane normal to x-axis the probe's crossection is 
+    <--> w    
+
+    |  | 
+    |  |
+     \/
+   
+    ^z 
+    |
+    -->y
+    with the tip at probe_x, probe_y, probe_z. Other parameters of the
+    probe are probe_width and probe_thick (ness) and the tip angle 
+    alpha. An optinal list of y,z coordinates  specigies positions of 
+    the conducting surfaces which are circle of radii contact_rad.
+    '''
+    def sane_inputs(self, params):
+
+        all_params = ('probe_x', 'probe_y', 'probe_z', 'alpha', 'probe_width', 'probe_thick')
+        
+        assert all(key in params for key in all_params)
+        assert params['probe_width'] > 0 and params['probe_thick'] > 0
+        assert 0 < params['alpha'] < np.pi
+        
+        for key in all_params: setattr(self, key, params[key])
+
+        self.probe_dz = abs(self.probe_width/2/tan(self.alpha/2))
+        
+        # Contacts are optional
+        contacts = params.get('contact_points', [])
+        # With contacts there must be a radius and poins must be in the probe. 
+        if contacts:
+            # FIXME
+            msg = '!'*79+'\n'
+            msg += 'The contact surfaces are NOT marked by 41 (yet).\n'
+            msg += 'The entire probe surface is 40\n'
+            msg += '!'*79+'\n'
+
+            print '\033[1;37;31m%s\033[0m' % msg
+            assert params['contact_rad'] > 0
+            
+            rad = params['contact_rad']
+            # The probes don't overlap
+            for i, c0 in enumerate(contacts):
+                for c1 in contacts[i+1:]:
+                    # At least two radii away
+                    assert (c0[0]-c1[0])**2 + (c0[1]-c1[1])**2 > (2*rad)**2
+
+            # The contacts are well within the probe. Note that this does
+            # not mean that all the contacts will be in the final domain
+            # as the probe length is determined by the bbox which is not
+            # known a this point.
+            # _|_
+            #  |
+            contact_control_pts = lambda (y, z): [(y+rad, z+rad),
+                                                  (y+rad, z-rad),
+                                                  (y-rad, z+rad),
+                                                  (y-rad, z-rad)]
+
+            for y, z in sum(map(contact_control_pts, contacts), []):
+                assert z > self.probe_z, (z, self.probe_z)
+                # Check the tip, wedge
+                if z < self.probe_z + self.probe_dz:
+                    assert atan(abs(y)/(z - self.probe_z)) < self.alpha/2,\
+                        (atan(abs(y)/(z - self.probe_z)), self.alpha/2)
+                # The rectangular probe
+                else:
+                    assert abs(y - self.probe_y) < self.probe_width/2
+
+            # Points are only needed for the code. No need to keep around
+            # for loenger
+            y_pts = map(lambda p: p[0], contacts)
+            code_y = 'contact_loc_y[] = {%s};' % (', '.join(map(str, y_pts)))
+
+            z_pts = map(lambda p: p[1], contacts)
+            code_z = 'contact_loc_z[] = {%s};' % (', '.join(map(str, z_pts)))
+
+            self.contact_points_code = '\n'.join([code_y, code_z])
+
+            # Remove conatct_points from params so that they are not
+            # added to header defs in code gen
+            del params['contact_points']
+
+
+        return True
+
+    def control_points(self):
+        '''Control points of the probe'''
+        #  __
+        #  \/
+        points = np.array([[self.probe_x-self.probe_thick/2,
+                            self.probe_y-self.probe_width/2,
+                            self.probe_z + self.probe_dz],
+                           [self.probe_x-self.probe_thick/2,
+                            self.probe_y,
+                            self.probe_z],
+                           [self.probe_x-self.probe_thick/2,
+                            self.probe_y+self.probe_width/2,
+                            self.probe_z + self.probe_dz]])
+        # Add the extruded points
+        points = np.r_[points, points + np.array([self.probe_thick, 0, 0])]
+
+        return points
+
+    def definitions(self):
+        '''Code for contact points defition'''
+        return self.contact_points_code
+    
+    def __str__(self): return 'wedge_probe'
