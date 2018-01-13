@@ -363,6 +363,9 @@ class WedgeProbe(Probe):
             # Remove conatct_points from params so that they are not
             # added to header defs in code gen
             del params['contact_points']
+        else:
+            if 'contact_points' in params: del params['contact_points']
+            self.contact_points_code = 'contact_loc_z[] = {};'
 
 
         return True
@@ -371,7 +374,8 @@ class WedgeProbe(Probe):
         '''Control points of the probe'''
         #  __
         #  \/
-        points = np.array([[self.probe_x-self.probe_thick/2,
+        points = np.array([[self.probe_x-self.
+                            probe_thick/2,
                             self.probe_y-self.probe_width/2,
                             self.probe_z + self.probe_dz],
                            [self.probe_x-self.probe_thick/2,
