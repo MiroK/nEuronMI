@@ -388,3 +388,49 @@ class WedgeProbe(Probe):
                           'probe_top = %g + 2;' % neuron.geom_bbox.y[2]])
     
     def __str__(self): return 'wedge_probe'
+
+    
+class FancyProbe(Probe):
+    '''The realistic probe. Everything is hardcoded...'''
+    def sane_inputs(self, params):
+
+        all_params = ('probe_x', 'probe_y', 'probe_z')
+        
+        assert all(key in params for key in all_params)
+        
+        for key in all_params: setattr(self, key, params[key])
+        # Additional
+        self.probe_thick = 15
+        self.contact_rad = 7.5
+        self.with_contacts = int(params.get('with_contacts', 0))
+        self.cz = params['probe_z'] + 62 + sqrt(22*22-18*18) +9*25
+
+        return True
+        
+    def control_points(self):
+        '''Control points of the probe'''
+        # These define the tip
+        #         |     cz
+        #       _/      62
+        #      /
+        #    /
+        #    0 31 57
+        points = np.array([[self.probe_x - self.probe_thick/2, self.probe_y, self.probe_z],
+                           [self.probe_x - self.probe_thick/2, self.probe_y+31, self.probe_z+62],
+                           [self.probe_x - self.probe_thick/2, self.probe_y+57, self.probe_z+self.cz],
+                           [self.probe_x - self.probe_thick/2, self.probe_y-31, self.probe_z+62],
+                           [self.probe_x - self.probe_thick/2, self.probe_y-57, self.probe_z+self.cz]])
+        
+        points = np.r_[points, points + np.array([self.probe_thick, 0, 0])]
+
+        return points
+
+    def definitions(self, neuron):
+        '''Code for contact points defition and probe top from bbox'''
+
+        return '\n'.join(['probe_thick = %g;' % self.probe_thick,
+                          'contact_rad = %g;' % self.contact_rad,
+                          'with_contacts = %d;' % self.with_contacts,
+                          'probe_top = %g + 20;' % neuron.geom_bbox.y[2]])
+    
+    def __str__(self): return 'fancy_probe'
