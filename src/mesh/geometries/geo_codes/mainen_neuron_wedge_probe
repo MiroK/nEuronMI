@@ -65,14 +65,12 @@ If(ncontacts > 0)
   probe_surface[] -= {8, 9, 10, 11, 12, 13};  // outer
   probe_surface[] -= {1, 2, 3, 4, 5, 6, 7};       // neuron surfaces
 
-  probe_insul_surface[] = {14:19};
+  probe_insul_surface[] = {14:21};
   Physical Surface(4) = {probe_insul_surface[]};
   
   probe_contact_surface[] = probe_surface[];
   probe_contact_surface[] -= {probe_insul_surface[]};
   Physical Surface(41) = {probe_contact_surface[]};
-
-  probe_surface_[] = outside_surface[];
 Else
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
 
@@ -81,7 +79,7 @@ Else
   Physical Volume(2) = {outside[]};  
 
   // Probe surfaces, no contact surface so no 41
-  probe_surface[] = {14:19};
+  probe_surface[] = {14:21};
   Physical Surface(4) = {probe_surface[]};
 
   // Boundaries is of the 2 volume

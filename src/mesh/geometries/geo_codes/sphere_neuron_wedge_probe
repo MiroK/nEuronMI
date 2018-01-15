@@ -71,8 +71,6 @@ If(ncontacts > 0)
   probe_contact_surface[] = probe_surface[];
   probe_contact_surface[] -= {probe_insul_surface[]};
   Physical Surface(41) = {probe_contact_surface[]};
-
-  probe_surface[] = outside_surface[];
 Else
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
 
