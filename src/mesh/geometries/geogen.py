@@ -132,17 +132,17 @@ Physical Volume(2) = {outside[]};
 from shapes import SphereNeuron, MainenNeuron
 from shapes import CylinderProbe, BoxProbe, WedgeProbe
 
-# neuron = SphereNeuron({'rad_soma': 0.5,
-#                        'rad_dend': 0.3, 'length_dend': 1,
-#                        'rad_axon': 0.2, 'length_axon': 1,
-#                        'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
+neuron = SphereNeuron({'rad_soma': 0.5,
+                       'rad_dend': 0.3, 'length_dend': 1,
+                       'rad_axon': 0.2, 'length_axon': 1,
+                       'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
 
-neuron = MainenNeuron({'rad_soma': 1,
-                       'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
-                       'rad_dend': 0.3, 'length_dend': 2,
-                       'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
-                       'rad_axon': 0.2, 'length_axon': 4,
-                       'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
+# neuron = MainenNeuron({'rad_soma': 1,
+#                        'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
+#                        'rad_dend': 0.3, 'length_dend': 2,
+#                        'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
+#                        'rad_axon': 0.2, 'length_axon': 4,
+#                        'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
 
 #probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 

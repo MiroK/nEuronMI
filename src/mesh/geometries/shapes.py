@@ -314,12 +314,6 @@ class WedgeProbe(Probe):
         # With contacts there must be a radius and poins must be in the probe. 
         if contacts:
             # FIXME
-            msg = '!'*79+'\n'
-            msg += 'The contact surfaces are NOT marked by 41 (yet).\n'
-            msg += 'The entire probe surface is 40\n'
-            msg += '!'*79+'\n'
-
-            print '\033[1;37;31m%s\033[0m' % msg
             assert params['contact_rad'] > 0
             
             rad = params['contact_rad']

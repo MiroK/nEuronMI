@@ -21,24 +21,14 @@ Line(lines[2]) = {points[2], points[3]};
 Line(lines[3]) = {points[3], points[4]};
 Line(lines[4]) = {points[4], points[5]};
 Line(lines[5]) = {points[5], points[1]};
-Line(lines[6]) = {points[2], points[4]};
 
-loop_sq = newll;
-Line Loop(loop_sq) = {lines[4], lines[5], lines[1], lines[6]};
+loop = newll;
 
-probe_square_surface = news; 
-Plane Surface(probe_square_surface) = {loop_sq};
+Line Loop(loop) = {lines[4], lines[5], lines[1], lines[2], lines[3]};
+Plane Surface(loop) = {loop};
 
-loop_tip = newll;
-Line Loop(loop_tip) = {lines[3], -lines[6], lines[2]};
-
-probe_tip_surface = news;
-Plane Surface(probe_tip_surface) = {loop_tip};
-
-extr_tip[] = Extrude {probe_thick, 0, 0} {Surface{probe_tip_surface};};
-extr_sq[] = Extrude {probe_thick, 0, 0} {Surface{probe_square_surface};};
-
-probe_free() = BooleanUnion {Volume{extr_tip[1]}; Delete;} {Volume{extr_sq[1]}; Delete;};
+extr_loop[] = Extrude {probe_thick, 0, 0} {Surface{loop};};
+probe_free = extr_loop[1];
 
 // Fancy
 ncontacts = #contact_loc_z[];
@@ -72,10 +62,18 @@ If(ncontacts > 0)
   Physical Surface(5) = {8, 9, 11, 12, 13};
   Physical Surface(6) = {10};
 
-  probe_surface[] = outside_surface[];
+  probe_surface_[] = outside_surface[];
   probe_surface[] -= {8, 9, 10, 11, 12, 13};  // outer
   probe_surface[] -= {1, 2, 3, 4, 5, 6, 7};       // neuron surfaces
-  Physical Surface(4) = {probe_surface[]};
+
+  probe_insul_surface[] = {14:19};
+  Physical Surface(4) = {probe_insul_surface[]};
+  
+  probe_contact_surface[] = probe_surface[];
+  probe_contact_surface[] -= {probe_insul_surface[]};
+  Physical Surface(41) = {probe_contact_surface[]};
+
+  probe_surface_[] = outside_surface[];
 Else
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
 
@@ -84,7 +82,7 @@ Else
   Physical Volume(2) = {outside[]};  
 
   // Probe surfaces, no contact surface so no 41
-  probe_surface[] = {14:20};
+  probe_surface[] = {14:19};
   Physical Surface(4) = {probe_surface[]};
 
   // Boundaries is of the 2 volume
