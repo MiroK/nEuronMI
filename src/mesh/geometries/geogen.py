@@ -96,7 +96,7 @@ def geofile(neuron, sizes, probe=None):
     # Code when probe included
     if probe is not None:
         # Special defs of the neuron which may not be user params
-        probe_defs = probe.definitions()
+        probe_defs = probe.definitions(neuron)
         
         neuron_probe_code = read_code('_'.join(map(str, (neuron, probe))))
         

@@ -73,7 +73,7 @@ class Probe(object):
         '''Control points of the probe'''
         raise NotImplementedError
 
-    def definitions(self):
+    def definitions(self, neuron):
         '''Addtional code for geo file'''
         return ''
 
@@ -313,7 +313,6 @@ class WedgeProbe(Probe):
         contacts = params.get('contact_points', [])
         # With contacts there must be a radius and poins must be in the probe. 
         if contacts:
-            # FIXME
             assert params['contact_rad'] > 0
             
             rad = params['contact_rad']
@@ -383,8 +382,9 @@ class WedgeProbe(Probe):
 
         return points
 
-    def definitions(self):
-        '''Code for contact points defition'''
-        return self.contact_points_code
+    def definitions(self, neuron):
+        '''Code for contact points defition and probe top from bbox'''
+        return '\n'.join([self.contact_points_code,
+                          'probe_top = %g + 2;' % neuron.geom_bbox.y[2]])
     
     def __str__(self): return 'wedge_probe'
