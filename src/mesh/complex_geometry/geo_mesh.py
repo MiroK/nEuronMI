@@ -134,11 +134,16 @@ if __name__ == '__main__':
         
         raw_mesh = mesh
 
-    terminals, branches = find_branches(raw_mesh)
-    print max(map(len, branches))
+    from simplifier import simplify_mesh
+    
+    mesh = simplify_mesh(mesh, ntimes=4)
+
+    terminals, branches = find_branches(mesh)
+    # print len(branches)
+    # print map(len, branches)
 
     # 3 here is just an example
-    # branch = 3
-    # code = make_geo_branch(mesh, (branches[branch], terminals[branch]))
+    branch = 4
+    code = make_geo_branch(mesh, (branches[branch], terminals[branch]))
 
-    # print code
+    print code
