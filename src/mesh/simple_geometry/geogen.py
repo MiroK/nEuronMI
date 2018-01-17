@@ -73,7 +73,7 @@ Background Field = 4;
 
 # ---
 
-def geofile(neuron, sizes, probe=None):
+def geofile(neuron, sizes, file_name='', probe=None):
     '''
     Write the geo file for given neuron [probe] and mesh sizes. Note that
     all the code pieces rely on existence of variables like rad_soma etc ...
@@ -116,9 +116,13 @@ Physical Volume(2) = {outside[]};
                         probe_defs, neuron_probe_code, size_code])
     
     # File
-    geo_file = hashlib.sha1()
-    geo_file.update(str(time.time()))
-    geo_file = '.'.join([geo_file.hexdigest(), 'GEO'])
+    if not file_name:
+        geo_file = hashlib.sha1()
+        geo_file.update(str(time.time()))
+        geo_file = geo_file.hexdigest()
+    else:
+        geo_file = file_name
+    geo_file = '.'.join([geo_file, 'GEO'])
 
     print 'Generated geo file', geo_file
     print 'Inspect with Gmsh or run e.g. `gmsh -3 $GEOFILE` to generate mesh'
@@ -129,61 +133,62 @@ Physical Volume(2) = {outside[]};
 
 # -------------------------------------------------------------------
 
-from shapes import SphereNeuron, MainenNeuron
-from shapes import CylinderProbe, BoxProbe, WedgeProbe, FancyProbe
-from math import pi
+if __name__ == '__main__':
+    from shapes import SphereNeuron, MainenNeuron
+    from shapes import CylinderProbe, BoxProbe, WedgeProbe, FancyProbe
+    from math import pi
 
-########################
-# SIMPLE
-########################
-if False:
-    neuron = SphereNeuron({'rad_soma': 0.5,
-                           'rad_dend': 0.3, 'length_dend': 1,
-                           'rad_axon': 0.2, 'length_axon': 1,
-                           'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
+    ########################
+    # SIMPLE
+    ########################
+    if False:
+        neuron = SphereNeuron({'rad_soma': 0.5,
+                               'rad_dend': 0.3, 'length_dend': 1,
+                               'rad_axon': 0.2, 'length_axon': 1,
+                               'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
 
-    # neuron = MainenNeuron({'rad_soma': 1,
-    #                        'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
-    #                        'rad_dend': 0.3, 'length_dend': 2,
-    #                        'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
-    #                        'rad_axon': 0.2, 'length_axon': 4,
-    #                        'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
+        # neuron = MainenNeuron({'rad_soma': 1,
+        #                        'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
+        #                        'rad_dend': 0.3, 'length_dend': 2,
+        #                        'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
+        #                        'rad_axon': 0.2, 'length_axon': 4,
+        #                        'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
 
-    # probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
+        # probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
     
-    # probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
-    #                  'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
+        # probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
+        #                  'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 
-    contact_pts = [(0, 0.7), (0, 1.0), (0, 1.3), (0, 0.3)]
-    probe = WedgeProbe({'alpha': pi/4,
-                        'probe_z': 0, 'probe_x': 1.5, 'probe_y': 0,
-                        'probe_width': 0.5, 'probe_thick': 0.3,
-                        'contact_points': contact_pts, 'contact_rad': 0.05})
- 
-    sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
-#####################################
-# THE FANCY PROBE
-#####################################
-else:
-    # neuron = SphereNeuron({'rad_soma': 30,
-    #                        'rad_dend': 20, 'length_dend': 400,
-    #                        'rad_axon': 22, 'length_axon': 350,
-    #                        'dxp': 200, 'dxn': 50, 'dy': 40, 'dz': 40})
+        contact_pts = [(0, 0.7), (0, 1.0), (0, 1.3), (0, 0.3)]
+        probe = WedgeProbe({'alpha': pi/4,
+                            'probe_z': 0, 'probe_x': 1.5, 'probe_y': 0,
+                            'probe_width': 0.5, 'probe_thick': 0.3,
+                            'contact_points': contact_pts, 'contact_rad': 0.05})
+        
+        sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
+    #####################################
+    # THE FANCY PROBE
+    #####################################
+    else:
+        # neuron = SphereNeuron({'rad_soma': 30,
+        #                        'rad_dend': 20, 'length_dend': 400,
+        #                        'rad_axon': 22, 'length_axon': 350,
+        #                        'dxp': 200, 'dxn': 50, 'dy': 40, 'dz': 40})
 
-    neuron = MainenNeuron({'rad_soma': 30,
-                           'rad_dend': 20, 'length_dend': 400,
-                           'rad_axon': 22, 'length_axon': 350,
-                           'rad_hilox_d': 24, 'length_hilox_d': 50,
-                           'rad_hilox_a': 24, 'length_hilox_a': 50,
-                           'dxp': 200, 'dxn': 50, 'dy': 40, 'dz': 40})
+        neuron = MainenNeuron({'rad_soma': 30,
+                               'rad_dend': 20, 'length_dend': 400,
+                               'rad_axon': 22, 'length_axon': 350,
+                               'rad_hilox_d': 24, 'length_hilox_d': 50,
+                               'rad_hilox_a': 24, 'length_hilox_a': 50,
+                               'dxp': 200, 'dxn': 50, 'dy': 40, 'dz': 40})
 
-    # With contacts == 0 means that the circular contact points (markers)
-    # 41 are gone from the mesh
-    probe = FancyProbe({'probe_z': 0, 'probe_y': 0, 'probe_x': 100, 'with_contacts': 1})
- 
-    sizes = {'neuron_mesh_size': 10.0, 'probe_mesh_size': 10.0, 'rest_mesh_size': 20.0}
+        # With contacts == 0 means that the circular contact points (markers)
+        # 41 are gone from the mesh
+        probe = FancyProbe({'probe_z': 0, 'probe_y': 0, 'probe_x': 100, 'with_contacts': 1})
+        
+        sizes = {'neuron_mesh_size': 10.0, 'probe_mesh_size': 10.0, 'rest_mesh_size': 20.0}
 
-out = geofile(neuron, sizes, probe=probe)
+    out = geofile(neuron, sizes, probe=probe)
 
-import subprocess
-subprocess.call(['gmsh %s' % out], shell=True)
+    import subprocess
+    subprocess.call(['gmsh %s' % out], shell=True)
