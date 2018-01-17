@@ -1,6 +1,9 @@
 import hashlib, time, os
 
 
+GEO_CODE_DIR = os.path.join(os.path.dirname(__file__), 'geo_codes')
+
+
 def header_code(neuron, sizes, probe=None):
     '''Write parameter definitions for Gmsh'''
     if probe is None:
@@ -21,7 +24,7 @@ def header_code(neuron, sizes, probe=None):
     return '\n'.join(code)
 
 
-def read_code(dispatch, directory='geo_codes'):
+def read_code(dispatch, directory=GEO_CODE_DIR):
     '''Geometries for gmsh are taken from files'''
     with open(os.path.join(directory, dispatch)) as f:
         code = f.readlines()
