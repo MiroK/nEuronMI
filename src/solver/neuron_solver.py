@@ -22,10 +22,10 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     #                  U for potential u
     #                  Q for transmebrane potential p
     Sel = FiniteElement('RT', cell, 1)
-    Uel = FiniteElement('DG', cell, 0)
+    Vel = FiniteElement('DG', cell, 0)
     Qel = FiniteElement('Discontinuous Lagrange Trace', cell, 0)
 
-    W = FunctionSpace(mesh, MixedElement([Sel, Uel, Qel]))
+    W = FunctionSpace(mesh, MixedElement([Sel, Vel, Qel]))
     sigma, u, p = TrialFunctions(W)
     tau, v, q = TestFunctions(W)
 
@@ -159,6 +159,11 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     # And its solver
     la_solver = LinearSystemSolver(A, W, solver_parameters)
 
+    # Finally for postprocessing we return the potential and current time
+    V = FunctionSpace(mesh, Vel)
+    u_out = Function(V)
+    toV_fromW1 = FunctionAssigner(V, W.sub(1))
+    
     w = Function(W)
     step_count = 0
     for ((t0, t1), ode_solution) in ode_solutions:
@@ -169,7 +174,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             # ODE(0) -> p0_neuron
             if toQ_neuron_fromODE is None:
                 toQ_neuron_fromODE = FunctionAssigner(p0_neuron.function_space(),
-                                                      ode_solution.sub(0).function_space())
+                                                      ode_solution.function_space().sub(0))
             toQ_neuron_fromODE.assign(p0_neuron, ode_solution.sub(0))
             # Upscale p0_neuron->p0
             assign_toQ_fromQ_neuron(p0, p0_neuron)
@@ -179,11 +184,15 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             # New (sigma, u, p) ...
             info('\tSolving linear system of size %d' % A.size(0))
             la_solver.solve(w.vector(), b)
+
+            # Update u_out for output. FIXME: is t1 the right time here?
+            toV_fromW1.assign(u_out, w.sub(1))
+            yield t1, u_out
             
             # Now transfer the new transm potential down to ode ...
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
             if toODE_fromQ_neuron is None:
-                toODE_fromQ_neuron = FunctionAssigner(ode_solution.sub(0).function_space(),
+                toODE_fromQ_neuron = FunctionAssigner(ode_solution.function_space().sub(0),
                                                       p0_neuron.function_space())
             toODE_fromQ_neuron.assign(ode_solution.sub(0), p0_neuron)  # As IC for ODE

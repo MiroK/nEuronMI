@@ -9,37 +9,42 @@ from solver.neuron_solver import neuron_solver
 
 import subprocess, os
 
-h5_is_done = False   # Set to true when the test.h5 is already in place
+h5_is_done = True
 
-# Geometry definition
-neuron = SphereNeuron({'rad_soma': 0.5,
-                       'rad_dend': 0.3, 'length_dend': 1,
-                       'rad_axon': 0.2, 'length_axon': 1,
-                       'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
+if not h5_is_done:
+    # Geometry definition
+    neuron = SphereNeuron({'rad_soma': 0.5,
+                           'rad_dend': 0.3, 'length_dend': 1,
+                           'rad_axon': 0.2, 'length_axon': 1,
+                           'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
 
-probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
-    
-mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
+    probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
 
-# This will give us test.GEO
-# geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
-assert h5_is_done or os.path.exists('test.GEO')
+    mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 
-# Generate msh file, test.msh
-# subprocess.call(['gmsh -3 test.GEO'], shell=True)
-assert h5_is_done or os.path.exists('test.msh')
+    # This will give us test.GEO
+    geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
+    assert os.path.exists('test.GEO')
 
-# Conversion to h5 file
-# convert('test.msh', 'test.h5')
-assert h5_is_done or os.path.exists('test.h5')
+    # Generate msh file, test.msh
+    subprocess.call(['gmsh -3 test.GEO'], shell=True)
+    assert os.path.exists('test.msh')
 
-# Solving
-neuron_solver(mesh_path='test.h5',
-              problem_parameters={'C_m': 1E-3,
-                                  'cond_int': 1.0,
-                                  'cond_ext': 1.2,
-                                  'I_ion': 0.0,
-                                  'Tstop': 1.0},
-              solver_parameters={'dt_fem': 1E-3,
-                                 'dt_ode': 1E-4,
-                                 'linear_solver': 'direct'})
+    # Conversion to h5 file
+    convert('test.msh', 'test.h5')
+    assert os.path.exists('test.h5')
+
+# Solver setup
+stream = neuron_solver(mesh_path='test.h5',
+                       problem_parameters={'C_m': 1E-3,
+                                           'cond_int': 1.0,
+                                           'cond_ext': 1.2,
+                                           'I_ion': 0.0,
+                                           'Tstop': 1.0},
+                       solver_parameters={'dt_fem': 1E-3,
+                                          'dt_ode': 1E-4,
+                                          'linear_solver': 'direct'})
+
+# Do something with the solutions
+for t, u in stream:
+    print 'At t = %g |u|^2= %g' % (t, u.vector().norm('l2'))

@@ -21,6 +21,6 @@ def ODESolver(subdomains, soma, axon, dendrite, parameters):
     mesh = subdomains.mesh()
     time = Constant(0.0)  # Start from now
     ode_solver = beat.BasicCardiacODESolver(mesh, time, neuron_model,
-                                            I_s=Expression('0.0', t=time, degree=1))
+                                            I_s=Expression('exp(-t)', t=time, degree=1))
 
     return ode_solver, neuron_model
