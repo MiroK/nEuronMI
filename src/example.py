@@ -9,6 +9,8 @@ from solver.neuron_solver import neuron_solver
 
 import subprocess, os
 
+debug = True
+
 # Geometry definition
 neuron = SphereNeuron({'rad_soma': 0.5,
                        'rad_dend': 0.3, 'length_dend': 1,
@@ -21,15 +23,23 @@ mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size':
 
 # This will give us test.GEO
 # geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
-assert os.path.exists('test.GEO')
+assert debug or os.path.exists('test.GEO')
 
 # Generate msh file, test.msh
 # subprocess.call(['gmsh -3 test.GEO'], shell=True)
-assert os.path.exists('test.msh')
+assert debug or os.path.exists('test.msh')
 
 # Conversion to h5 file
 # convert('test.msh', 'test.h5')
-assert os.path.exists('test.h5')
+assert debug or os.path.exists('test.h5')
 
 # Solving
-neuron_solver(mesh_path='test.h5')
+neuron_solver(mesh_path='test.h5',
+              problem_parameters={'C_m': 1E-3,
+                                  'cond_int': 1.0,
+                                  'cond_ext': 1.2,
+                                  'I_ion': 0.0,
+                                  'Tstop': 1.0},
+              solver_parameters={'dt_fem': 1E-3,
+                                 'dt_ode': 1E-4,
+                                 'linear_solver': 'direct'})
