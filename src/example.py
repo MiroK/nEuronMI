@@ -9,7 +9,7 @@ from solver.neuron_solver import neuron_solver
 
 import subprocess, os
 
-debug = True
+h5_is_done = False   # Set to true when the test.h5 is already in place
 
 # Geometry definition
 neuron = SphereNeuron({'rad_soma': 0.5,
@@ -23,15 +23,15 @@ mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size':
 
 # This will give us test.GEO
 # geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
-assert debug or os.path.exists('test.GEO')
+assert h5_is_done or os.path.exists('test.GEO')
 
 # Generate msh file, test.msh
 # subprocess.call(['gmsh -3 test.GEO'], shell=True)
-assert debug or os.path.exists('test.msh')
+assert h5_is_done or os.path.exists('test.msh')
 
 # Conversion to h5 file
 # convert('test.msh', 'test.h5')
-assert debug or os.path.exists('test.h5')
+assert h5_is_done or os.path.exists('test.h5')
 
 # Solving
 neuron_solver(mesh_path='test.h5',

@@ -135,9 +135,8 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     assign_toQ_neuron_fromQ = transfer.compute_map(Q_neuron, Q, strict=False)
     assign_toQ_fromQ_neuron = transfer.compute_map(Q, Q_neuron, strict=False)
     # Between submesh space and internals of the ODE solver
-    # FIXME:
-    # toODE_fromQ_neuron = FunctionAssigner(ODE_space.sub(0), Q_neuron)
-    # toQ_neuron_fromODE = FunctionAssigner(Q_neuron, ODE_space.sub(0))
+    toODE_fromQ_neuron = None  # FIXME: for now they are defined only
+    toQ_neuron_fromODE = None  # declared here and defined later
 
     # And finally onto the solution loop
     # ODE
@@ -168,8 +167,10 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
         if step_count == fem_ode_sync:
             step_count = 0
             # ODE(0) -> p0_neuron
-            # toQ_neuron_fromODE.assign(p0_neuron, ode_solution.sub(0))
-            assign(p0_neuron, ode_solution.sub(0))
+            if toQ_neuron_fromODE is None:
+                toQ_neuron_fromODE = FunctionAssigner(p0_neuron.function_space(),
+                                                      ode_solution.sub(0).function_space())
+            toQ_neuron_fromODE.assign(p0_neuron, ode_solution.sub(0))
             # Upscale p0_neuron->p0
             assign_toQ_fromQ_neuron(p0, p0_neuron)
         
@@ -182,5 +183,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             # Now transfer the new transm potential down to ode ...
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
-            # toODE_fromQ_neuron.assign(ode_solution.sub(0), p0_neuron)  # As IC for ODE
-            assign(ode_solution.sub(0), p0_neuron)
+            if toODE_fromQ_neuron is None:
+                toODE_fromQ_neuron = FunctionAssigner(ode_solution.sub(0).function_space(),
+                                                      p0_neuron.function_space())
+            toODE_fromQ_neuron.assign(ode_solution.sub(0), p0_neuron)  # As IC for ODE
