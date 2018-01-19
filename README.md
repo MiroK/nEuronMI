@@ -7,7 +7,7 @@
 - the current code has been tested with FEniCS 2017.2.0 (fetched as the Ubuntu package),
   the other dependencies were built from source again the latest maste (18/01/2018)
   branches.
-- other (for now) optional dependencies are [networkx](https://networkx.github.io/) and [fenicstools](https://github.com/mikaem/fenicstools)
+- an optional dependency for computing the probe for contact surfaces is [networkx](https://networkx.github.io/)
 
 ### Create mesh
 
