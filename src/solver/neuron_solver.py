@@ -159,12 +159,15 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     # And its solver
     la_solver = LinearSystemSolver(A, W, solver_parameters)
 
+    w = Function(W)
     # Finally for postprocessing we return the potential and current time
     V = FunctionSpace(mesh, Vel)
     u_out = Function(V)
     toV_fromW1 = FunctionAssigner(V, W.sub(1))
-    
-    w = Function(W)
+    toV_fromW1.assign(u_out, w.sub(1))
+    # To get initial state
+    yield 0, u_out
+                    
     step_count = 0
     for ((t0, t1), ode_solution) in ode_solutions:
         step_count += 1

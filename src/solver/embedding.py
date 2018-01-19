@@ -14,6 +14,9 @@ def EmbeddedMesh(marking_function, markers):
     # Prevent cell function (just not to duplicate functionality
     assert base_mesh.topology().dim() != marking_function.dim(), 'Use SubMesh'
 
+    # Work in serial only (much like submesh)
+    assert df.MPI.size(base_mesh.mpi_comm()) == 1
+
     gdim = base_mesh.geometry().dim()
     tdim = marking_function.dim()
     assert tdim > 0, 'No Embedded mesh from vertices'

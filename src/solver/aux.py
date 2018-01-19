@@ -40,5 +40,3 @@ def load_mesh(mesh_file):
                 'probe_surfaces': {4, 41} & global_tags}
 
     return mesh, surfaces, volumes, aux_tags
-
-

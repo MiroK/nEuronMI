@@ -6,8 +6,9 @@ from mesh.simple_geometry.shapes import SphereNeuron, CylinderProbe
 from mesh.simple_geometry.geogen import geofile
 from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
-
+from solver.probing import Probe
 import subprocess, os
+import numpy as np
 
 h5_is_done = True
 
@@ -45,6 +46,29 @@ stream = neuron_solver(mesh_path='test.h5',
                                           'dt_ode': 1E-4,
                                           'linear_solver': 'direct'})
 
+t0, u = next(stream)
+# The stream will yield times and electrical potential. Suppose that
+# point values of potential at some locations are of interest. 
+locations = [np.zeros(3)]
+
+try:
+    # Add the centers of 41 regions
+    from solver.probing import probing_locations
+
+    locations.extend(probing_locations('test.h5', 41))
+    
+except ImportError:
+    pass
+
+# Sets up and makes the first record.
+probes = Probe(u, locations)
+
+last_record = lambda: ','.join(['@x = %r, u=%g' % (list(x), ux)
+                                for x, ux in zip(probes.locations, probes.data[-1][1:])])
+
 # Do something with the solutions
 for t, u in stream:
-    print 'At t = %g |u|^2= %g' % (t, u.vector().norm('l2'))
+    # Probe now
+    probes.probe(t)
+    print t, last_record()
+
