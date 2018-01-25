@@ -112,16 +112,14 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             neuron_soldomains[c] = 2
 
     dt_ode = solver_parameters['dt_ode']
-    assert dt_ode < dt_fem(0)
-    
-    # FIXME(Karoline): What are the appropriate models, excitation,
-    #                  and other parameters? Backward Euler etc
-    #                  Feel free to change the API
+    assert dt_ode <= dt_fem(0)
+
+    # Set up neuron model and ODE solver
     ode_solver, neuron_model = ODESolver(neuron_subdomains,
                                          soma=next(iter(soma)),
                                          axon=next(iter(axon)),
                                          dendrite=next(iter(dendrite)),
-                                         parameters=solver_parameters)
+                                         problem_parameters=problem_parameters)
 
     transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
     # The ODE solver talks to the worlk via chain: VS <-> Q_neuron <-> Q <- W

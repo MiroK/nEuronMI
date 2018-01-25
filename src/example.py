@@ -38,6 +38,7 @@ if not h5_is_done:
 # Solver setup
 stream = neuron_solver(mesh_path='test.h5',
                        problem_parameters={'C_m': 1E-3,
+                                           'stim_strenght': 200, 
                                            'cond_int': 1.0,
                                            'cond_ext': 1.2,
                                            'I_ion': 0.0,
