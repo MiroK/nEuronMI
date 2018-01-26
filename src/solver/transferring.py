@@ -11,9 +11,9 @@ class SubMeshTransfer(object):
     meaningful operation in some cases.
     '''
     def __init__(self, mesh, submesh):
-        # The submesh must have come from EmbeddedMesh
+        # The submesh must have come from EmbeddedMesh/SubMesh
         # FIXME: own class?
-        assert hasattr(submesh, 'entity_map')
+        assert hasattr(submesh, 'entity_map') or isinstance(submesh, df.SubMesh)
         assert any((mesh.topology().dim() >= submesh.topology().dim(), 
                     mesh.num_cells() > submesh.num_cells()))
 
@@ -22,7 +22,13 @@ class SubMeshTransfer(object):
 
         self.mesh = mesh
         self.submesh = submesh
-        self.cell_map = submesh.entity_map[submesh.topology().dim()]
+
+        try:
+            self.cell_map = submesh.entity_map[submesh.topology().dim()]
+        except AttributeError:
+            self.cell_map = submesh.data().array('parent_cell_indices',
+                                                 submesh.topology().dim())
+
         self.cache = []
 
     def compute_map(self, toSpace, fromSpace, strict=True):

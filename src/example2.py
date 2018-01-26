@@ -48,12 +48,12 @@ stream = neuron_solver(mesh_path='test.h5',
                        'linear_solver': 'direct'})
 
 v_file = File('v_sol.pvd')
+I_file = File('current_sol.pvd')
 
 # Do something with the solutions
-n=0
-for t, u in stream:
+for n, (t, u, current) in enumerate(stream):
     print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
     
-    if n%100 == 0:
+    if n % 100 == 0:
         v_file << u
-    n=n+1
+        I_file << current
