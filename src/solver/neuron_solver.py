@@ -128,9 +128,6 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     fem_ode_sync = int(dt_fem(0)/dt_ode)
     # NOTE: a generator; nothing is computed so far
     ode_solutions = ode_solver.solve(interval, dt_ode)
-    # Set up initial conditions
-    (ode_solution0, _) = ode_solver.solution_fields()
-    ode_solution0.assign(neuron_model.initial_conditions())
 
     transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
     # The ODE solver talks to the worlk via chain: VS <-> Q_neuron <-> Q <- W
