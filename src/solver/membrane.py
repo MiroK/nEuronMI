@@ -40,7 +40,8 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     Solver = beat.BasicCardiacODESolver
     odesolver_params = Solver.default_parameters()
     odesolver_params["theta"] = 0.5    # Crank-Nicolson
-
+    # The timer in adjoint causes trouble so disable for now
+    odesolver_params['enable_adjoint'] = False
     
     ode_solver = SubDomainCardiacODESolver(subdomains,
                                            models={soma: soma_model,
@@ -90,7 +91,6 @@ class SubDomainCardiacODESolver(object):
         self.transfers = transfers
         
     def solve(self, interval, dt=None):
-        print [s.VS.dim() for s in self.solvers]
         # MixedODE(sub) <--> PotentialODE(sub) <---> FullPotential
         adapters = []
         toSub_fromMixed_map, toWhole_fromSub_map = [], []
@@ -116,31 +116,35 @@ class SubDomainCardiacODESolver(object):
         stopped = [False]*len(generators)
         while True: 
             # Step all
+            solutions = []
             for j, gen in enumerate(generators):
                 try:
                     (t0, t1), uj = next(gen)
                 except StopIteration:
                     stopped[j] = True
-                    
-                info('(%s), Stepping u%d yields %d' % (gen, j, uj.vector().size()))
                 solutions.append(uj)
                 
-            if all(stopped): break
+            if all(stopped): raise StopIteration
             # Glue
-            #for j, uj in enumerate(solutions):
-            #    toSub_fromMixed_map[j].assign(adapters[j], uj.sub(0))
-            #    toWhole_fromSub_map[j](v_whole, adapters[j])
+            for j, uj in enumerate(solutions):
+                toSub_fromMixed_map[j].assign(adapters[j], uj.sub(0))
+                toWhole_fromSub_map[j](v_whole, adapters[j])
+                
             # Expose 
             yield (t0, t1), v_whole
 
-            # Put updated whole back to the solvers
-            #for j, uj in enumerate(solutions):
-            #    toSub_fromWhole_map[j](adapters[j], v_whole)
-            #    toMixed_fromSub_map[j].assign(uj.sub(0), adapters[j])
+            # Put updated whole back to the solvers. The idea is that
+            # outside v_whole is modified
+            for j, uj in enumerate(solutions):
+                toSub_fromWhole_map[j](adapters[j], v_whole)
+                toMixed_fromSub_map[j].assign(uj.sub(0), adapters[j])
 
             # They either all be true or all be False
             assert len(set(stopped)) == 1
+
+            
 # --------------------------------------------------------------------
+
 
 if __name__ == '__main__':
     mesh = UnitSquareMesh(32, 32)
@@ -174,6 +178,7 @@ if __name__ == '__main__':
 
     Solver = beat.BasicCardiacODESolver
     odesolver_params = Solver.default_parameters()
+    # The timer in adjoint causes trouble so disable for now
     odesolver_params['enable_adjoint'] = False
 
     solver = SubDomainCardiacODESolver(subdomains=cell_f,
@@ -182,7 +187,9 @@ if __name__ == '__main__':
                                        params=odesolver_params)
 
     gen = solver.solve((0, 1), 1E-1)
+    f = File('foo.pvd')
     for ((t0, t1), x) in gen:
-        print x, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>', t1
+        print x, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>', t1, x.vector().norm('l2')
+        f << x, t1
 
-    
+        x.vector()[:] += 1.
