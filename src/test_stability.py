@@ -21,6 +21,6 @@ stream = neuron_solver(mesh_path='test.h5',
                        'linear_solver': 'direct'})
 
 # The min(u) should be close to -75 (not -74.1)
-for t, u in stream:
+for t, u, _ in stream:
     print 'At t = %g max(u) = %g min(u) = %g' % (t, u.vector().max(), u.vector().min())
 
