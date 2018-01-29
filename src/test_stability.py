@@ -12,10 +12,11 @@ import subprocess, os
 stream = neuron_solver(mesh_path='test.h5',
                        problem_parameters={'C_m': 1.0e-8,
                        'stim_strength': 0.0,
+                       'stim_start': 0.0,
                        'cond_int': 7.0e-4,
                        'cond_ext': 3.0e-4,
                        'I_ion': 0.0,
-                       'Tstop': 0.2},
+                       'Tstop': 2.0},
                        solver_parameters={'dt_fem': 1E-3,
                        'dt_ode': 1E-3,
                        'linear_solver': 'direct'})

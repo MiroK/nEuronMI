@@ -36,7 +36,7 @@ class Hodgkin_Huxley_1952(CardiacCellModel):
     @staticmethod
     def default_initial_conditions():
         "Set-up and return default initial conditions."
-        ic = OrderedDict([("V", -74.996379),
+        ic = OrderedDict([("V", -75.0),
                           ("m", 0.052955),
                           ("h", 0.595994),
                           ("n", 0.317732)])

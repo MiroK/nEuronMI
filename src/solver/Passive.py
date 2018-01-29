@@ -31,7 +31,8 @@ class Passive(CardiacCellModel):
                               ("Cm", 1.0),
                               ("g_s", 0.0),
                               ("alpha", 2.0),
-                              ("v_eq", 0.0)])
+                              ("v_eq", 0.0),
+                              ("t0", 0.0)])
         return params
 
     @staticmethod
@@ -56,13 +57,14 @@ class Passive(CardiacCellModel):
         g_s = self._parameters["g_s"]
         alpha = self._parameters["alpha"]
         v_eq = self._parameters["v_eq"]
+        t0 = self._parameters["t0"]
 
         # Init return args
         current = [ufl.zero()]*1
 
         # Expressions for the Membrane component
         i_leak = g_leak*(-E_leak + V)
-        i_stim = g_s*exp(-time/alpha)*(V-v_eq)
+        i_stim = g_s*exp(-(time-t0)/alpha)*(V-v_eq)*ufl.conditional(ufl.ge(time, t0), 1, 0)
         current[0] = (-i_leak-i_stim)/Cm
 
         # Return results

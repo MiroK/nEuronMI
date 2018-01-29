@@ -36,18 +36,19 @@ if not h5_is_done:
     assert os.path.exists('test.h5')
 
 # Solver setup
-stream = neuron_solver(mesh_path='test.h5',
-                       problem_parameters={'C_m': 1.0e-8,
-                       'stim_strength': 200.0,
-                       'cond_int': 7.0e-4,
-                       'cond_ext': 3.0e-4,
+stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh lengths specified in cm:
+                       problem_parameters={'C_m': 1.0,    # uF/um^2
+                       'stim_strength': 100.0,            # mS/cm^2
+                       'stim_start': 0.5,                 # ms
+                       'cond_int': 7.0,                   # mS/cm^2
+                       'cond_ext': 3.0,                   # mS/cm^2
                        'I_ion': 0.0,
-                       'Tstop': 1.0},
-                       solver_parameters={'dt_fem': 1E-3,
-                       'dt_ode': 1E-3,
+                       'Tstop': 4.0},                     # ms
+                       solver_parameters={'dt_fem': 1E-3, # ms
+                       'dt_ode': 1E-3,                    # ms
                        'linear_solver': 'direct'})
 
-v_file = File('v_sol.pvd')
+u_file = File('u_sol.pvd')
 I_file = File('current_sol.pvd')
 
 # Do something with the solutions
@@ -55,5 +56,5 @@ for n, (t, u, current) in enumerate(stream):
     print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
     
     if n % 100 == 0:
-        v_file << u
+        u_file << u
         I_file << current

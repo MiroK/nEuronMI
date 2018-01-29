@@ -28,7 +28,8 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     # Note: Stimulation is currently implemented as a part of the passive membrane model
     # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
     dendrite_params["alpha"] = 2.0  # (ms)
-    dendrite_params["v_eq"] = 0.0   # (ms)
+    dendrite_params["v_eq"] = 0.0   # (mV)
+    dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
     dendrite_params["g_s"] = Expression("stim_strength*(x[2]>1.0)",
                                         stim_strength=problem_parameters["stim_strength"],
                                                                             degree=1)
@@ -168,7 +169,7 @@ if __name__ == '__main__':
     # Note: Stimulation is currently implemented as a part of the passive membrane model
     # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
     dendrite_params["alpha"] = 2.0  # (ms)
-    dendrite_params["v_eq"] = 0.0   # (ms)
+    dendrite_params["v_eq"] = 0.0   # (mV)
     dendrite_params["g_s"] = Expression("stim_strength*(x[2]>1.0)",
                                         stim_strength=1.0,
                                         degree=1)
