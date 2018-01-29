@@ -48,6 +48,10 @@ def subdomain_bbox(subdomains, label=None):
     tagged with label. Return a d-tuple of intervals such that their 
     cartesion product forms the bounding box.
     '''
+    if hasattr(label, '__iter__'):
+        return [(min(I[0] for I in intervals), max(I[1] for I in intervals))
+                for intervals in zip(*(subdomain_bbox(subdomains, l) for l in label))]
+    
     mesh = subdomains.mesh()
     if label is None:
         coords = mesh.coordinates()
@@ -60,14 +64,29 @@ def subdomain_bbox(subdomains, label=None):
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
+    # Test 2d
     mesh = UnitSquareMesh(10, 10)
     cell_f = MeshFunction('size_t', mesh, 2, 0)
     CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
 
     assert subdomain_bbox(cell_f, 1) == [(0.5, 1.0), (0.5, 1.0)]
 
+    # Test 3d
     mesh = UnitCubeMesh(10, 10, 10)
     cell_f = MeshFunction('size_t', mesh, 3, 0)
     CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
 
     assert subdomain_bbox(cell_f, 1) == [(0.5, 1.0), (0.5, 1.0), (0.0, 1.0)]
+
+    # Multi marker tests
+    mesh = UnitSquareMesh(10, 10)
+    cell_f = MeshFunction('size_t', mesh, 2, 0)
+    CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
+    CompiledSubDomain('x[0] < 0.5 + DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 2)
+    CompiledSubDomain('x[0] < 0.5 + DOLFIN_EPS && x[1] < 0.5 + DOLFIN_EPS').mark(cell_f, 3)
+
+    assert subdomain_bbox(cell_f) == [(0.0, 1.0), (0.0, 1.0)]
+    assert subdomain_bbox(cell_f, (1, 2)) == [(0.0, 1.0), (0.5, 1.0)]
+    assert subdomain_bbox(cell_f, (3, 2)) == [(0.0, 0.5), (0.0, 1.0)]
+    assert subdomain_bbox(cell_f, (1, 0)) == [(0.5, 1.0), (0.0, 1.0)]
+    assert subdomain_bbox(cell_f, (1, 3)) == [(0.0, 1.0), (0.0, 1.0)]
