@@ -36,9 +36,10 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["alpha"] = 2.0  # (ms)
     dendrite_params["v_eq"] = 0.0   # (mV)
     dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
-    dendrite_params["g_s"] = Expression("stim_strength*(x[2]>1.0)",
+    dendrite_params["g_s"] = Expression("stim_strength*(x[2]>stim_limit)",
                                         stim_strength=problem_parameters["stim_strength"],
-                                                                            degree=1)
+                                        stim_limit=zmax_dend-problem_parameters["stim_length"],
+                                        degree=1)
 
     # Update dendrite parameters
     dendrite_model = Passive(dendrite_params)

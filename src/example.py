@@ -40,10 +40,11 @@ stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh 
                        problem_parameters={'C_m': 1.0,    # uF/um^2
                        'stim_strength': 100.0,            # mS/cm^2
                        'stim_start': 0.5,                 # ms
+                       'stim_length': 0.4,                # cm
                        'cond_int': 7.0,                   # mS/cm^2
                        'cond_ext': 3.0,                   # mS/cm^2
                        'I_ion': 0.0,
-                       'Tstop': 4.0},                     # ms
+                       'Tstop': 5.0},                     # ms
                        solver_parameters={'dt_fem': 1E-3, # ms
                        'dt_ode': 1E-3,                    # ms
                        'linear_solver': 'direct'})
