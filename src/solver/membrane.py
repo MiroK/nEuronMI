@@ -24,6 +24,11 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["E_leak"] = -75.0   #  passive resting membrane potential (in mV)
     dendrite_params["Cm"] = 1.0         #  membrane capacitance (in uF/cm**2)
 
+    # Extract the bounds of the z coordinate to localize stimulation
+    coord_min = subdomains.mesh().coordinates().min(axis=0)
+    coord_max = subdomains.mesh().coordinates().min(axis=1)
+    zmin, zmax = coord_min[-1], coord_max[-1]
+
     # Adjust stimulus current
     # Note: Stimulation is currently implemented as a part of the passive membrane model
     # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
