@@ -26,7 +26,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
 
     # Extract the bounds of the z coordinate to localize stimulation
     coord_min = subdomains.mesh().coordinates().min(axis=0)
-    coord_max = subdomains.mesh().coordinates().min(axis=1)
+    coord_max = subdomains.mesh().coordinates().max(axis=0)
     zmin, zmax = coord_min[-1], coord_max[-1]
 
     # Adjust stimulus current
