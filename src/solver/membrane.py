@@ -1,6 +1,7 @@
 import cbcbeat as beat
 from Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
 from transferring import SubMeshTransfer
+from aux import subdomain_bbox
 from Passive import Passive
 from dolfin import *
 
@@ -25,9 +26,9 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["Cm"] = 1.0         #  membrane capacitance (in uF/cm**2)
 
     # Extract the bounds of the z coordinate to localize stimulation
-    coord_min = subdomains.mesh().coordinates().min(axis=0)
-    coord_max = subdomains.mesh().coordinates().max(axis=0)
-    zmin, zmax = coord_min[-1], coord_max[-1]
+    zmin, zmax = subdomain_bbox(subdomains)[-1]
+    # Or just for the dendrite part
+    zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
 
     # Adjust stimulus current
     # Note: Stimulation is currently implemented as a part of the passive membrane model

@@ -40,3 +40,34 @@ def load_mesh(mesh_file):
                 'probe_surfaces': {4, 41} & global_tags}
 
     return mesh, surfaces, volumes, aux_tags
+
+
+def subdomain_bbox(subdomains, label=None):
+    '''
+    Draw a bounding box around subdomain defined by entities in `subdomains`
+    tagged with label. Return a d-tuple of intervals such that their 
+    cartesion product forms the bounding box.
+    '''
+    mesh = subdomains.mesh()
+    if label is None:
+        coords = mesh.coordinates()
+    else:
+        mesh.init(mesh.topology().dim(), 0)
+        vertices = set(v for cell in SubsetIterator(subdomains, label) for v in cell.entities(0))
+        coords = mesh.coordinates()[list(vertices)]
+    return zip(coords.min(axis=0), coords.max(axis=0))
+
+# -------------------------------------------------------------------
+
+if __name__ == '__main__':
+    mesh = UnitSquareMesh(10, 10)
+    cell_f = MeshFunction('size_t', mesh, 2, 0)
+    CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
+
+    assert subdomain_bbox(cell_f, 1) == [(0.5, 1.0), (0.5, 1.0)]
+
+    mesh = UnitCubeMesh(10, 10, 10)
+    cell_f = MeshFunction('size_t', mesh, 3, 0)
+    CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
+
+    assert subdomain_bbox(cell_f, 1) == [(0.5, 1.0), (0.5, 1.0), (0.0, 1.0)]
