@@ -10,6 +10,8 @@ def convert(msh_file, h5_file):
     # Get the xml mesh
     xml_file = '.'.join([root, 'xml'])
     subprocess.call(['dolfin-convert %s %s' % (msh_file, xml_file)], shell=True)
+    # Success?
+    assert os.path.exists(xml_file)
 
     cmd = '''from dolfin import Mesh, HDF5File;\
              mesh=Mesh('%(xml_file)s');\
@@ -31,8 +33,13 @@ def convert(msh_file, h5_file):
 
     cmd = 'python -c "%s"' % cmd
 
-    return subprocess.call([cmd], shell=True)
+    status = subprocess.call([cmd], shell=True)
+    assert status == 0
+    # Sucess?
+    assert os.path.exists(h5_file)
 
+    return True
+    
 
 def cleanup(files=None, exts=()):
     '''Get rid of xml'''
@@ -71,7 +78,7 @@ if __name__ == '__main__':
         root, ext = os.path.splitext(msh_file)
         h5_file = '.'.join([root, 'h5'])
 
-    convert(msh_file, h5_file)
+    assert convert(msh_file, h5_file)
 
     h5 = HDF5File(mpi_comm_world(), h5_file, 'r')
     mesh = Mesh()
