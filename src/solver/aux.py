@@ -61,6 +61,36 @@ def subdomain_bbox(subdomains, label=None):
         coords = mesh.coordinates()[list(vertices)]
     return zip(coords.min(axis=0), coords.max(axis=0))
 
+
+def closest_entity(x, subdomains, label):
+    '''
+    Return entity with smallest distance to x out of entities marked by label
+    in subdomains. The distance is determined by midpoint is it's only 
+    approximate.
+    '''
+    x = Point(*x)
+    e = min(SubsetIterator(subdomains, label), key=lambda e: (x-e.midpoint()).norm())
+    
+    return MeshEntity(subdomains.mesh(), e.dim(), e.index())
+
+
+def point_source(e, A, h=1E-10):
+    '''
+    Create a point source (h cutoff) with amplitude A at the entity center
+    '''
+    gdim = e.mesh().geometry().dim()
+    x = e.midpoint().array()[:gdim]
+    
+    degree = A.ufl_element().degree()
+
+    norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(gdim)])
+    norm_code = 'sqrt(%s)' % norm_code
+
+    params = {'h': h, 'A': A}
+    params.update({('x%d' % i): x[i] for i in range(gdim)})
+
+    return Expression('%s < h ? A: 0' % norm_code, degree=1, **params)
+
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -90,3 +120,20 @@ if __name__ == '__main__':
     assert subdomain_bbox(cell_f, (3, 2)) == [(0.0, 0.5), (0.0, 1.0)]
     assert subdomain_bbox(cell_f, (1, 0)) == [(0.5, 1.0), (0.0, 1.0)]
     assert subdomain_bbox(cell_f, (1, 3)) == [(0.0, 1.0), (0.0, 1.0)]
+
+    # Closest point
+    from embedding import EmbeddedMesh
+    import numpy as np
+    
+    mesh = UnitCubeMesh(10, 10, 10)
+    facet_f = MeshFunction('size_t', mesh, 2, 0)
+    CompiledSubDomain('near(x[0], 0)').mark(facet_f, 1)
+    CompiledSubDomain('near(x[2], 0.5)').mark(facet_f, 1)
+
+    bmesh, subdomains = EmbeddedMesh(facet_f, [1])
+    x = np.array([1, 1., 1.])
+    entity = closest_entity(x, subdomains, 1)
+    x0 = entity.midpoint().array()[:3]
+    
+    f = point_source(entity, A=Expression('3', degree=1))
+    assert abs(f(x0) - 3) < 1E-15, abs(f(x0 + 1E-9*np.ones(3))) < 1E-15

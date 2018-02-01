@@ -27,8 +27,16 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
 
     # Extract the bounds of the z coordinate to localize stimulation
     zmin, zmax = subdomain_bbox(subdomains)[-1]
+    
     # Or just for the dendrite part
     zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
+    
+    # Or just for the soma part
+    zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
+    
+    # Select start and end of the synaptic input area
+    stim_start_z = zmax_soma + problem_parameters["stim_pos"]
+    stim_end_z = stim_start_z + problem_parameters["stim_length"]
 
     # Adjust stimulus current
     # Note: Stimulation is currently implemented as a part of the passive membrane model
@@ -36,9 +44,10 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["alpha"] = 2.0  # (ms)
     dendrite_params["v_eq"] = 0.0   # (mV)
     dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
-    dendrite_params["g_s"] = Expression("stim_strength*(x[2]>stim_limit)",
+    dendrite_params["g_s"] = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
                                         stim_strength=problem_parameters["stim_strength"],
-                                        stim_limit=zmax_dend-problem_parameters["stim_length"],
+                                        stim_start_z = stim_start_z,
+                                        stim_end_z = stim_end_z,
                                         degree=1)
 
     # Update dendrite parameters

@@ -116,8 +116,9 @@ class SubMeshTransfer(object):
                 # print '\t', x
                 # Closest mdof
                 m_dof = min(m_dofs, key=lambda dof: np.linalg.norm(x-m_dofs_x[dof]))
-                # There MUST be one which matches exactly
-                assert np.linalg.norm(x-m_dofs_x[m_dof]) < 10*df.DOLFIN_EPS, np.linalg.norm(x-m_dofs_x[m_dof])
+                # There MUST be one which matches 'exactly'
+                dof_x_error = np.linalg.norm(x-m_dofs_x[m_dof])/np.linalg.norm(x)
+                assert dof_x_error < 10*df.DOLFIN_EPS, dof_x_error
                 # Insert
                 mapping[s_dof] = m_dof
         # And we foudn them all 
