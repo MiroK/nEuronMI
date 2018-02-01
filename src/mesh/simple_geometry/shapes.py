@@ -404,7 +404,7 @@ class FancyProbe(Probe):
         self.contact_rad = 7.5
         self.with_contacts = int(params.get('with_contacts', 0))
         # self.cz = params['z_lim'] - params['probe_z'] - 62
-        self.cz = params['probe_z'] + 62 + sqrt(22*22-18*18) +9*25
+        self.cz = params['probe_z'] + 62 + sqrt(22*22-18*18) + 9*25
 
         return True
         
@@ -432,6 +432,6 @@ class FancyProbe(Probe):
         return '\n'.join(['probe_thick = %g;' % self.probe_thick,
                           'contact_rad = %g;' % self.contact_rad,
                           'with_contacts = %d;' % self.with_contacts,
-                          'probe_top = %g + 20;' % neuron.geom_bbox.y[2]])
+                          'probe_top = %g + 200;' % neuron.geom_bbox.y[2]])
     
     def __str__(self): return 'fancy_probe'

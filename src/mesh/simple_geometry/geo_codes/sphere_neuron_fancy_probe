@@ -6,7 +6,8 @@ If(with_contacts)
     cx  = probe_x - 0.5*probe_thick;
     cy = probe_y;
     cz = probe_z + 62 + i*25;
-    Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
+    //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
+    Cylinder(circle) = {cx, cy, cz, 0.1, 0, 0, contact_rad};
   
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
@@ -19,7 +20,9 @@ If(with_contacts)
   
     cy = probe_y + 18;
     circle = newv;
-    Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
+    //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
+    Cylinder(circle) = {cx, cy, cz, 0.1, 0, 0, contact_rad};
+
   
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
@@ -28,7 +31,8 @@ If(with_contacts)
   
     cy = probe_y - 18;
     circle = newv;
-    Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
+    //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
+    Cylinder(circle) = {cx, cy, cz, 0.1, 0, 0, contact_rad};
   
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
