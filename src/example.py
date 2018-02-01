@@ -37,9 +37,10 @@ if not h5_is_done:
 
 # Solver setup
 stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh lengths specified in cm:
-                       problem_parameters={'C_m': 1.0,    # uF/um^2
+                       problem_parameters={'C_m': 1.0,    # uF/cm^2
                        'stim_strength': 100.0,            # mS/cm^2
                        'stim_start': 0.1,                 # ms
+                       'stim_pos': 0.3,                   # cm
                        'stim_length': 0.4,                # cm
                        'cond_int': 7.0,                   # mS/cm^2
                        'cond_ext': 3.0,                   # mS/cm^2
