@@ -12,44 +12,8 @@ import matplotlib.pylab as plt
 import numpy as np
 
 import subprocess, os, time, sys
+from os.path import join
 
-h5_is_done = True
-
-if not h5_is_done:
-    # Geometry definition
-    # neuron = SphereNeuron({'rad_soma': 0.5,
-    #                       'rad_dend': 0.3, 'length_dend': 1,
-    #                       'rad_axon': 0.2, 'length_axon': 1,
-    #                       'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
-    #
-    # probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
-    #
-    # mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
-
-    neuron = SphereNeuron({'rad_soma': 30*conv,
-                           'rad_dend': 15*conv, 'length_dend': 400*conv,
-                           'rad_axon': 10*conv, 'length_axon': 300*conv,
-                           'dxp': 150*conv, 'dxn': 125*conv, 'dy': 100*conv, 'dz': 20*conv})
-
-    probe_x = 100*conv
-
-    probe = CylinderProbe({'rad_probe': 20*conv, 'probe_x': probe_x, 'probe_y': 0, 'probe_z': 0})
-
-    mesh_sizes = {'neuron_mesh_size': 10*conv, 'probe_mesh_size': 10*conv, 'rest_mesh_size': 40*conv}
-
-
-                          
-    # This will give us test.GEO
-    geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
-    assert os.path.exists('test.GEO')
-                          
-    # Generate msh file, test.msh
-    subprocess.call(['gmsh -3 test.GEO'], shell=True)
-    assert os.path.exists('test.msh')
-                          
-    # Conversion to h5 file
-    convert('test.msh', 'test.h5')
-    assert os.path.exists('test.h5')
 
 if __name__ == '__main__':
     if '-mesh' in sys.argv:
@@ -63,6 +27,11 @@ if __name__ == '__main__':
     else:
         probe_mesh_path=mesh_path
 
+    mesh_name = os.path.split(mesh_path)[-1]
+    assert mesh_name[-3:] == '.h5'
+
+    mesh_root = mesh_name[:-3]
+
     conv = 1E-4
 
     # Solver setup
@@ -70,7 +39,7 @@ if __name__ == '__main__':
                            problem_parameters={'C_m': 1.0,    # uF/um^2
                            'stim_strength': 10.0,             # mS/cm^2
                            'stim_start': 0.01,                # ms
-                           'stim_pos': 350*conv,              # cm
+                           'stim_pos': [0., 0., 350*conv],    # cm
                            'stim_length': 20*conv,            # cm
                            'cond_int': 7.0,                   # mS/cm^2
                            'cond_ext': 3.0,                   # mS/cm^2
@@ -80,15 +49,16 @@ if __name__ == '__main__':
                            'dt_ode': 1E-2,#1E-3,                    # ms
                            'linear_solver': 'direct'})
 
-    if not os.path.isdir('results/v_ext'):
+    if not os.path.isdir('results'):
         os.mkdir('results')
-        os.mkdir('results/v_ext')
-        os.mkdir('results/currents')
+
+    if not os.path.isdir(join('results', mesh_root)):
+        os.mkdir(join('results', mesh_root))
 
     rec_sites =  np.array(probing_locations(probe_mesh_path, 41))
 
-    u_file = File('results/v_ext/u_sol.pvd')
-    I_file = File('results/currents/current_sol.pvd')
+    u_file = File(join('results', mesh_root, 'u_sol.pvd'))
+    I_file = File(join('results', mesh_root, 'current_sol.pvd'))
 
     t_start = time.time()
     v_probe = []
@@ -107,14 +77,17 @@ if __name__ == '__main__':
             I_file << current
             times.append(t)
             v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
-            # v_probe.append([u(el[0], el[1], el[2]) for el in rec
-            #_sites])
-            # i_m.append(current)
+
 
     t_stop = time.time()
     print 'Elapsed time = ', t_stop - t_start
 
-    #plt.plot(times, v_probe)
+    v_probe = np.transpose(np.array(v_probe))
+
+    np.save(join('results', mesh_root, 'times'), times)
+    np.save(join('results', mesh_root, 'v_probe'), v_probe)
+    np.save(join('results', mesh_root, 'sites'), rec_sites)
+
     plt.ion()
     plt.show()
 

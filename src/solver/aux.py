@@ -31,7 +31,8 @@ def load_mesh(mesh_file):
     # Surface, 21, 31, 41 are maybe
     local_tags = list(set(surfaces.array()))
     global_tags = set(comm_py.allreduce(local_tags))
-    assert {1, 2, 3, 5, 6} <= global_tags, global_tags
+    # assert {1, 2, 3, 5, 6} <= global_tags, global_tags
+    assert {1, 2, 3} <= global_tags, global_tags
     assert global_tags <= {0, 1, 2, 3, 5, 6, 4, 41, 21, 31} 
 
     # Build the axiliary mapping which identidies the surfaces

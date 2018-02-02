@@ -1,6 +1,6 @@
 import hashlib, time, os
 from os.path import join
-
+import numpy as np
 
 GEO_CODE_DIR = os.path.join(os.path.dirname(__file__), 'geo_codes')
 
@@ -152,6 +152,10 @@ if __name__ == '__main__':
         simple=True
     else:
         simple=False
+    if '-show' in sys.argv:
+        show=True
+    else:
+        show=False
     if '-probetype' in sys.argv:
         pos = sys.argv.index('-probetype')
         probetype = sys.argv[pos + 1]
@@ -164,7 +168,9 @@ if __name__ == '__main__':
         neurontype='sphere'
     if '-probetip' in sys.argv:
         pos = sys.argv.index('-probetip')
-        probetip = list(sys.argv[pos + 1])
+        probetip = sys.argv[pos + 1].split(',')
+        probetip = [float(p) for p in probetip]
+        print 'Probetip: ', probetip
     else:
         probetip=[50, 0, 0]
 
@@ -172,7 +178,7 @@ if __name__ == '__main__':
         print 'Generate GEO and msh files with and without probe. \n   -f : filename'\
               '\n   -simple : simpler mesh (coarser cells - larger neuron)' \
               '\n   -probetype : cylinder (default) - box - wedge - fancy\n   -neurontype : sphere (default) - mainen' \
-              '\n   -probetip : [x y z] of probe tip (in um)'
+              '\n   -probetip : x,y,z of probe tip (in um)'
         raise Exception('Indicate mesh argumets')
     
     conv=1E-4
@@ -192,20 +198,18 @@ if __name__ == '__main__':
     # DETAILED
     #####################################
     else:
-        geometrical_params = {'rad_soma': 15 * conv, 'rad_dend': 4 * conv, 'rad_axon': 1 * conv,
-                              'length_dend': 400 * conv,
-                              'length_axon': 200 * conv, 'rad_hilox_d': 8 * conv, 'length_hilox_d': 20 * conv,
-                              'rad_hilox_a': 4 * conv,
-                              'length_hilox_a': 10 * conv, 'dxp': 100 * conv, 'dxn': 80 * conv, 'dy': 80 * conv,
-                              'dz': 40 * conv}
+        geometrical_params = {'rad_soma': 15 * conv, 'rad_dend': 3 * conv, 'rad_axon': 0.5 * conv,
+                              'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 6 * conv,
+                              'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
+                              'dxp': 100 * conv, 'dxn': 80 * conv, 'dy': 80 * conv, 'dz': 40 * conv}
         mesh_sizes = {'neuron_mesh_size': 2 * geometrical_params['rad_axon'],
                       'probe_mesh_size': 4 * geometrical_params['rad_axon'],
                       'rest_mesh_size': 4 * geometrical_params['rad_axon']}
 
     if neurontype == 'sphere':
         neuron = SphereNeuron(geometrical_params)
-    elif neuron == 'mainen':
-        neurontype = MainenNeuron(geometrical_params)
+    elif neurontype == 'mainen':
+        neuron = MainenNeuron(geometrical_params)
 
     probe_x = probetip[0]*conv
     probe_y = probetip[1]*conv
@@ -219,7 +223,7 @@ if __name__ == '__main__':
         probe = BoxProbe({'probe_dx': 20*conv, 'probe_dy': 20*conv,
                           'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
     elif probetype == 'wedge':
-        contact_pts = [(0, 0.7), (0, 1.0), (0, 1.3), (0, 0.3)]
+        contact_pts = [(0, h*conv) for h in np.linspace(10, 100, 10)]
         probe = WedgeProbe({'alpha': pi / 4,
                             'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
                             'probe_width': 50*conv, 'probe_thick': 30*conv,
@@ -230,14 +234,18 @@ if __name__ == '__main__':
     if not os.path.isdir(probetype):
         os.mkdir(probetype)
 
-    fname_wprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
+    fname_wprobe = join(probetype + '_' + neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
                         + str(probetip[2]) + '_wprobe')
     out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe)
-    fname_noprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
+    fname_noprobe = join(probetype + '_' + neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
                          + str(probetip[2]) + '_noprobe')
     out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
 
     import subprocess
-    subprocess.call(['gmsh %s' % out_wprobe], shell=True)
-    subprocess.call(['gmsh %s' % out_noprobe], shell=True)
+    if show:
+        subprocess.call(['gmsh %s' % out_wprobe], shell=True)
+        subprocess.call(['gmsh %s' % out_noprobe], shell=True)
+    else:
+        subprocess.call(['gmsh -3 %s' % out_wprobe], shell=True)
+        subprocess.call(['gmsh -3 %s' % out_noprobe], shell=True)
 
