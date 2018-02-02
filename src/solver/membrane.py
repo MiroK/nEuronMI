@@ -73,7 +73,11 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
         P0 = problem_parameters['stim_pos']
         
         # Get the closest dendrite point
-        X = closest_entity(P0, subdomains, label=dendrite).midpoint().array()
+        X = closest_entity(P0, subdomains, label=dendrite).midpoint()
+        try:
+            X = X.array()
+        except AttributeError:
+            X = np.array([X[i] for i in range(3)])
 
         if 'stim_length' in problem_parameters:
             info('Using ring stimulus based on %r' % list(X))
