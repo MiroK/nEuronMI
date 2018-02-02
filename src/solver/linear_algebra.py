@@ -14,7 +14,11 @@ def LinearSystemSolver(A, W, solver_parameters):
 
 def direct_solver(A, W, params):
     '''A direct solver with MUMPS'''
-    solver = LUSolver(A, 'mumps')
+    if 'mumps' in lu_solver_methods().keys():
+        solver = LUSolver(A, 'mumps')
+    else:
+        print 'MUMPS solver not found: using default'
+        solver = LUSolver(A, 'default')
     # The system stays the same, only the rhs changes
     solver.parameters['reuse_factorization'] = True
 

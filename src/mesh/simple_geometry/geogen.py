@@ -1,4 +1,5 @@
 import hashlib, time, os
+from os.path import join
 
 
 GEO_CODE_DIR = os.path.join(os.path.dirname(__file__), 'geo_codes')
@@ -142,84 +143,101 @@ if __name__ == '__main__':
     from math import pi
     import sys
 
-    if '-noprobe' in sys.argv:
-        mesh_probe=False
-    else:
-        mesh_probe=True
-    if '-simple' in sys.argv:
-        simple=True
-    else:
-        simple=False
     if '-f' in sys.argv:
         pos = sys.argv.index('-f')
         fname = sys.argv[pos + 1]
     else:
         fname=''
+    if '-simple' in sys.argv:
+        simple=True
+    else:
+        simple=False
+    if '-probetype' in sys.argv:
+        pos = sys.argv.index('-probetype')
+        probetype = sys.argv[pos + 1]
+    else:
+        probetype='cylinder'
+    if '-neurontype' in sys.argv:
+        pos = sys.argv.index('-neurontype')
+        neurontype = sys.argv[pos + 1]
+    else:
+        neurontype='sphere'
+    if '-probetip' in sys.argv:
+        pos = sys.argv.index('-probetip')
+        probetip = list(sys.argv[pos + 1])
+    else:
+        probetip=[50, 0, 0]
+
+    if len(sys.argv) == 1:
+        print 'Generate GEO and msh files with and without probe. \n   -f : filename'\
+              '\n   -simple : simpler mesh (coarser cells - larger neuron)' \
+              '\n   -probetype : cylinder (default) - box - wedge - fancy\n   -neurontype : sphere (default) - mainen' \
+              '\n   -probetip : [x y z] of probe tip (in um)'
+        raise Exception('Indicate mesh argumets')
+    
+    conv=1E-4
 
     ########################
     # SIMPLE
     ########################
-    if False:
-        neuron = SphereNeuron({'rad_soma': 0.5,
-                               'rad_dend': 0.3, 'length_dend': 1,
-                               'rad_axon': 0.2, 'length_axon': 1,
-                               'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
-
-        # neuron = MainenNeuron({'rad_soma': 1,
-        #                        'rad_hilox_d': 0.4, 'length_hilox_d': 0.3,
-        #                        'rad_dend': 0.3, 'length_dend': 2,
-        #                        'rad_hilox_a': 0.3, 'length_hilox_a': 0.4,
-        #                        'rad_axon': 0.2, 'length_axon': 4,
-        #                        'dxp': 2.5, 'dxn': 0.5, 'dy': 0.2, 'dz': 0.2})
-
-        # probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
-    
-        # probe = BoxProbe({'probe_dx': 0.2, 'probe_dy': 0.2,
-        #                  'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
-
-        contact_pts = [(0, 0.7), (0, 1.0), (0, 1.3), (0, 0.3)]
-        if mesh_probe:
-            probe = WedgeProbe({'alpha': pi/4,
-                                'probe_z': 0, 'probe_x': 1.5, 'probe_y': 0,
-                                'probe_width': 0.5, 'probe_thick': 0.3,
-                                'contact_points': contact_pts, 'contact_rad': 0.05})
-        else:
-            probe=None
-        
-        sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
+    if simple:
+        geometrical_params = {'rad_soma': 30 * conv, 'rad_dend': 10 * conv, 'rad_axon': 6 * conv,
+                              'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 16 * conv,
+                              'length_hilox_d': 20 * conv, 'rad_hilox_a': 10 * conv, 'length_hilox_a': 10 * conv,
+                              'dxp': 80 * conv, 'dxn': 80 * conv, 'dy': 50 * conv, 'dz': 40 * conv}
+        mesh_sizes = {'neuron_mesh_size': 2 * geometrical_params['rad_axon'],
+                      'probe_mesh_size': 2 * geometrical_params['rad_axon'],
+                      'rest_mesh_size': 4 * geometrical_params['rad_axon']}
     #####################################
-    # THE FANCY PROBE
+    # DETAILED
     #####################################
     else:
-        geometrical_params_simple = {'rad_soma': 20, 'rad_dend': 8, 'rad_axon': 4, 'length_dend': 200,
-                              'length_axon': 100, 'rad_hilox_d': 12, 'length_hilox_d': 20, 'rad_hilox_a': 6,
-                              'length_hilox_a': 10, 'dxp': 100, 'dxn': 80, 'dy': 80, 'dz': 40}
-        mesh_sizes_simple = {'neuron_mesh_size': 2 * geometrical_params_simple['rad_axon'],
-                      'probe_mesh_size': 4 * geometrical_params_simple['rad_axon'],
-                      'rest_mesh_size': 4 * geometrical_params_simple['rad_axon']}
+        geometrical_params = {'rad_soma': 15 * conv, 'rad_dend': 4 * conv, 'rad_axon': 1 * conv,
+                              'length_dend': 400 * conv,
+                              'length_axon': 200 * conv, 'rad_hilox_d': 8 * conv, 'length_hilox_d': 20 * conv,
+                              'rad_hilox_a': 4 * conv,
+                              'length_hilox_a': 10 * conv, 'dxp': 100 * conv, 'dxn': 80 * conv, 'dy': 80 * conv,
+                              'dz': 40 * conv}
+        mesh_sizes = {'neuron_mesh_size': 2 * geometrical_params['rad_axon'],
+                      'probe_mesh_size': 4 * geometrical_params['rad_axon'],
+                      'rest_mesh_size': 4 * geometrical_params['rad_axon']}
 
-        geometrical_params = {'rad_soma':15, 'rad_dend': 4, 'rad_axon': 1, 'length_dend': 400,
-                              'length_axon': 200, 'rad_hilox_d': 8, 'length_hilox_d': 20, 'rad_hilox_a': 4,
-                              'length_hilox_a': 10, 'dxp': 100, 'dxn': 80, 'dy': 80, 'dz': 40}
-        mesh_sizes = {'neuron_mesh_size': 2*geometrical_params['rad_axon'],
-                      'probe_mesh_size': 4*geometrical_params['rad_axon'],
-                      'rest_mesh_size': 4*geometrical_params['rad_axon']}
+    if neurontype == 'sphere':
+        neuron = SphereNeuron(geometrical_params)
+    elif neuron == 'mainen':
+        neurontype = MainenNeuron(geometrical_params)
 
-        if simple:
-            geometrical_params = geometrical_params_simple
-            mesh_sizes=mesh_sizes_simple
-            neuron = SphereNeuron(geometrical_params)
-        else:
-            neuron = MainenNeuron(geometrical_params)
+    probe_x = probetip[0]*conv
+    probe_y = probetip[1]*conv
+    probe_z = probetip[2]*conv
 
-        # With contacts == 0 means that the circular contact points (markers)
-        # 41 are gone from the mesh
-        if mesh_probe:
-            probe = FancyProbe({'probe_z': -100, 'probe_y': 0, 'probe_x': 50, 'with_contacts': 1})
-        else:
-            probe=None
+    print probe_x, probe_y, probe_z
 
-    out = geofile(neuron, mesh_sizes, probe=probe, file_name=fname)
+    if probetype == 'cylinder':
+        probe = CylinderProbe({'rad_probe': 15*conv, 'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
+    elif probetype == 'box':
+        probe = BoxProbe({'probe_dx': 20*conv, 'probe_dy': 20*conv,
+                          'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
+    elif probetype == 'wedge':
+        contact_pts = [(0, 0.7), (0, 1.0), (0, 1.3), (0, 0.3)]
+        probe = WedgeProbe({'alpha': pi / 4,
+                            'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
+                            'probe_width': 50*conv, 'probe_thick': 30*conv,
+                            'contact_points': contact_pts, 'contact_rad': 5*conv})
+    elif probetype == 'fancy':
+        probe = FancyProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z, 'with_contacts': 1})
+
+    if not os.path.isdir(probetype):
+        os.mkdir(probetype)
+
+    fname_wprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
+                        + str(probetip[2]) + '_wprobe')
+    out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe)
+    fname_noprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
+                         + str(probetip[2]) + '_noprobe')
+    out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
 
     import subprocess
-    subprocess.call(['gmsh %s' % out], shell=True)
+    subprocess.call(['gmsh %s' % out_wprobe], shell=True)
+    subprocess.call(['gmsh %s' % out_noprobe], shell=True)
+

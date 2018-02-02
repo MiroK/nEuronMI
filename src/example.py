@@ -13,18 +13,31 @@ import numpy as np
 
 import subprocess, os, time, sys
 
-h5_is_done = False
+h5_is_done = True
 
 if not h5_is_done:
     # Geometry definition
-    neuron = SphereNeuron({'rad_soma': 0.5,
-                          'rad_dend': 0.3, 'length_dend': 1,
-                          'rad_axon': 0.2, 'length_axon': 1,
-                          'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
-        
-    probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
-                          
-    mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
+    # neuron = SphereNeuron({'rad_soma': 0.5,
+    #                       'rad_dend': 0.3, 'length_dend': 1,
+    #                       'rad_axon': 0.2, 'length_axon': 1,
+    #                       'dxp': 1.5, 'dxn': 1.25, 'dy': 1.0, 'dz': 0.2})
+    #
+    # probe = CylinderProbe({'rad_probe': 0.2, 'probe_x': 1.5, 'probe_y': 0, 'probe_z': 0})
+    #
+    # mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
+
+    neuron = SphereNeuron({'rad_soma': 30*conv,
+                           'rad_dend': 15*conv, 'length_dend': 400*conv,
+                           'rad_axon': 10*conv, 'length_axon': 300*conv,
+                           'dxp': 150*conv, 'dxn': 125*conv, 'dy': 100*conv, 'dz': 20*conv})
+
+    probe_x = 100*conv
+
+    probe = CylinderProbe({'rad_probe': 20*conv, 'probe_x': probe_x, 'probe_y': 0, 'probe_z': 0})
+
+    mesh_sizes = {'neuron_mesh_size': 10*conv, 'probe_mesh_size': 10*conv, 'rest_mesh_size': 40*conv}
+
+
                           
     # This will give us test.GEO
     geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
@@ -50,17 +63,19 @@ if __name__ == '__main__':
     else:
         probe_mesh_path=mesh_path
 
+    conv = 1E-4
+
     # Solver setup
     stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
                            problem_parameters={'C_m': 1.0,    # uF/um^2
-                           'stim_strength': 100.0,            # mS/cm^2
-                           'stim_start': 0.1,                 # ms
-                           'stim_pos': 0.3,                   # cm
-                           'stim_length': 0.4,                # cm
+                           'stim_strength': 10.0,             # mS/cm^2
+                           'stim_start': 0.01,                # ms
+                           'stim_pos': 350*conv,              # cm
+                           'stim_length': 20*conv,            # cm
                            'cond_int': 7.0,                   # mS/cm^2
                            'cond_ext': 3.0,                   # mS/cm^2
                            'I_ion': 0.0,
-                           'Tstop': 2.},                      # ms
+                           'Tstop': 5.},                      # ms
                            solver_parameters={'dt_fem': 1E-2, #1E-3, # ms
                            'dt_ode': 1E-2,#1E-3,                    # ms
                            'linear_solver': 'direct'})
@@ -80,18 +95,26 @@ if __name__ == '__main__':
     times = []
     i_m = []
 
+    p_x, p_y, p_z = rec_sites[0]
+
     # Do something with the solutions
     for n, (t, u, current) in enumerate(stream):
         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
-        print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
+        print 'Simulation time: ', t , ' v=', u(p_x, p_y, p_z)
 
-        if n % 50 == 0:
+        if n % 1 == 0:
             u_file << u
             I_file << current
             times.append(t)
-            v_probe.append([u(el) for el in rec_sites])
-            i_m.append(current)
+            v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
+            # v_probe.append([u(el[0], el[1], el[2]) for el in rec
+            #_sites])
+            # i_m.append(current)
 
     t_stop = time.time()
     print 'Elapsed time = ', t_stop - t_start
+
+    #plt.plot(times, v_probe)
+    plt.ion()
+    plt.show()
 

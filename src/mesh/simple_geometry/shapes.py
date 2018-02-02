@@ -400,11 +400,11 @@ class FancyProbe(Probe):
         
         for key in all_params: setattr(self, key, params[key])
         # Additional
-        self.probe_thick = 15
-        self.contact_rad = 7.5
+        self.conv = 1E-4
+        self.probe_thick = 15*self.conv
+        self.contact_rad = 7.5*self.conv
         self.with_contacts = int(params.get('with_contacts', 0))
-        # self.cz = params['z_lim'] - params['probe_z'] - 62
-        self.cz = params['probe_z'] + 62 + sqrt(22*22-18*18) + 9*25
+        self.cz = params['probe_z'] + 62*self.conv + sqrt(22*22-18*18)*self.conv + 9*25*self.conv
 
         return True
         
@@ -416,11 +416,11 @@ class FancyProbe(Probe):
         #      /
         #    /
         #    0 31 57
-        points = np.array([[self.probe_x - self.probe_thick/2, self.probe_y, self.probe_z],
-                           [self.probe_x - self.probe_thick/2, self.probe_y+31, self.probe_z+62],
-                           [self.probe_x - self.probe_thick/2, self.probe_y+57, self.probe_z+self.cz],
-                           [self.probe_x - self.probe_thick/2, self.probe_y-31, self.probe_z+62],
-                           [self.probe_x - self.probe_thick/2, self.probe_y-57, self.probe_z+self.cz]])
+        points = np.array([[self.probe_x - self.probe_thick/2., self.probe_y, self.probe_z],
+                           [self.probe_x - self.probe_thick/2., self.probe_y+31*self.conv, self.probe_z+62*self.conv],
+                           [self.probe_x - self.probe_thick/2., self.probe_y+57*self.conv, self.probe_z+self.cz],
+                           [self.probe_x - self.probe_thick/2., self.probe_y-31*self.conv, self.probe_z+62*self.conv],
+                           [self.probe_x - self.probe_thick/2., self.probe_y-57*self.conv, self.probe_z+self.cz]])
         
         points = np.r_[points, points + np.array([self.probe_thick, 0, 0])]
 
@@ -432,6 +432,6 @@ class FancyProbe(Probe):
         return '\n'.join(['probe_thick = %g;' % self.probe_thick,
                           'contact_rad = %g;' % self.contact_rad,
                           'with_contacts = %d;' % self.with_contacts,
-                          'probe_top = %g + 200;' % neuron.geom_bbox.y[2]])
+                          'probe_top = %g + %g;' % (neuron.geom_bbox.y[2], 200*self.conv)])
     
     def __str__(self): return 'fancy_probe'
