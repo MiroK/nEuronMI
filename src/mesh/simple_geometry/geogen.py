@@ -146,6 +146,10 @@ if __name__ == '__main__':
         mesh_probe=False
     else:
         mesh_probe=True
+    if '-simple' in sys.argv:
+        simple=True
+    else:
+        simple=False
     if '-f' in sys.argv:
         pos = sys.argv.index('-f')
         fname = sys.argv[pos + 1]
@@ -187,27 +191,35 @@ if __name__ == '__main__':
     # THE FANCY PROBE
     #####################################
     else:
-        # neuron = SphereNeuron({'rad_soma': 30,
-        #                        'rad_dend': 20, 'length_dend': 400,
-        #                        'rad_axon': 22, 'length_axon': 350,
-        #                        'dxp': 200, 'dxn': 50, 'dy': 40, 'dz': 40})
+        geometrical_params_simple = {'rad_soma': 20, 'rad_dend': 8, 'rad_axon': 4, 'length_dend': 200,
+                              'length_axon': 100, 'rad_hilox_d': 12, 'length_hilox_d': 20, 'rad_hilox_a': 6,
+                              'length_hilox_a': 10, 'dxp': 100, 'dxn': 80, 'dy': 80, 'dz': 40}
+        mesh_sizes_simple = {'neuron_mesh_size': 2 * geometrical_params_simple['rad_axon'],
+                      'probe_mesh_size': 4 * geometrical_params_simple['rad_axon'],
+                      'rest_mesh_size': 4 * geometrical_params_simple['rad_axon']}
 
-        neuron = MainenNeuron({'rad_soma': 15,
-                               'rad_dend': 4, 'length_dend': 500,
-                               'rad_axon': 1, 'length_axon': 350,
-                               'rad_hilox_d': 6, 'length_hilox_d': 20,
-                               'rad_hilox_a': 4, 'length_hilox_a': 15,
-                               'dxp': 100, 'dxn': 50, 'dy': 100, 'dz': 40})
+        geometrical_params = {'rad_soma':15, 'rad_dend': 4, 'rad_axon': 1, 'length_dend': 400,
+                              'length_axon': 200, 'rad_hilox_d': 8, 'length_hilox_d': 20, 'rad_hilox_a': 4,
+                              'length_hilox_a': 10, 'dxp': 100, 'dxn': 80, 'dy': 80, 'dz': 40}
+        mesh_sizes = {'neuron_mesh_size': 2*geometrical_params['rad_axon'],
+                      'probe_mesh_size': 4*geometrical_params['rad_axon'],
+                      'rest_mesh_size': 4*geometrical_params['rad_axon']}
+
+        if simple:
+            geometrical_params = geometrical_params_simple
+            mesh_sizes=mesh_sizes_simple
+            neuron = SphereNeuron(geometrical_params)
+        else:
+            neuron = MainenNeuron(geometrical_params)
 
         # With contacts == 0 means that the circular contact points (markers)
         # 41 are gone from the mesh
         if mesh_probe:
-            probe = FancyProbe({'probe_z': 0, 'probe_y': 0, 'probe_x': 50, 'with_contacts': 1})
+            probe = FancyProbe({'probe_z': -100, 'probe_y': 0, 'probe_x': 50, 'with_contacts': 1})
         else:
             probe=None
-        sizes = {'neuron_mesh_size': 10.0, 'probe_mesh_size': 10.0, 'rest_mesh_size': 40.0}
 
-    out = geofile(neuron, sizes, probe=probe, file_name=fname)
+    out = geofile(neuron, mesh_sizes, probe=probe, file_name=fname)
 
     import subprocess
     subprocess.call(['gmsh %s' % out], shell=True)

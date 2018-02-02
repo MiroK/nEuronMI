@@ -6,9 +6,12 @@ from mesh.simple_geometry.shapes import SphereNeuron, CylinderProbe
 from mesh.simple_geometry.geogen import geofile
 from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
+from solver.probing import probing_locations
 from dolfin import *
+import matplotlib.pylab as plt
+import numpy as np
 
-import subprocess, os, time
+import subprocess, os, time, sys
 
 h5_is_done = False
 
@@ -35,46 +38,60 @@ if not h5_is_done:
     convert('test.msh', 'test.h5')
     assert os.path.exists('test.h5')
 
-# Solver setup
-stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh lengths specified in cm:
-                       problem_parameters={'C_m': 1.0,    # uF/cm^2
-                       'stim_strength': 100.0,            # mS/cm^2
-                       'stim_start': 0.1,                 # ms
-                       'stim_pos': 0.3,                   # cm
-                       'stim_length': 0.4,                # cm
-                       'cond_int': 7.0,                   # mS/cm^2
-                       'cond_ext': 3.0,                   # mS/cm^2
-                       'I_ion': 0.0,
-                       'Tstop': 2.},                     # ms
-                       solver_parameters={'dt_fem': 1E-2,#1E-3, # ms
-                       'dt_ode': 1E-2,#1E-3,                    # ms
-                       'linear_solver': 'direct'})
+if __name__ == '__main__':
+    if '-mesh' in sys.argv:
+        pos = sys.argv.index('-mesh')
+        mesh_path = sys.argv[pos + 1]
+    else:
+        mesh_path='test.h5'
+    if '-probemesh' in sys.argv:
+        pos = sys.argv.index('-probemesh')
+        probe_mesh_path = sys.argv[pos + 1]
+    else:
+        probe_mesh_path=mesh_path
 
-if not os.path.isdir('results/v_ext'):
-    os.mkdir('results')
-    os.mkdir('results/v_ext')
-    os.mkdir('results/currents')
+    # Solver setup
+    stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
+                           problem_parameters={'C_m': 1.0,    # uF/um^2
+                           'stim_strength': 100.0,            # mS/cm^2
+                           'stim_start': 0.1,                 # ms
+                           'stim_pos': 0.3,                   # cm
+                           'stim_length': 0.4,                # cm
+                           'cond_int': 7.0,                   # mS/cm^2
+                           'cond_ext': 3.0,                   # mS/cm^2
+                           'I_ion': 0.0,
+                           'Tstop': 2.},                      # ms
+                           solver_parameters={'dt_fem': 1E-2, #1E-3, # ms
+                           'dt_ode': 1E-2,#1E-3,                    # ms
+                           'linear_solver': 'direct'})
 
-u_file = File('results/v_ext/u_sol.pvd')
-I_file = File('results/currents/current_sol.pvd')
+    if not os.path.isdir('results/v_ext'):
+        os.mkdir('results')
+        os.mkdir('results/v_ext')
+        os.mkdir('results/currents')
 
-t_start = time.time()
-v_probe = []
-times = []
-i_m = []
+    rec_sites =  np.array(probing_locations(probe_mesh_path, 41))
 
-# # Do something with the solutions
-# for n, (t, u, current) in enumerate(stream):
-#     # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
-#     print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
-#
-#     if n % 1 == 0:
-#         u_file << u
-#         I_file << current
-#         times.append(t)
-#         v_probe.append(u(1.5, 0, 0))
-#         i_m.append(current)
-#
-# t_stop = time.time()
-# print 'Elapsed time = ', t_stop - t_start
+    u_file = File('results/v_ext/u_sol.pvd')
+    I_file = File('results/currents/current_sol.pvd')
+
+    t_start = time.time()
+    v_probe = []
+    times = []
+    i_m = []
+
+    # Do something with the solutions
+    for n, (t, u, current) in enumerate(stream):
+        # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
+        print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
+
+        if n % 50 == 0:
+            u_file << u
+            I_file << current
+            times.append(t)
+            v_probe.append([u(el) for el in rec_sites])
+            i_m.append(current)
+
+    t_stop = time.time()
+    print 'Elapsed time = ', t_stop - t_start
 
