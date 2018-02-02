@@ -1,7 +1,7 @@
 import cbcbeat as beat
 from Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
 from transferring import SubMeshTransfer
-from aux import subdomain_bbox
+from aux import subdomain_bbox, closest_entity
 from Passive import Passive
 from dolfin import *
 
@@ -25,31 +25,77 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["E_leak"] = -75.0   #  passive resting membrane potential (in mV)
     dendrite_params["Cm"] = 1.0         #  membrane capacitance (in uF/cm**2)
 
-    # Extract the bounds of the z coordinate to localize stimulation
-    zmin, zmax = subdomain_bbox(subdomains)[-1]
-    
-    # Or just for the dendrite part
-    zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
-    
-    # Or just for the soma part
-    zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
-    
-    # Select start and end of the synaptic input area
-    stim_start_z = zmax_soma + problem_parameters["stim_pos"]
-    stim_end_z = stim_start_z + problem_parameters["stim_length"]
-
     # Adjust stimulus current
     # Note: Stimulation is currently implemented as a part of the passive membrane model
     # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
     dendrite_params["alpha"] = 2.0  # (ms)
     dendrite_params["v_eq"] = 0.0   # (mV)
     dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
-    dendrite_params["g_s"] = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
-                                        stim_strength=problem_parameters["stim_strength"],
-                                        stim_start_z = stim_start_z,
-                                        stim_end_z = stim_end_z,
-                                        degree=1)
 
+    # ^z
+    # | x + length [END]                   
+    # | 
+    # | x = zmax_soma + stim_pos  [START]
+    # |
+    # | zmax_soma (x - stim_pos)
+    # |
+    # We have 3 ways of stimulating the dendrite. If `stip_pos` is a float
+    # is is interpreted as a distance from the soma top where the dendrite
+    # piece of length `stim_length` is stimulated. If `stim_pos` is a
+    # an iterable of len 3 it is interpreted as a source location and the
+    # stimulus location is defined using the dendrite point P closest to it.
+    # If stim_length is not among the parameters only the closest point
+    # will act as a point stimulus. Otherwise dendrite points X such that
+    # their abs(X[2] - P[2]) < stim_length/2 are stimulated - 
+    if isinstance(problem_parameters['stim_pos'], (int, float)):
+        info('Using stimulus based on soma location')
+        # Extract the bounds of the z coordinate to localize stimulation
+        zmin, zmax = subdomain_bbox(subdomains)[-1]
+    
+        # Or just for the dendrite part
+        zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
+    
+        # Or just for the soma part
+        zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
+
+        # Select start and end of the synaptic input area
+        stim_start_z = zmax_soma + problem_parameters["stim_pos"]
+        stim_end_z = stim_start_z + problem_parameters["stim_length"]
+
+        stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
+                              stim_strength=problem_parameters["stim_strength"],
+                              stim_start_z = stim_start_z,
+                              stim_end_z = stim_end_z,
+                              degree=1)
+    else:
+        assert len(problem_parameters['stim_pos']) == 3
+
+        P0 = problem_parameters['stim_pos']
+        
+        # Get the closest dendrite point
+        X = closest_entity(P0, subdomains, label=dendrite).midpoint().array()
+
+        if 'stim_length' in problem_parameters:
+            info('Using ring stimulus based on %r' % list(X))
+
+            stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
+                                  stim_strength=problem_parameters["stim_strength"],
+                                  stim_start_z=X[2]-problem_parameters['stim_length']/2,
+                                  stim_end_z=X[2]+problem_parameters['stim_length']/2,
+                                  degree=1)
+        else:
+            info('Using point stimulus at %r' % list(X))
+
+            norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
+            norm_code = 'sqrt(%s)' % norm_code
+            # NOTE: Points are considered distince if they are > h away
+            # from each other
+            params_ = {'h': 1E-10, 'A': problem_parameters['stim_strength']}
+            params_.update({('x%d' % i): X[i] for i in range(3)})
+
+            stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
+
+    dendrite_params["g_s"] = stimul_f
     # Update dendrite parameters
     dendrite_model = Passive(dendrite_params)
 

@@ -10,7 +10,7 @@ from dolfin import *
 
 import subprocess, os, time
 
-h5_is_done = False
+h5_is_done = True
 
 if not h5_is_done:
     # Geometry definition
@@ -40,7 +40,7 @@ stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh 
                        problem_parameters={'C_m': 1.0,    # uF/cm^2
                        'stim_strength': 100.0,            # mS/cm^2
                        'stim_start': 0.1,                 # ms
-                       'stim_pos': 0.3,                   # cm
+                       'stim_pos': [0.3, 0.4, 0.3],                   # cm
                        'stim_length': 0.4,                # cm
                        'cond_int': 7.0,                   # mS/cm^2
                        'cond_ext': 3.0,                   # mS/cm^2
@@ -63,18 +63,17 @@ v_probe = []
 times = []
 i_m = []
 
-# # Do something with the solutions
-# for n, (t, u, current) in enumerate(stream):
-#     # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
-#     print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
-#
-#     if n % 1 == 0:
-#         u_file << u
-#         I_file << current
-#         times.append(t)
-#         v_probe.append(u(1.5, 0, 0))
-#         i_m.append(current)
-#
-# t_stop = time.time()
-# print 'Elapsed time = ', t_stop - t_start
+# Do something with the solutions
+for n, (t, u, current) in enumerate(stream):
+    # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
+    print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
 
+    if n % 1 == 0:
+        u_file << u
+        I_file << current
+        times.append(t)
+        v_probe.append(u(1.5, 0, 0))
+        i_m.append(current)
+
+t_stop = time.time()
+print 'Elapsed time = ', t_stop - t_start
