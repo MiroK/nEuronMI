@@ -92,6 +92,10 @@ class SubMeshTransfer(object):
         sub_dofs_x = submSpace.tabulate_dof_coordinates().reshape((submSpace.dim(), -1))
         m_dofs_x = mSpace.tabulate_dof_coordinates().reshape((mSpace.dim(), -1))
 
+        # We shall compare dofs in some relative scale which is determined
+        # by the size of mesh
+        h_scale = max(sub_mesh.coordinates().max(axis=0)-sub_mesh.coordinates().min(axis=0))
+
         # subdofs to dofs
         mapping = np.nan*np.ones(submSpace.dim())
         for cell in df.cells(submSpace.mesh()):
@@ -117,7 +121,7 @@ class SubMeshTransfer(object):
                 # Closest mdof
                 m_dof = min(m_dofs, key=lambda dof: np.linalg.norm(x-m_dofs_x[dof]))
                 # There MUST be one which matches 'exactly'
-                dof_x_error = np.linalg.norm(x-m_dofs_x[m_dof])/np.linalg.norm(x)
+                dof_x_error = np.linalg.norm(x-m_dofs_x[m_dof])/h_scale
                 assert dof_x_error < 10*df.DOLFIN_EPS, dof_x_error
                 # Insert
                 mapping[s_dof] = m_dof
