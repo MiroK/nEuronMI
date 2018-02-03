@@ -4,6 +4,7 @@ from transferring import SubMeshTransfer
 from aux import subdomain_bbox, closest_entity
 from Passive import Passive
 from dolfin import *
+import numpy as np
 
 
 def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
