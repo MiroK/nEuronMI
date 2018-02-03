@@ -223,7 +223,7 @@ if __name__ == '__main__':
         probe = BoxProbe({'probe_dx': 20*conv, 'probe_dy': 20*conv,
                           'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
     elif probetype == 'wedge':
-        contact_pts = [(0, h*conv) for h in np.linspace(10, 100, 10)]
+        contact_pts = [(0, h*conv) for h in np.linspace(10, 100, 5)]
         probe = WedgeProbe({'alpha': pi / 4,
                             'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
                             'probe_width': 50*conv, 'probe_thick': 30*conv,
@@ -234,10 +234,10 @@ if __name__ == '__main__':
     if not os.path.isdir(probetype):
         os.mkdir(probetype)
 
-    fname_wprobe = join(probetype + '_' + neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
+    fname_wprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
                         + str(probetip[2]) + '_wprobe')
     out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe)
-    fname_noprobe = join(probetype + '_' + neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
+    fname_noprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
                          + str(probetip[2]) + '_noprobe')
     out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
 
