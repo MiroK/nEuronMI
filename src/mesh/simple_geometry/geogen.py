@@ -198,13 +198,13 @@ if __name__ == '__main__':
     # DETAILED
     #####################################
     else:
-        geometrical_params = {'rad_soma': 15 * conv, 'rad_dend': 3 * conv, 'rad_axon': 0.5 * conv,
+        geometrical_params = {'rad_soma': 15 * conv, 'rad_dend': 4 * conv, 'rad_axon': 1 * conv,
                               'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 6 * conv,
                               'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
-                              'dxp': 100 * conv, 'dxn': 80 * conv, 'dy': 80 * conv, 'dz': 40 * conv}
-        mesh_sizes = {'neuron_mesh_size': 2 * geometrical_params['rad_axon'],
-                      'probe_mesh_size': 4 * geometrical_params['rad_axon'],
-                      'rest_mesh_size': 4 * geometrical_params['rad_axon']}
+                              'dxp': 100 * conv, 'dxn': 100 * conv, 'dy': 100 * conv, 'dz': 50 * conv}
+        mesh_sizes = {'neuron_mesh_size': 2.5 * geometrical_params['rad_axon'],
+                      'probe_mesh_size': 5 * geometrical_params['rad_axon'],
+                      'rest_mesh_size': 8 * geometrical_params['rad_axon']}
 
     if neurontype == 'sphere':
         neuron = SphereNeuron(geometrical_params)
