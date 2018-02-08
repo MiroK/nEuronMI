@@ -194,19 +194,23 @@ if __name__ == '__main__':
         raise Exception('Indicate mesh argumets')
     
     conv=1E-4
-
-    if coarse == 1:
-        nmesh = 2
-        pmesh = 4
-        rmesh = 6
-    elif coarse == 2:
+    
+    if coarse == 0:
+	nmesh = 2.5
+	pmesh = 5
+	rmesh = 7.5
+    elif coarse == 1:
         nmesh = 3
         pmesh = 6
         rmesh = 9
-    elif coarse == 3:
+    elif coarse == 2:
         nmesh = 4
         pmesh = 8
         rmesh = 12
+    elif coarse == 3:
+        nmesh = 4
+        pmesh = 10
+        rmesh = 15
 
     if box == 1:
         dxp = 80

@@ -1,6 +1,11 @@
 import numpy as np
 import matplotlib.pylab as plt
-from neuroplot import *
+
+try:
+    from neuroplot import *
+    neur_plot=True
+except ImportError:
+    neur_plot=False
 from os.path import join
 import sys
 
@@ -36,7 +41,8 @@ if __name__ == '__main__':
     pitch = np.array([18., 25.])*conv
 
     if len(v_p.shape) > 2:
-        fig, _, _ = plot_mea_recording(v_p, sites, pitch)
+	if neur_plot:
+            fig, _, _ = plot_mea_recording(v_p, sites, pitch)
     else:
         plt.plot(times, np.transpose(v_p))
 

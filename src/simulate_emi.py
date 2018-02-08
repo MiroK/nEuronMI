@@ -33,6 +33,7 @@ if __name__ == '__main__':
     mesh_root = mesh_name[:-3]
 
     conv = 1E-4
+    t_start = time.time()
 
     # Solver setup
     stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
@@ -60,7 +61,6 @@ if __name__ == '__main__':
     u_file = File(join('results', mesh_root, 'u_sol.pvd'))
     I_file = File(join('results', mesh_root, 'current_sol.pvd'))
 
-    t_start = time.time()
     v_probe = []
     times = []
     i_m = []
@@ -72,11 +72,12 @@ if __name__ == '__main__':
         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
         print 'Simulation time: ', t , ' v=', u(p_x, p_y, p_z)
 
-        if n % 1 == 0:
+        if n % 50 == 0:
             u_file << u
             I_file << current
-            times.append(t)
-            v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
+
+        times.append(t)
+        v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
 
 
     t_stop = time.time()
