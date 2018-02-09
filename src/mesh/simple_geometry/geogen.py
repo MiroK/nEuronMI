@@ -143,11 +143,6 @@ if __name__ == '__main__':
     from math import pi
     import sys
 
-    if '-f' in sys.argv:
-        pos = sys.argv.index('-f')
-        fname = sys.argv[pos + 1]
-    else:
-        fname=''
     if '-simple' in sys.argv:
         simple=True
     else:
@@ -156,6 +151,11 @@ if __name__ == '__main__':
         show=True
     else:
         show=False
+    if '-returnfname' in sys.argv:
+        return_f=True
+        print 'ciao'
+    else:
+        return_f=False
     if '-probetype' in sys.argv:
         pos = sys.argv.index('-probetype')
         probetype = sys.argv[pos + 1]
@@ -172,7 +172,10 @@ if __name__ == '__main__':
         probetip = [float(p) for p in probetip]
         print 'Probetip: ', probetip
     else:
-        probetip=[50, 0, 0]
+        if probetype == 'cylinder':
+            probetip=[50, 0, 0]
+        elif probetype == 'fancy':
+            probetip=[50, 0, -100]
     if '-coarse' in sys.argv:
         pos = sys.argv.index('-coarse')
         coarse = int(sys.argv[pos + 1])
@@ -185,7 +188,7 @@ if __name__ == '__main__':
         box = 2
 
     if len(sys.argv) == 1:
-        print 'Generate GEO and msh files with and without probe. \n   -f : filename'\
+        print 'Generate GEO and msh files with and without probe. '\
               '\n   -simple : simpler mesh (coarser cells - larger neuron)' \
               '\n   -probetype : cylinder (default) - box - wedge - fancy\n   -neurontype : sphere (default) - mainen' \
               '\n   -probetip : x,y,z of probe tip (in um)\n   -coarse : 1 (less) - 2 - 3 (more)' \
@@ -196,9 +199,9 @@ if __name__ == '__main__':
     conv=1E-4
     
     if coarse == 0:
-	nmesh = 2.5
-	pmesh = 5
-	rmesh = 7.5
+        nmesh = 2.5
+        pmesh = 5
+        rmesh = 7.5
     elif coarse == 1:
         nmesh = 3
         pmesh = 6
@@ -227,6 +230,8 @@ if __name__ == '__main__':
         dxn = 120
         dy = 120
         dz = 60
+
+    root = os.getcwd()
 
     ########################
     # SIMPLE
@@ -276,14 +281,16 @@ if __name__ == '__main__':
     elif probetype == 'fancy':
         probe = FancyProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z, 'with_contacts': 1})
 
-    if not os.path.isdir(probetype):
-        os.mkdir(probetype)
 
-    fname_wprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
-                        + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_wprobe')
+    mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
+                + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box)
+
+    if not os.path.isdir(join(root, probetype, mesh_name)):
+        os.mkdir(join(root, probetype, mesh_name))
+
+    fname_wprobe = join(root, probetype, mesh_name, mesh_name + '_wprobe')
     out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe)
-    fname_noprobe = join(probetype, neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_'
-                         + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_noprobe')
+    fname_noprobe = join(root, probetype, mesh_name, mesh_name + '_noprobe')
     out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
 
     import subprocess
@@ -293,4 +300,10 @@ if __name__ == '__main__':
     else:
         subprocess.call(['gmsh -3 %s' % out_wprobe], shell=True)
         subprocess.call(['gmsh -3 %s' % out_noprobe], shell=True)
+
+    out_msh_noprobe = out_noprobe[:-3] + 'msh'
+    out_msh_wprobe = out_wprobe[:-3] + 'msh'
+
+    if return_f:
+        sys.exit(out_msh_noprobe + ' ' + out_msh_wprobe)
 
