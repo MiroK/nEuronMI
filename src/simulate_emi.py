@@ -72,9 +72,9 @@ if __name__ == '__main__':
         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
         print 'Simulation time: ', t , ' v=', u(p_x, p_y, p_z)
 
-        if n % 50 == 0:
-            u_file << u
-            I_file << current
+        # if n % 50 == 0:
+        u_file << u
+        I_file << current
 
         times.append(t)
         v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
