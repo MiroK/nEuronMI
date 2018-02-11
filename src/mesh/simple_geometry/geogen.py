@@ -285,6 +285,8 @@ if __name__ == '__main__':
     mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
                 + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box)
 
+    if not os.path.isdir(join(root, probetype)):
+        os.mkdir(join(root, probetype))
     if not os.path.isdir(join(root, probetype, mesh_name)):
         os.mkdir(join(root, probetype, mesh_name))
 
