@@ -6,6 +6,7 @@ from mesh.simple_geometry.shapes import SphereNeuron, CylinderProbe
 from mesh.simple_geometry.geogen import geofile
 from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
+from solver.aux import snap_to_nearest
 from dolfin import *
 
 import subprocess, os, time
@@ -63,10 +64,16 @@ v_probe = []
 times = []
 i_m = []
 
+I_proxy = None 
 # Do something with the solutions
 for n, (t, u, current) in enumerate(stream):
+    
+    if I_proxy is None:
+        I_proxy = snap_to_nearest(current)
+    
     # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
     print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
+    print 'I(proxy)=', I_proxy(1.500001, 0.00001, 0.0001), 'using', I_proxy.snaps[(1.500001, 0.00001, 0.0001)]
 
     if n % 1 == 0:
         u_file << u
