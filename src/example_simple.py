@@ -6,6 +6,7 @@ from mesh.simple_geometry.shapes import SphereNeuron, CylinderProbe
 from mesh.simple_geometry.geogen import geofile
 from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
+from solver.aux import snap_to_nearest
 from dolfin import *
 
 import subprocess, os, time
@@ -45,35 +46,61 @@ stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh 
                        'cond_int': 7.0,                   # mS/cm^2
                        'cond_ext': 3.0,                   # mS/cm^2
                        'I_ion': 0.0,
-                       'Tstop': 2.},                     # ms
+                       'Tstop': 2.0},                     # ms
+
                        solver_parameters={'dt_fem': 1E-2,#1E-3, # ms
                        'dt_ode': 1E-2,#1E-3,                    # ms
                        'linear_solver': 'direct'})
-
-if not os.path.isdir('results/v_ext'):
-    os.mkdir('results')
-    os.mkdir('results/v_ext')
-    os.mkdir('results/currents')
-
-u_file = File('results/v_ext/u_sol.pvd')
-I_file = File('results/currents/current_sol.pvd')
 
 t_start = time.time()
 v_probe = []
 times = []
 i_m = []
 
+# Compute the areas of neuron subdomains for current normalization
+# NOTE: on the first yield the stream returns the subdomain function
+# marking the subdomains of the neuron surface
+neuron_subdomains = next(stream)
+# Dx here because the mesh is embedded
+dx_ = Measure('dx', subdomain_data=neuron_subdomains, domain=neuron_subdomains.mesh())
+areas = {tag: assemble(1*dx_(tag)) for tag in range(1, 4)}
+    
+I_proxy = None
+
+if not os.path.isdir('results/v_ext'):
+    os.mkdir('results')
+    os.mkdir('results/v_ext')
+    os.mkdir('results/currents')
+
+# You might get gueried by paraview about the reader for while
+# for me XDMF3 Reader works on version 5.1.0
+u_file = XDMFFile(mpi_comm_world(), 'results/v_ext/u_sol.xdmf')
+I_file = XDMFFile(mpi_comm_world(), 'results/currents/current_sol.xdmf')
+
 # Do something with the solutions
 for n, (t, u, current) in enumerate(stream):
+    
+    if I_proxy is None: I_proxy = snap_to_nearest(current)
+
+    msg = 'Normalized curent in %s = %g'
+    for tag, domain in ((1, 'soma'), (2, 'axon'), (3, 'dendrite')):
+        value = assemble(current*dx_(tag))
+        value /= areas[tag]
+        print msg % (domain, value)
+
     # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
     print 'Simulation time: ', t, ' v=', u(1.5, 0, 0)
+    print 'I(proxy)=', I_proxy(1.500001, 0.00001, 0.0001), 'using', I_proxy.snaps[(1.500001, 0.00001, 0.0001)]
 
-    if n % 1 == 0:
-        u_file << u
-        I_file << current
+    if n % 2 == 0:
+        u_file.write(u, t)
+        I_file.write(current, t)
+        
         times.append(t)
         v_probe.append(u(1.5, 0, 0))
         i_m.append(current)
+u_file.close()
+I_file.close()
 
 t_stop = time.time()
 print 'Elapsed time = ', t_stop - t_start

@@ -1,4 +1,5 @@
 from dolfin import *
+import numpy as np
 
 
 def load_mesh(mesh_file):
@@ -70,7 +71,7 @@ def closest_entity(x, subdomains, label):
     approximate.
     '''
     x = Point(*x)
-    e = min(SubsetIterator(subdomains, label), key=lambda e: (x-e.midpoint()).norm())
+    e = min(SubsetIterator(subdomains, label), key=lambda e, x=x: (x-e.midpoint()).norm())
     
     return MeshEntity(subdomains.mesh(), e.dim(), e.index())
 
@@ -92,9 +93,52 @@ def point_source(e, A, h=1E-10):
 
     return Expression('%s < h ? A: 0' % norm_code, degree=1, **params)
 
+
+def snap_to_nearest(f):
+    '''An expression which evaluates f[function] at dof closest to f'''
+ 
+    class ProxyExpression(Expression):
+        def __init__(self, f, **kwargs):
+            self.f = f
+            V = f.function_space()
+            self.y = V.tabulate_dof_coordinates().reshape((V.dim(), -1))
+            self.snaps = {}
+            
+        def eval(self, value, x):
+            x = self.snap_to_nearest(x)
+            value[:] = self.f(x)
+            # Keep track of where the evaluation happend
+            self.eval_point = x
+
+        def value_shape(self):
+            return f.ufl_element().value_shape()
+
+        def snap_to_nearest(self, x):
+            x = tuple(x)
+            out = self.snaps.get(x, None)
+            # Memoize
+            if out is None:
+                out = self.y[np.argmin(np.sqrt(np.sum((self.y - x)**2, axis=1)))]
+                self.snaps[x] = out
+                
+            return out
+
+    return ProxyExpression(f, element=f.function_space().ufl_element())
+
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
+
+    mesh = UnitCubeMesh(10, 10, 10)
+    mesh = BoundaryMesh(mesh, 'exterior')
+    V = FunctionSpace(mesh, 'CG', 2)
+    f = interpolate(Expression('sin(x[0]+x[1]+x[2])', degree=2), V)
+    # A proxy expression whose action at x eval f at closest point dof
+    # to x
+    f_ = snap_to_nearest(f)
+    assert abs(f_(1., 1., 1.) - f(1., 1., 1.)) < 1E-13
+    assert abs(f_(1.1, 1.1, 1.1) - f(1., 1., 1.)) < 1E-13
+
     # Test 2d
     mesh = UnitSquareMesh(10, 10)
     cell_f = MeshFunction('size_t', mesh, 2, 0)

@@ -111,7 +111,10 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
 
     # Ode solver. Defined on the neuron mesh
     neuron_surf_mesh, neuron_subdomains = EmbeddedMesh(facet_marking_f, neuron_surfaces)
-            
+    # This is not a very pretty solution to the problem of getting the neuron
+    # subdomains out for the purpose of integrating memebrane current.
+    yield neuron_subdomains
+    
     dt_ode = solver_parameters['dt_ode']
     assert dt_ode <= dt_fem(0)
 
