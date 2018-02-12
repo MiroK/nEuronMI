@@ -6,6 +6,7 @@ from mesh.simple_geometry.shapes import SphereNeuron, CylinderProbe
 from mesh.simple_geometry.geogen import geofile
 from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
+from solver.aux import snap_to_nearest
 from solver.probing import probing_locations
 from dolfin import *
 import matplotlib.pylab as plt
@@ -58,27 +59,55 @@ if __name__ == '__main__':
 
     rec_sites =  np.array(probing_locations(probe_mesh_path, 41))
 
-    u_file = File(join('results', mesh_root, 'u_sol.pvd'))
-    I_file = File(join('results', mesh_root, 'current_sol.pvd'))
+    # u_file = File(join('results', mesh_root, 'u_sol.pvd'))
+    # I_file = File(join('results', mesh_root, 'current_sol.pvd'))
+
+    u_file = XDMFFile(mpi_comm_world(), 'results/v_ext/u_sol.xdmf')
+    I_file = XDMFFile(mpi_comm_world(), 'results/currents/current_sol.xdmf')
+
+    # Compute the areas of neuron subdomains for current normalization
+    # NOTE: on the first yield the stream returns the subdomain function
+    # marking the subdomains of the neuron surface
+    neuron_subdomains = next(stream)
+    # Dx here because the mesh is embedded
+    dx_ = Measure('dx', subdomain_data=neuron_subdomains, domain=neuron_subdomains.mesh())
+    areas = {tag: assemble(1 * dx_(tag)) for tag in range(1, 4)}
+
+    I_proxy = None
 
     v_probe = []
     times = []
     i_m = []
 
     p_x, p_y, p_z = rec_sites[0]
+    soma_m = [15*conv, 0, 0]
 
     # Do something with the solutions
     for n, (t, u, current) in enumerate(stream):
+
+        if I_proxy is None: I_proxy = snap_to_nearest(current)
+
+        msg = 'Normalized curent in %s = %g'
+        for tag, domain in ((1, 'soma'), (2, 'axon'), (3, 'dendrite')):
+            value = assemble(current * dx_(tag))
+            value /= areas[tag]
+            print msg % (domain, value)
+
         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
-        print 'Simulation time: ', t , ' v=', u(p_x, p_y, p_z)
+        print 'Simulation time: ', t, ' v=', u(p_x, p_y, p_z)
+        print 'I(proxy)=', I_proxy(soma_m[0], soma_m[1], soma_m[2]), \
+            'using', I_proxy.snaps[(soma_m[0], soma_m[1], soma_m[2])]
 
-        # if n % 50 == 0:
-        u_file << u
-        I_file << current
+        if n % 1 == 0:
+            u_file.write(u, t)
+            I_file.write(current, t)
 
-        times.append(t)
-        v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
+            times.append(t)
+            v_probe.append(u(p_x, p_y, p_z))
+            i_m.append(current)
 
+    u_file.close()
+    I_file.close()
 
     t_stop = time.time()
     print 'Elapsed time = ', t_stop - t_start
@@ -88,6 +117,7 @@ if __name__ == '__main__':
     np.save(join('results', mesh_root, 'times'), times)
     np.save(join('results', mesh_root, 'v_probe'), v_probe)
     np.save(join('results', mesh_root, 'sites'), rec_sites)
+    np.save(join('results', mesh_root, 'i_soma'), i_m)
 
     plt.ion()
     plt.show()
