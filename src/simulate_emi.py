@@ -62,8 +62,8 @@ if __name__ == '__main__':
     # u_file = File(join('results', mesh_root, 'u_sol.pvd'))
     # I_file = File(join('results', mesh_root, 'current_sol.pvd'))
 
-    u_file = XDMFFile(mpi_comm_world(), 'results/v_ext/u_sol.xdmf')
-    I_file = XDMFFile(mpi_comm_world(), 'results/currents/current_sol.xdmf')
+    u_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'u_sol.pvd'))
+    I_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'current_sol.pvd'))
 
     # Compute the areas of neuron subdomains for current normalization
     # NOTE: on the first yield the stream returns the subdomain function
