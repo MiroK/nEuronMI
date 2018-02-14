@@ -11,6 +11,7 @@ from solver.probing import probing_locations
 from dolfin import *
 import matplotlib.pylab as plt
 import numpy as np
+import yaml
 
 import subprocess, os, time, sys
 from os.path import join
@@ -36,20 +37,23 @@ if __name__ == '__main__':
     conv = 1E-4
     t_start = time.time()
 
+    problem_params = {'C_m': 1.0,    # uF/um^2
+                      'stim_strength': 10.0,             # mS/cm^2
+                      'stim_start': 0.01,                # ms
+                      'stim_pos': 350*conv, #[0., 0., 350*conv],    # cm
+                      'stim_length': 20*conv,            # cm
+                      'cond_int': 7.0,                   # mS/cm^2
+                      'cond_ext': 3.0,                   # mS/cm^2
+                      'I_ion': 0.0,
+                      'Tstop': 5.}                       # ms
+    solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
+                     'dt_ode': 1E-2, #1E-3,               # ms
+                     'linear_solver': 'direct'} 
+
     # Solver setup
     stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
-                           problem_parameters={'C_m': 1.0,    # uF/um^2
-                           'stim_strength': 10.0,             # mS/cm^2
-                           'stim_start': 0.01,                # ms
-                           'stim_pos': 350*conv, #[0., 0., 350*conv],    # cm
-                           'stim_length': 20*conv,            # cm
-                           'cond_int': 7.0,                   # mS/cm^2
-                           'cond_ext': 3.0,                   # mS/cm^2
-                           'I_ion': 0.0,
-                           'Tstop': 5.},                      # ms
-                           solver_parameters={'dt_fem': 1E-2, #1E-3, # ms
-                           'dt_ode': 1E-2,#1E-3,                    # ms
-                           'linear_solver': 'direct'})
+                           problem_parameters=problem_params,                      # ms
+                           solver_parameters=solver_params)
 
     if not os.path.isdir('results'):
         os.mkdir('results')
@@ -62,8 +66,8 @@ if __name__ == '__main__':
     # u_file = File(join('results', mesh_root, 'u_sol.pvd'))
     # I_file = File(join('results', mesh_root, 'current_sol.pvd'))
 
-    u_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'u_sol.pvd'))
-    I_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'current_sol.pvd'))
+    u_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'u_sol.xdmf'))
+    I_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'current_sol.xdmf'))
 
     # Compute the areas of neuron subdomains for current normalization
     # NOTE: on the first yield the stream returns the subdomain function
@@ -76,6 +80,7 @@ if __name__ == '__main__':
     I_proxy = None
 
     v_probe = []
+    v_soma = []
     times = []
     i_m = []
 
@@ -103,11 +108,9 @@ if __name__ == '__main__':
             I_file.write(current, t)
 
             times.append(t)
-            v_probe.append(u(p_x, p_y, p_z))
-            i_m.append(current)
-
-    u_file.close()
-    I_file.close()
+            v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
+	    v_soma.append(u(0, 0, 0))
+            i_m.append(assemble(current * dx_(1))/areas[1])
 
     t_stop = time.time()
     print 'Elapsed time = ', t_stop - t_start
@@ -116,9 +119,13 @@ if __name__ == '__main__':
 
     np.save(join('results', mesh_root, 'times'), times)
     np.save(join('results', mesh_root, 'v_probe'), v_probe)
+    np.save(join('results', mesh_root, 'v_soma'), v_soma) 
     np.save(join('results', mesh_root, 'sites'), rec_sites)
     np.save(join('results', mesh_root, 'i_soma'), i_m)
-
+    with open(join('results', mesh_root, 'params.yaml'), 'w') as f:
+	info = {'problem': problem_params, 'solver': solver_params}
+	yaml.dump(info, f, default_flow_style=False)
+        
     plt.ion()
     plt.show()
 
