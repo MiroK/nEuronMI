@@ -3,20 +3,46 @@
 cwd=$(pwd)
 
 if [ $# == 0 ]; then
-    echo "Supply mesh folder, (optional) boxsize (1 - 2 - 3) and coarse (0 1 2 3)"
+    echo "Supply mesh folder (includeing final /), (optional) boxsize (1 - 2 - 3) and coarse (0 1 2 3)"
 elif [ $# == 1 ]; then
     mesh_folder=$1
-    cd $mesh_folder
 
-    files=$(ls)
+    files=$(ls $mesh_folder)
 
     for f in $files
     do
-    echo $f
+    echo "Simulating: "$f"_wprobe.h5"
+    python simulate_emi.py -mesh "$mesh_folder$f/$f"_wprobe.h5
+    echo "Simulating: "$f"_noprobe.h5"
+    python simulate_emi.py -mesh "$mesh_folder$f/$f"_noprobe.h5 -probemesh "$mesh_folder$f/$f"_wprobe.h5
     done
+elif [ $# == 2 ]; then
+    mesh_folder=$1
+    coarse=$2
+    files=$(ls $mesh_folder)
 
-    cd $cwd
+    for f in $files
+    do
+    if [[ "$f" == *"coarse_$coarse"* ]]; then
+        echo "Simulating: "$f"_wprobe.h5"
+        python simulate_emi.py -mesh "$mesh_folder$f/$f"_wprobe.h5
+        echo "Simulating: "$f"_noprobe.h5"
+        python simulate_emi.py -mesh "$mesh_folder$f/$f"_noprobe.h5 -probemesh "$mesh_folder$f/$f"_wprobe.h5
+    fi
+    done
+elif [ $# == 3 ]; then
+    mesh_folder=$1
+    coarse=$2
+    box=$3
+    files=$(ls $mesh_folder)
 
-
-#    python simulate
+    for f in $files
+    do
+    if [[ "$f" == *"coarse_$coarse"* ]] && [[ "$f" == *"box_$box"* ]]; then
+        echo "Simulating: "$f"_wprobe.h5"
+        python simulate_emi.py -mesh "$mesh_folder$f/$f"_wprobe.h5
+        echo "Simulating: "$f"_noprobe.h5"
+        python simulate_emi.py -mesh "$mesh_folder$f/$f"_noprobe.h5 -probemesh "$mesh_folder$f/$f"_wprobe.h5
+    fi
+    done
 fi
