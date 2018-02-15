@@ -199,7 +199,7 @@ if __name__ == '__main__':
     conv=1E-4
     
     if coarse == 0:
-        nmesh = 2.5
+        nmesh = 2
         pmesh = 5
         rmesh = 7.5
     elif coarse == 1:

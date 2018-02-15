@@ -7,6 +7,7 @@ from mesh.simple_geometry.geogen import geofile
 from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
 from solver.aux import snap_to_nearest
+from solver.aux import load_mesh
 from solver.probing import probing_locations
 from dolfin import *
 import matplotlib.pylab as plt
@@ -45,10 +46,15 @@ if __name__ == '__main__':
                       'cond_int': 7.0,                   # mS/cm^2
                       'cond_ext': 3.0,                   # mS/cm^2
                       'I_ion': 0.0,
-                      'Tstop': 5.}                       # ms
+                      'Tstop': 1.}                       # ms
     solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
                      'dt_ode': 1E-2, #1E-3,               # ms
-                     'linear_solver': 'direct'} 
+                     'linear_solver': 'direct'}
+
+    mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
+    mesh_params = {'path': mesh_path, 'name': mesh_name ,'cells': mesh.num_cells(), 'facets': mesh.num_facets(),
+                   'vertices': mesh.num_vertices(), 'faces': mesh.num_faces(), 'edges': mesh.num_edges(),}
+    performance = {}
 
     # Solver setup
     stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
@@ -88,32 +94,34 @@ if __name__ == '__main__':
     soma_m = [15*conv, 0, 0]
 
     # Do something with the solutions
-    for n, (t, u, current) in enumerate(stream):
+    for n, (t, u, current, system_size) in enumerate(stream):
 
-        if I_proxy is None: I_proxy = snap_to_nearest(current)
+        if I_proxy is None:
+            I_proxy = snap_to_nearest(current)
 
-        msg = 'Normalized curent in %s = %g'
-        for tag, domain in ((1, 'soma'), (2, 'axon'), (3, 'dendrite')):
-            value = assemble(current * dx_(tag))
-            value /= areas[tag]
-            print msg % (domain, value)
+        # msg = 'Normalized curent in %s = %g'
+        # for tag, domain in ((1, 'soma'), (2, 'axon'), (3, 'dendrite')):
+        #     value = assemble(current * dx_(tag))
+        #     value /= areas[tag]
+        #     print msg % (domain, value)
 
         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
         print 'Simulation time: ', t, ' v=', u(p_x, p_y, p_z)
-        print 'I(proxy)=', I_proxy(soma_m[0], soma_m[1], soma_m[2]), \
-            'using', I_proxy.snaps[(soma_m[0], soma_m[1], soma_m[2])]
+        # print 'I(proxy)=', I_proxy(soma_m[0], soma_m[1], soma_m[2]), \
+        #       'using', I_proxy.snaps[(soma_m[0], soma_m[1], soma_m[2])]
 
-        if n % 1 == 0:
-            u_file.write(u, t)
-            I_file.write(current, t)
-
-            times.append(t)
-            v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
-	    v_soma.append(u(0, 0, 0))
-            i_m.append(assemble(current * dx_(1))/areas[1])
+        u_file.write(u, t)
+        I_file.write(current, t)
+        times.append(t)
+        v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
+        v_soma.append(u(0, 0, 0))
+        i_m.append(assemble(current * dx_(1))/areas[1])
 
     t_stop = time.time()
+    processing_time = t_stop - t_start
     print 'Elapsed time = ', t_stop - t_start
+
+    performance.update({'system size': system_size, 'time': processing_time})
 
     v_probe = np.transpose(np.array(v_probe))
 
@@ -123,7 +131,7 @@ if __name__ == '__main__':
     np.save(join('results', mesh_root, 'sites'), rec_sites)
     np.save(join('results', mesh_root, 'i_soma'), i_m)
     with open(join('results', mesh_root, 'params.yaml'), 'w') as f:
-	info = {'problem': problem_params, 'solver': solver_params}
+	info = {'problem': problem_params, 'solver': solver_params, 'mesh': mesh_params, 'performance': performance}
 	yaml.dump(info, f, default_flow_style=False)
         
     plt.ion()

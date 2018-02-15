@@ -174,7 +174,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     assign_toQ_neuron_fromQ(current_out, current_aux)
     
     # To get initial state
-    yield 0, u_out, current_out
+    yield 0, u_out, current_out, A.size(0)
                     
     step_count = 0
     for ((t0, t1), ode_solution) in ode_solutions:
@@ -200,7 +200,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             toQ_fromW2.assign(current_aux, w_aux.sub(2))
             assign_toQ_neuron_fromQ(current_out, current_aux)
 
-            yield t1, u_out, current_out
+            yield t1, u_out, current_out, A.size(0)
             
             # Now transfer the new transm potential down to ode ...
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
