@@ -20,10 +20,10 @@ if __name__ == '__main__':
 
     if 'noprobe' in mesh:
         no_mesh = mesh
-        w_mesh = mesh[:-8] + 'wprobe'
+        w_mesh = mesh[:no_mesh.find('noprobe')] + 'wprobe'
     elif 'wprobe' in mesh:
         w_mesh = mesh
-        no_mesh = mesh[:-7] + 'noprobe'
+        no_mesh = mesh[:w_mesh.find('wprobe')] + 'noprobe'
 
     print w_mesh
     print no_mesh
