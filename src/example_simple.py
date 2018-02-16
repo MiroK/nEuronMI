@@ -66,6 +66,7 @@ dx_ = Measure('dx', subdomain_data=neuron_subdomains, domain=neuron_subdomains.m
 areas = {tag: assemble(1*dx_(tag)) for tag in range(1, 4)}
     
 I_proxy = None
+is_neuron_mesh = False
 
 if not os.path.isdir('results/v_ext'):
     os.mkdir('results')
@@ -78,9 +79,15 @@ u_file = XDMFFile(mpi_comm_world(), 'results/v_ext/u_sol.xdmf')
 I_file = XDMFFile(mpi_comm_world(), 'results/currents/current_sol.xdmf')
 
 # Do something with the solutions
-for n, (t, u, current) in enumerate(stream):
+for n, (t, u, current, _) in enumerate(stream):
     
     if I_proxy is None: I_proxy = snap_to_nearest(current)
+
+    # Store the neuron mesh once for post-processing
+    if not is_neuron_mesh:
+        with HDF5File(mpi_comm_world(), 'results/currents/neuron_mesh.h5', 'w') as nm_out:
+            nm_out.write(current.function_space().mesh(), 'mesh')
+            is_neuron_mesh = True
 
     msg = 'Normalized curent in %s = %g'
     for tag, domain in ((1, 'soma'), (2, 'axon'), (3, 'dendrite')):
