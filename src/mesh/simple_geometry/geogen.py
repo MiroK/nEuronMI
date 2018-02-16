@@ -166,6 +166,11 @@ if __name__ == '__main__':
         neurontype = sys.argv[pos + 1]
     else:
         neurontype='sphere'
+    if '-dist' in sys.argv:
+        pos = sys.argv.index('-dist')
+        dist = float(sys.argv[pos + 1])
+    else:
+        dist=40
     if '-probetip' in sys.argv:
         pos = sys.argv.index('-probetip')
         probetip = sys.argv[pos + 1].split(',')
@@ -173,9 +178,9 @@ if __name__ == '__main__':
         print 'Probetip: ', probetip
     else:
         if probetype == 'cylinder':
-            probetip=[50, 0, 0]
+            probetip=[dist, 0, 0]
         elif probetype == 'fancy':
-            probetip=[50, 0, -100]
+            probetip=[dist, 0, -100]
     if '-coarse' in sys.argv:
         pos = sys.argv.index('-coarse')
         coarse = int(sys.argv[pos + 1])
