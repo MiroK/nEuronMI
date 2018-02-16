@@ -253,7 +253,7 @@ if __name__ == '__main__':
     # DETAILED
     #####################################
     else:
-        geometrical_params = {'rad_soma': 7.5 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
+        geometrical_params = {'rad_soma': 10 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
                               'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 4 * conv,
                               'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
                               'dxp': dxp * conv, 'dxn': dxn * conv, 'dy': dy * conv, 'dz': dz * conv}
