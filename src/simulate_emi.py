@@ -46,7 +46,7 @@ if __name__ == '__main__':
                       'cond_int': 7.0,                   # mS/cm^2
                       'cond_ext': 3.0,                   # mS/cm^2
                       'I_ion': 0.0,
-                      'Tstop': 10.}                       # ms
+                      'Tstop': 5.}                       # ms
     solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
                      'dt_ode': 1E-2, #1E-3,               # ms
                      'linear_solver': 'direct'}
