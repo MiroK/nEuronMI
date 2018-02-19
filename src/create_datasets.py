@@ -51,11 +51,13 @@ data = pd.DataFrame({'neuron': neuron, 'probe': probe, 'box': box, 'coarse': coa
                      'tip_x': tip_x, 'tip_y': tip_y, 'tip_z': tip_z, 'min_wprobe': min_amp_wprobe,
                      'min_noprobe': min_noprobe, 'diff': diff})
 
-data_fancy = data[data['probe']=='fancy']
-data_cylinder = data[data['probe']=='cylinder']
+data.to_pickle(join('results', 'results'))
 
-sns.pointplot(x='box', y='min_wprobe', hue='coarse', data=data_fancy)
-sns.pointplot(x='box', y='min_noprobe', hue='coarse', data=data_fancy)
-sns.pointplot(x='box', y='diff', hue='coarse', data=data_fancy)
+# data_fancy = data[data['probe']=='fancy']
+# data_cylinder = data[data['probe']=='cylinder']
+#
+# sns.pointplot(x='box', y='min_wprobe', hue='coarse', data=data_fancy)
+# sns.pointplot(x='box', y='min_noprobe', hue='coarse', data=data_fancy)
+# sns.pointplot(x='box', y='diff', hue='coarse', data=data_fancy)
 
 
