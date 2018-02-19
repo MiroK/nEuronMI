@@ -34,7 +34,8 @@ if __name__ == '__main__':
     assert mesh_name[-3:] == '.h5'
 
     mesh_root = mesh_name[:-3]
-
+    
+    parameters['allow_extrapolation'] = True
     conv = 1E-4
     t_start = time.time()
 
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         #     print msg % (domain, value)
 
         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
-        print 'Simulation time: ', t, ' v=', u(p_x, p_y, p_z)
+        print 'Simulation time: ', t , ' v=', u(p_x, p_y, p_z)
         # print 'I(proxy)=', I_proxy(soma_m[0], soma_m[1], soma_m[2]), \
         #       'using', I_proxy.snaps[(soma_m[0], soma_m[1], soma_m[2])]
 
