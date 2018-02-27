@@ -235,6 +235,16 @@ if __name__ == '__main__':
         dxn = 120
         dy = 120
         dz = 60
+    elif box == 4:
+        dxp = 160
+        dxn = 160
+        dy = 160
+        dz = 100
+    elif box == 5:
+        dxp = 200
+        dxn = 200
+        dy = 200
+        dz = 150
 
     root = os.getcwd()
 

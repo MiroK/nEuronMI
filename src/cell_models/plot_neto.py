@@ -65,6 +65,14 @@ normal /= np.linalg.norm(normal)
 new_pos = rot_pos[0] + min_dist*normal
 plot_neuron(cell=cell, plane='3d', ax=ax1, color=[0.3, 0.3, 0.3], alpha=0.7, c_soma='g', pos=new_pos) #, condition='cell.xend[idx] > 20')
 
+#plot pipette
+pipette_dir = [0.5, 0, np.sqrt(3)/2.]
+rad = 5
+length = 1000
+bottom = cell.somapos + [cell.diam[0]/2., 0, 0]
+
+plot_cylinder_3d(bottom, pipette_dir, length, rad, ax=ax1, alpha=.2, color=[0.3, 0.7, 0.7])
+
 lim=200
 # Get rid of the panes
 ax1.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -92,5 +100,7 @@ plt.show()
 #
 #
 if save_fig:
-    plt.savefig('neto.pdf')
+    plt.savefig('../figures/neto.pdf')
+    plt.savefig('../figures/neto.svg')
+    plt.savefig('../figures/neto.png')
 

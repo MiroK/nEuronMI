@@ -5,6 +5,7 @@ import neuron
 import yaml
 import MEAutility as mea
 from neuroplot import *
+import time
 
 plt.ion()
 plt.show()
@@ -17,6 +18,7 @@ def order_recording_sites(sites1, sites2):
 
     return np.array(pairs)
 
+t_start = time.time()
 
 end_T = 5.
 
@@ -63,7 +65,7 @@ synapse_parameters = {
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.04,              # synaptic weight
+    'weight' : 0.043,            # synaptic weight
     'record_current' : True,    # record synapse current
 }
 
@@ -102,10 +104,11 @@ electrode = LFPy.RecExtElectrode(cell,**electrode_parameters)
 electrode.calc_lfp()
 v_ext = electrode.LFP * 1000
 
-plt.figure()
-plt.plot(np.transpose(v_ext))
-plot_mea_recording(v_ext, pos, pitch, time=end_T)
+processing_time = time.time() - t_start
+print 'Processing time: ', processing_time
 
+
+plot_mea_recording(v_ext, pos, pitch, time=end_T)
 
 # #plot currents
 # fig = plt.figure()
@@ -123,7 +126,6 @@ plot_mea_recording(v_ext, pos, pitch, time=end_T)
 # [ax3.plot(cell.tvec, cell.icap[i]) for i in cell.get_idx('dend')]
 # ax3.set_title('cap')
 
-print 'min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape)
 
 ### Compare with EMI ###
 no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
@@ -131,7 +133,7 @@ no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
 conv=1E-4
 fs_legend = 20
 save_fig = False
-figsize = (7, 14)
+figsize = (9, 14)
 
 with open(join(no_mesh, 'params.yaml'), 'r') as f:
     info = yaml.load(f)
@@ -146,7 +148,6 @@ v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
 pairs = order_recording_sites(pos, sites)
 v_ordered = v_noprobe[pairs[:, 1]]
 
-print 'min at: ', np.unravel_index(v_ordered.argmin(), v_ordered.shape)
 
 v_p = np.squeeze(np.array([v_ordered, v_ext]))
 # pitch = np.array([18., 25.])
@@ -155,5 +156,17 @@ colors = plt.rcParams['axes.color_cycle']
 fig = plt.figure(figsize=figsize)
 ax = fig.add_subplot(1,1,1)
 ax = plot_mea_recording(v_p, pos, pitch, ax=ax, time=end_T, lw=2, colors=[colors[0], colors[3]], vscale=40)
-ax.legend(labels=['EMI', 'Conventional'], fontsize=fs_legend)
+ax.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
 fig.tight_layout()
+
+print 'NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape)
+print 'EMI min at: ', np.unravel_index(v_ordered.argmin(), v_ordered.shape)
+
+print 'peak NEURON: ', np.min(v_ext)
+print 'peak EMI: ', np.min(v_ordered)
+print 'difference: ', np.min(v_ordered) - np.min(v_ext)
+
+
+if save_fig:
+    fig.savefig(join('../figures', 'bas_emi_EAP.pdf'))
+

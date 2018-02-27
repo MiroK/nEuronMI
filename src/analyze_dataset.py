@@ -22,13 +22,13 @@ fs_ticks = 20
 lw = 3
 ms = 10
 
-save_fig=True
+save_fig=False
 
 data = pd.read_pickle(join('results', 'results.pkl'))
 
-#remove dist 2.5
-data = data[data['tip_x']!='20.0']
-data = data[data['tip_x']!='27.5']
+# #remove dist 2.5
+# data = data[data['tip_x']!='20.0']
+# data = data[data['tip_x']!='27.5']
 
 data_40 = data[data['tip_x']=='40']
 data_dist = data[data['tip_x']!='40']
@@ -36,6 +36,8 @@ data_dist = data[data['tip_x']!='40']
 
 ###########################################
 # CONVERGENCE
+xlim = [10, 90]
+ylim = [-130, 80]
 
 data_fancy = data_dist[data_dist['probe']=='fancy']
 data_cylinder = data_dist[data_dist['probe']=='cylinder']
@@ -52,8 +54,8 @@ ax11.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
 ax11.set_ylabel('V ($\mu$V)', fontsize = fs_label)
 ax11.set_title('MEA probe', fontsize = fs_title)
 ax11.legend(fontsize = fs_legend)
-ax11.set_xlim([20, 95])
-ax11.set_ylim([-90, 45])
+ax11.set_xlim(xlim)
+ax11.set_ylim(ylim)
 
 
 ax12 = fig1.add_subplot(1,3,2)
@@ -67,8 +69,8 @@ ax12.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
 ax12.set_ylabel('V ($\mu$V)', fontsize = fs_label)
 ax12.set_title('Microwire probe', fontsize = fs_title)
 ax12.legend(fontsize = fs_legend)
-ax12.set_xlim([20, 95])
-ax12.set_ylim([-90, 45])
+ax12.set_xlim(xlim)
+ax12.set_ylim(ylim)
 
 
 ax13 = fig1.add_subplot(1,3,3)
@@ -97,11 +99,11 @@ fig1.tight_layout()
 ###########################################
 # CONVERGENCE
 
-data_fancy = data_40[data_40['probe']=='fancy']
-data_cylinder = data_40[data_40['probe']=='cylinder']
+data_fancy_conv = data_40[data_40['probe']=='fancy']
+data_cylinder_conv = data_40[data_40['probe']=='cylinder']
 
-data_fancy.min_noprobe = data_fancy.min_noprobe*1000
-data_fancy.min_wprobe = data_fancy.min_wprobe*1000
+data_fancy_conv.min_noprobe = data_fancy_conv.min_noprobe*1000
+data_fancy_conv.min_wprobe = data_fancy_conv.min_wprobe*1000
 
 fig2 = plt.figure(figsize=(12, 7))
 ax21 = fig2.add_subplot(1,2,1)
@@ -112,14 +114,14 @@ plt.xticks(ax22.get_xticks(), fontsize=fs_ticks)
 
 colors = plt.rcParams['axes.color_cycle']
 labels = ['coarse 0', 'coarse 1', 'coarse 2', 'coarse 3']
-sns.pointplot(x='box', y='min_wprobe', hue='coarse', data=data_fancy, ax=ax21,
+sns.pointplot(x='box', y='min_wprobe', hue='coarse', data=data_fancy_conv, ax=ax21,
               palette=sns.color_palette('OrRd', 4), marker='o', label=labels)
-sns.pointplot(x='box', y='min_noprobe', hue='coarse', data=data_fancy, ax=ax22,
+sns.pointplot(x='box', y='min_noprobe', hue='coarse', data=data_fancy_conv, ax=ax22,
               palette=sns.color_palette('GnBu', 4), marker='^', label=labels)
 
-print np.mean(data_fancy.min_noprobe), ' +- ', np.std(data_fancy.min_noprobe)
-print np.mean(data_fancy.min_wprobe), ' +- ', np.std(data_fancy.min_wprobe)
-print np.mean(data_fancy['diff']*1000), ' +- ', np.std(data_fancy['diff']*1000)
+print np.mean(data_fancy_conv.min_noprobe), ' +- ', np.std(data_fancy_conv.min_noprobe)
+print np.mean(data_fancy_conv.min_wprobe), ' +- ', np.std(data_fancy_conv.min_wprobe)
+print np.mean(data_fancy_conv['diff']*1000), ' +- ', np.std(data_fancy_conv['diff']*1000)
 
 ax21.set_xlabel('Box size', fontsize = fs_label)
 ax21.set_ylabel('V ($\mu$V)', fontsize = fs_label)

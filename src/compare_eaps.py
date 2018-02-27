@@ -33,8 +33,8 @@ if __name__ == '__main__':
 
     conv=1E-4
     fs_legend = 20
-    save_fig = False
-    figsize = (7, 14)
+    save_fig = True
+    figsize = (9, 14)
 
     with open(join(no_mesh, 'params.yaml'), 'r') as f:
         info = yaml.load(f)
@@ -80,6 +80,9 @@ if __name__ == '__main__':
     abs_diff = np.abs(v_wprobe - v_noprobe)
     print 'DIFF: ', np.min(v_noprobe) - np.min(v_wprobe)
 
+    print 'Min occurrence with probe: ', np.unravel_index(v_wprobe.argmin(), v_wprobe.shape)
+    print 'Min occurrence no probe: ', np.unravel_index(v_noprobe.argmin(), v_noprobe.shape)
+
     ratio = np.min(v_wprobe)/np.min(v_noprobe)
     v_corr = ratio * v_noprobe
     v_p_corr = np.squeeze(np.array([v_wprobe, v_corr]))
@@ -111,7 +114,6 @@ if __name__ == '__main__':
         ax.text(pos_h[0] + shift, pos_h[1] + length_h / 2., str(int((np.max(v_p) - np.min(v_p)) // 10 * 10)) + ' $\mu$V')
         ax.plot([pos_w[0], pos_w[0] + length_w], [pos_w[1], pos_w[1]], color='k', lw=2)
         ax.text(pos_w[0] + shift, pos_w[1] - length_h / 4., str(round(times[-1] / 5, 1)) + ' ms')
-
 
     if save_fig:
         fig.savefig(join('figures', probe + '_EAP.pdf'))

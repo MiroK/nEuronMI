@@ -5,12 +5,8 @@ import neuron
 import MEAutility as mea
 from neuroplot import *
 
-plt.ion()
-plt.show()
-
 neuron.h.load_file("stdrun.hoc")
 neuron.h.load_file("import3d.hoc")
-
 
 def get_templatename(f):
     '''
@@ -154,6 +150,9 @@ def find_spike_idxs(v, thresh=-30):
 end_T = 500.
 dt = 2**-5
 start_T = 0.
+figsize = (9, 14)
+save_fig = True
+plot_fig = False
 
 cell_model = 'L5_TTPC1_cADpyr232_1'
 cell = return_cell(cell_model, cell_model, end_T, dt, start_T)
@@ -161,7 +160,7 @@ cell = return_cell(cell_model, cell_model, end_T, dt, start_T)
 mea_pos, dim, pitch = mea.return_site_positions('Neuronexus-32')
 
 # rotate position
-M = rotation_matrix2([0, 1., 0.], -np.pi/4.)
+M = rotation_matrix2([0, 1., 0.], np.deg2rad(-48.2))
 pos = np.dot(M, mea_pos.T).T
 
 stim_length = 500
@@ -205,14 +204,15 @@ if n > 1:
     }
 
 # from Neto
-soma_half_size = 10
+soma_half_size = 7.5
 error = 0
-min_dist = 31-soma_half_size
+min_dist = 31-soma_half_size-error
 # closest-electrode 29 -> 0
 closest = pos[12]
+
 normal = np.abs(np.cross(pos[1]-pos[0], pos[-1]-pos[0]))
 normal /= np.linalg.norm(normal)
-new_pos = pos[0] + min_dist*normal
+new_pos = pos[12] + min_dist*normal
 
 cell.set_pos(new_pos[0], new_pos[1], new_pos[2])
 
@@ -230,7 +230,7 @@ electrode.calc_lfp()
 v_ext = electrode.LFP * 1000
 
 # cut spikes
-cut_out = [2. / dt, 5. / dt]
+cut_out = [2. / dt, 3. / dt]
 tspike = 7.
 v_spikes = []
 v_ext_spikes = []
@@ -247,32 +247,46 @@ v_spikes = np.array(v_spikes)
 v_ext_spikes = np.array(v_ext_spikes)
 i_spikes = np.array(i_spikes)
 
+colors = plt.rcParams['axes.color_cycle']
+fig1 = plt.figure(figsize=figsize)
+ax1 =  fig1.add_subplot(111)
 mean_waveform = np.mean(v_ext_spikes, axis=0)
-plot_mea_recording(mean_waveform, pos, pitch, time=tspike)
+plot_mea_recording(mean_waveform, pos, pitch, time=tspike, ax=ax1, lw=2, colors=colors[1], vscale=300)
 
-plt.figure()
-plt.plot(np.transpose(v_ext))
-plot_mea_recording(v_ext, pos, pitch, time=end_T)
+fig2 = plt.figure(figsize=figsize)
+ax2 = fig2.add_subplot(111)
+plot_mea_recording(v_ext, pos, pitch, time=end_T, vscale=300, ax=ax2)
 
-
-#plot currents
-fig = plt.figure()
-ax1 = fig.add_subplot(1,3,1)
-[ax1.plot(cell.tvec, cell.imem[i]) for i in cell.get_idx('dend')]
-ax1.set_title('transmembrane total currents')
+fig1.tight_layout()
+fig2.tight_layout()
 
 #plot currents
-ax2 = fig.add_subplot(1,3,2)
-[ax2.plot(cell.tvec, cell.ipas[i]) for i in cell.get_idx('dend')]
-ax2.set_title('passive')
-
-#plot currents
-ax3 = fig.add_subplot(1,3,3)
-[ax3.plot(cell.tvec, cell.icap[i]) for i in cell.get_idx('dend')]
-ax3.set_title('cap')
-
+# fig = plt.figure()
+# ax1 = fig.add_subplot(1,3,1)
+# [ax1.plot(cell.tvec, cell.imem[i]) for i in cell.get_idx('dend')]
+# ax1.set_title('transmembrane total currents')
+# plt.plot(np.transpose(v_ext))
+# #plot currents
+# ax2 = fig.add_subplot(1,3,2)
+# [ax2.plot(cell.tvec, cell.ipas[i]) for i in cell.get_idx('dend')]
+# ax2.set_title('passive')
+#
+# #plot currents
+# ax3 = fig.add_subplot(1,3,3)
+# [ax3.plot(cell.tvec, cell.icap[i]) for i in cell.get_idx('dend')]
+# ax3.set_title('cap')
+rec_peak = 421.
 
 print np.min(v_ext), np.min(mean_waveform)
+print np.max(np.abs(mean_waveform))/rec_peak * 100, ' %'
+
+if plot_fig:
+    plt.ion()
+    plt.show()
+
+if save_fig:
+    fig1.savefig(join('../figures', 'neto_avg.pdf'))
+    fig2.savefig(join('../figures', 'neto_eaps.pdf'))
 
 print("done")
 

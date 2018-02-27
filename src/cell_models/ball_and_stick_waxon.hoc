@@ -27,7 +27,7 @@ soma[0] {
 
 dend[0] {
     pt3dadd(0, 0, 20, 5)
-    pt3dadd(0, 0, 400, 5)
+    pt3dadd(0, 0, 420, 5)
 }
 
 axon[0] {
