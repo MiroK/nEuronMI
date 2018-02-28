@@ -3,7 +3,7 @@
 cwd=$(pwd)
 
 if [ $# == 0 ]; then
-    echo "Supply mesh folder (includeing final /), (optional) boxsize (1 - 2 - 3) and coarse (0 1 2 3)"
+    echo "Supply mesh folder (includeing final /), (optional) coarse (0 - 1 - 2 - 3) and boxsize (1 2 3)"
 elif [ $# == 1 ]; then
     mesh_folder=$1
 

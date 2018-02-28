@@ -166,6 +166,11 @@ if __name__ == '__main__':
         neurontype = sys.argv[pos + 1]
     else:
         neurontype='sphere'
+    if '-dist' in sys.argv:
+        pos = sys.argv.index('-dist')
+        dist = float(sys.argv[pos + 1])
+    else:
+        dist=40
     if '-probetip' in sys.argv:
         pos = sys.argv.index('-probetip')
         probetip = sys.argv[pos + 1].split(',')
@@ -173,9 +178,9 @@ if __name__ == '__main__':
         print 'Probetip: ', probetip
     else:
         if probetype == 'cylinder':
-            probetip=[50, 0, 0]
+            probetip=[dist, 0, 0]
         elif probetype == 'fancy':
-            probetip=[50, 0, -100]
+            probetip=[dist, 0, -100]
     if '-coarse' in sys.argv:
         pos = sys.argv.index('-coarse')
         coarse = int(sys.argv[pos + 1])
@@ -230,6 +235,16 @@ if __name__ == '__main__':
         dxn = 120
         dy = 120
         dz = 60
+    elif box == 4:
+        dxp = 160
+        dxn = 160
+        dy = 160
+        dz = 100
+    elif box == 5:
+        dxp = 200
+        dxn = 200
+        dy = 200
+        dz = 150
 
     root = os.getcwd()
 
@@ -248,7 +263,7 @@ if __name__ == '__main__':
     # DETAILED
     #####################################
     else:
-        geometrical_params = {'rad_soma': 7.5 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
+        geometrical_params = {'rad_soma': 10 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
                               'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 4 * conv,
                               'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
                               'dxp': dxp * conv, 'dxn': dxn * conv, 'dy': dy * conv, 'dz': dz * conv}
