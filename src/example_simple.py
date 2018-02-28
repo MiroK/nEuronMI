@@ -46,6 +46,7 @@ stream = neuron_solver(mesh_path='test.h5',               # Units assuming mesh 
                        'cond_int': 7.0,                   # mS/cm^2
                        'cond_ext': 3.0,                   # mS/cm^2
                        'I_ion': 0.0,
+                       'grounded_bottom_only': True,     #
                        'Tstop': 2.0},                     # ms
 
                        solver_parameters={'dt_fem': 1E-2,#1E-3, # ms
