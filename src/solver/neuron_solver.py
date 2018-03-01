@@ -4,6 +4,7 @@ from embedding import EmbeddedMesh
 from membrane import ODESolver
 from aux import load_mesh
 from dolfin import *
+import operator
 
 
 # Optimizations
@@ -53,6 +54,21 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     # integrals over 5, 6 are not included in the weak form (vanish). On
     # the other hand insulated condition is enforced strongly, that is
     # on the function space level
+
+    # It might be useful to reduce the size of grounded domain keeping it
+    # only at the plane z_min. We do this by tagging as 6 everything but the
+    # base and then making 6 an insulated surface.
+    if problem_parameters.get('grounded_bottom_only', False):
+        zmin = mesh.coordinates().min(0)[-1]
+
+        for facet in SubsetIterator(facet_marking_f, 5):
+            # Make a non base surface 6
+            if not near(facet.midpoint()[2], zmin):
+                facet_marking_f[facet] = 6
+        # 6 is newly insulated
+        grounded_surfaces.remove(6)  # Leaving only 5/base grounded
+        insulated_surfaces.add(6)
+
     bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
                     for tag in insulated_surfaces]
     # NOTE: (0, 0, 0) means that the dof is set based on (0, 0, 0).n
@@ -63,6 +79,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     # everywhere instead. So the not neuron part should be set to 0
     bc_constrained = [DirichletBC(W.sub(2), Constant(0), facet_marking_f, tag)
                       for tag in (all_surfaces - neuron_surfaces)]
+    ncstr_dofs = sum(len(bc.get_boundary_values()) for bc in bc_constrained)
 
     # To integrate over inside and outside of the neuron we define a volume
     # measure. Note that interior is mared as 1 and outside is 2
@@ -150,6 +167,14 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     assembler.assemble(b)
 
     # And its solver
+    if solver_parameters.get('use_reduced', False):
+        # For reduction it is necessary to add cstr_dofs for the subspace
+        # number 2
+        solver_parameters['constrained_dofs'] = {
+            2: reduce(operator.or_,
+                      (set(bc.get_boundary_values().keys()) for bc in bc_constrained))
+            }
+                                                           
     la_solver = LinearSystemSolver(A, W, solver_parameters)
 
     w = Function(W)
@@ -191,6 +216,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             assembler.assemble(b)  # Also applies bcs
             # New (sigma, u, p) ...
             info('\tSolving linear system of size %d' % A.size(0))
+            info('\tNumber of true unknowns %d' % (A.size(0) - ncstr_dofs))
             la_solver.solve(w.vector(), b)
 
             # Update u_out and current_out for output
