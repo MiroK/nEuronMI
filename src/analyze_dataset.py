@@ -22,16 +22,19 @@ fs_ticks = 20
 lw = 3
 ms = 10
 
-save_fig=False
+save_fig=True
 
 data = pd.read_pickle(join('results', 'results.pkl'))
 
 # #remove dist 2.5
-# data = data[data['tip_x']!='20.0']
-# data = data[data['tip_x']!='27.5']
+data = data[data['tip_x']!='20.0']
+data = data[data['tip_x']!='27.5']
 
 data_40 = data[data['tip_x']=='40']
 data_dist = data[data['tip_x']!='40']
+
+figsize3 = (15,7)
+figsize1 = (7,7)
 
 
 ###########################################
@@ -42,7 +45,7 @@ ylim = [-130, 80]
 data_fancy = data_dist[data_dist['probe']=='fancy']
 data_cylinder = data_dist[data_dist['probe']=='cylinder']
 
-fig1 = plt.figure(figsize=(15,7))
+fig1 = plt.figure(figsize=figsize3)
 ax11 = fig1.add_subplot(1,3,1)
 ax11.plot(data_fancy.tip_x.astype('float'), data_fancy.min_noprobe*1e3, linestyle='-', marker='^',
               label='peak without probe', lw=lw, ms=ms)
@@ -56,6 +59,22 @@ ax11.set_title('MEA probe', fontsize = fs_title)
 ax11.legend(fontsize = fs_legend)
 ax11.set_xlim(xlim)
 ax11.set_ylim(ylim)
+
+fig11 = plt.figure(figsize=figsize1)
+ax111 = fig11.add_subplot(1,1,1)
+ax111.plot(data_fancy.tip_x.astype('float'), data_fancy.min_noprobe*1e3, linestyle='-', marker='^',
+              label='peak without probe', lw=lw, ms=ms)
+ax111.plot(data_fancy.tip_x.astype('float'), data_fancy.min_wprobe*1e3, linestyle='-', marker='o',
+              label='peak with probe', lw=lw, ms=ms)
+ax111.plot(data_fancy.tip_x.astype('float'), data_fancy['diff']*1e3, linestyle='-', marker='d',
+              label='peak difference', lw=lw, ms=ms)
+ax111.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
+ax111.set_ylabel('V ($\mu$V)', fontsize = fs_label)
+ax111.set_title('MEA probe', fontsize = fs_title)
+ax111.legend(fontsize = fs_legend)
+ax111.set_xlim(xlim)
+ax111.set_ylim(ylim)
+
 
 
 ax12 = fig1.add_subplot(1,3,2)
@@ -71,6 +90,21 @@ ax12.set_title('Microwire probe', fontsize = fs_title)
 ax12.legend(fontsize = fs_legend)
 ax12.set_xlim(xlim)
 ax12.set_ylim(ylim)
+
+fig12 = plt.figure(figsize=figsize1)
+ax112 = fig12.add_subplot(1,1,1)
+ax112.plot(data_cylinder.tip_x.astype('float'), data_cylinder.min_noprobe*1e3, linestyle='-', marker='^',
+              label='peak without probe', lw=lw, ms=ms)
+ax112.plot(data_cylinder.tip_x.astype('float'), data_cylinder.min_wprobe*1e3, linestyle='-', marker='o',
+              label='peak with probe', lw=lw, ms=ms)
+ax112.plot(data_cylinder.tip_x.astype('float'), data_cylinder['diff']*1e3, linestyle='-', marker='d',
+              label='peak difference', lw=lw, ms=ms)
+ax112.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
+ax112.set_ylabel('V ($\mu$V)', fontsize = fs_label)
+ax112.set_title('Microwire probe', fontsize = fs_title)
+ax112.legend(fontsize = fs_legend)
+ax112.set_xlim(xlim)
+ax112.set_ylim(ylim)
 
 
 ax13 = fig1.add_subplot(1,3,3)
@@ -92,9 +126,35 @@ ax13.set_ylabel('with / without probe', fontsize = fs_label)
 ax13.legend(fontsize=fs_legend)
 ax13.set_title('Peak ratio', fontsize=fs_title)
 
+
+fig13 = plt.figure(figsize=figsize1)
+ax113 = fig13.add_subplot(1,1,1)
+ax113.plot(data_fancy.tip_x.astype('float'), data_fancy.min_wprobe/data_fancy.min_noprobe, marker='d',
+              linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
+ax113.plot(data_cylinder.tip_x.astype('float'), data_cylinder.min_wprobe/data_cylinder.min_noprobe, marker='o',
+              linestyle='-', lw=lw, label='Microwire', color='grey', ms=ms)
+ax113.axhline(np.mean(data_fancy.min_wprobe/data_fancy.min_noprobe), color='r', alpha=0.4, ls='--')
+ax113.axhline(np.mean(data_cylinder.min_wprobe/data_cylinder.min_noprobe), color='grey', alpha=0.4, ls='--')
+ax113.text(87, np.mean(data_fancy.min_wprobe/data_fancy.min_noprobe)-0.1,
+         str(round(np.mean(data_fancy.min_wprobe/data_fancy.min_noprobe),2)), color='r',
+         alpha=0.5, fontsize=fs_label)
+ax113.text(87, np.mean(data_cylinder.min_wprobe/data_cylinder.min_noprobe) - 0.1,
+         str(round(np.mean(data_cylinder.min_wprobe/data_cylinder.min_noprobe),2)), color='grey',
+         alpha=0.5, fontsize=fs_label)
+
+ax113.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
+ax113.set_ylabel('with / without probe', fontsize = fs_label)
+ax113.legend(fontsize=fs_legend)
+ax113.set_title('Peak ratio', fontsize=fs_title)
+
 mark_subplots([ax11, ax12, ax13], xpos=-0.15, ypos=1, fs=40)
 simplify_axes([ax11, ax12, ax13])
+simplify_axes([ax111, ax112, ax113])
 fig1.tight_layout()
+fig11.tight_layout()
+fig12.tight_layout()
+fig13.tight_layout()
+
 
 ###########################################
 # CONVERGENCE
@@ -144,6 +204,9 @@ fig2.tight_layout()
 if save_fig:
     fig1.savefig('figures/distance_analysis.pdf')
     fig2.savefig('figures/convergence_analysis.pdf')
+    fig11.savefig('figures/mea_distance.pdf')
+    fig12.savefig('figures/microwire_distance.pdf')
+    fig13.savefig('figures/ratio_distance.pdf')
 
 plt.ion()
 plt.show()
