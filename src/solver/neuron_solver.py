@@ -4,6 +4,7 @@ from embedding import EmbeddedMesh
 from membrane import ODESolver
 from aux import load_mesh
 from dolfin import *
+import operator
 
 
 # Optimizations
@@ -166,6 +167,14 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     assembler.assemble(b)
 
     # And its solver
+    if solver_parameters.get('use_reduced', False):
+        # For reduction it is necessary to add cstr_dofs for the subspace
+        # number 2
+        solver_parameters['constrained_dofs'] = {
+            2: reduce(operator.or_,
+                      (set(bc.get_boundary_values().keys()) for bc in bc_constrained))
+            }
+                                                           
     la_solver = LinearSystemSolver(A, W, solver_parameters)
 
     w = Function(W)
