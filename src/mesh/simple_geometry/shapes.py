@@ -404,7 +404,7 @@ class FancyProbe(Probe):
         self.probe_thick = 15*self.conv
         self.contact_rad = 7.5*self.conv
         self.with_contacts = int(params.get('with_contacts', 0))
-        self.cz = params['probe_z'] + 62*self.conv + sqrt(22*22-18*18)*self.conv + 9*25*self.conv
+        self.cz = 62*self.conv + sqrt(22*22-18*18)*self.conv + 9*25*self.conv
 
         return True
         
