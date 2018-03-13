@@ -25,3 +25,11 @@
 
 ### Solve the FEM problem
 - see `example.py`
+- for simulated meshes run:
+
+`python simulate_emi.py -mesh path-to-mesh-with-probe`
+
+`python simulate_emi.py -mesh path-to-mesh-without-probe -probemesh path-to-mesh-with-probe`
+
+Results are saved in the `src/results` folder. Running the script `python create_datasets.py` creates a `results.pkl` pandas dataframe containing information about each simulation.
+
