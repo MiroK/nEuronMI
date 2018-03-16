@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 if [ $# == 0 ]; then
-    echo "Supply neurontype (sphere-mainen) and probetype (cylinder-fancy)"
+    echo "Supply neurontype (sphere-mainen) and probetype (cylinder-fancy), and (optional) coarse and box size"
 elif [ $# == 2 ]; then
     neuron=$1
     probe=$2
-    box='1 2 3'
+    box='1 2 3 4 5'
     coarse='0 1 2 3'
 
     for b in $box

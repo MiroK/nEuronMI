@@ -160,12 +160,12 @@ if __name__ == '__main__':
         pos = sys.argv.index('-probetype')
         probetype = sys.argv[pos + 1]
     else:
-        probetype='cylinder'
+        probetype='fancy'
     if '-neurontype' in sys.argv:
         pos = sys.argv.index('-neurontype')
         neurontype = sys.argv[pos + 1]
     else:
-        neurontype='sphere'
+        neurontype='mainen'
     if '-dist' in sys.argv:
         pos = sys.argv.index('-dist')
         dist = float(sys.argv[pos + 1])
@@ -270,7 +270,6 @@ if __name__ == '__main__':
         mesh_sizes = {'neuron_mesh_size': nmesh * geometrical_params['rad_axon'],
                       'probe_mesh_size': pmesh * geometrical_params['rad_axon'],
                       'rest_mesh_size': rmesh * geometrical_params['rad_axon']}
-
     if neurontype == 'sphere':
         neuron = SphereNeuron(geometrical_params)
     elif neurontype == 'mainen':
