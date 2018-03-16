@@ -54,7 +54,7 @@ if __name__ == '__main__':
     if neur_plot and len(v_p.shape) == 3:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
-        ax = plot_mea_recording(v_p, sites, pitch, ax=ax, time=T, lw=2)
+        ax = plot_mea_recording(v_p, sites, pitch, ax=ax, time=T, lw=2, scalebar=True, vscale=40)
         ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
         fig.tight_layout()
     else:
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         colors = plt.rcParams['axes.color_cycle']
         fig_c = plt.figure(figsize=figsize)
         ax = fig_c.add_subplot(1,1,1)
-        ax = plot_mea_recording(v_p_corr, sites, pitch, ax=ax, time=T, lw=2, colors=colors[1:3])
+        ax = plot_mea_recording(v_p_corr, sites, pitch, ax=ax, time=T, lw=2, colors=colors[1:3], scalebar=True, vscale=40)
         ax.legend(labels=['With probe', 'Corrected'], fontsize=fs_legend)
         fig_c.tight_layout()
     else:
