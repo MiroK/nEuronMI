@@ -160,12 +160,12 @@ if __name__ == '__main__':
         pos = sys.argv.index('-probetype')
         probetype = sys.argv[pos + 1]
     else:
-        probetype='cylinder'
+        probetype='fancy'
     if '-neurontype' in sys.argv:
         pos = sys.argv.index('-neurontype')
         neurontype = sys.argv[pos + 1]
     else:
-        neurontype='sphere'
+        neurontype='mainen'
     if '-dist' in sys.argv:
         pos = sys.argv.index('-dist')
         dist = float(sys.argv[pos + 1])
@@ -191,13 +191,18 @@ if __name__ == '__main__':
         box = int(sys.argv[pos + 1])
     else:
         box = 2
+    if '-rot' in sys.argv:
+        pos = sys.argv.index('-rot')
+        rot = int(sys.argv[pos + 1])
+    else:
+        rot = 0
 
     if len(sys.argv) == 1:
         print 'Generate GEO and msh files with and without probe. '\
               '\n   -simple : simpler mesh (coarser cells - larger neuron)' \
               '\n   -probetype : cylinder (default) - box - wedge - fancy\n   -neurontype : sphere (default) - mainen' \
               '\n   -probetip : x,y,z of probe tip (in um)\n   -coarse : 1 (less) - 2 - 3 (more)' \
-              '\n   -boxsize : 1 (smaller) - 2 - 3 (larger)'
+              '\n   -boxsize : 1 (smaller) - 2 - 3 (larger)\n   -rot rotation along z in deg'
 
         raise Exception('Indicate mesh argumets')
     
@@ -296,11 +301,11 @@ if __name__ == '__main__':
     elif probetype == 'fancy':
         # Angle in radians
         probe = FancyProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
-                            'with_contacts': 1, 'rot_angle': pi/8.})
+                            'with_contacts': 1, 'rot_angle': np.deg2rad(rot)})
 
 
     mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
-                + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box)
+                + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(rot)
 
     if not os.path.isdir(join(root, probetype)):
         os.mkdir(join(root, probetype))
