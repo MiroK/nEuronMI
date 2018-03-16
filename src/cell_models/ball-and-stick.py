@@ -157,13 +157,15 @@ v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext]))
 colors = plt.rcParams['axes.color_cycle']
 fig1 = plt.figure(figsize=figsize)
 ax1 = fig1.add_subplot(1,1,1)
-ax1 = plot_mea_recording(v_p_noprobe, pos, pitch, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]], vscale=40)
+ax1 = plot_mea_recording(v_p_noprobe, pos, pitch, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
+                         vscale=40, scalebar=True)
 ax1.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
 fig1.tight_layout()
 
 fig2 = plt.figure(figsize=figsize)
 ax2 = fig2.add_subplot(1,1,1)
-ax2 = plot_mea_recording(v_p_wprobe, pos, pitch, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3]], vscale=40)
+ax2 = plot_mea_recording(v_p_wprobe, pos, pitch, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3]],
+                         vscale=40, scalebar=True)
 ax2.legend(labels=['EMI with probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
 fig2.tight_layout()
 

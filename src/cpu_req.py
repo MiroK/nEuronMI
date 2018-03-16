@@ -17,7 +17,7 @@ system = []
 times = []
 
 for f in files:
-    if 'noprobe' in f:
+    if 'noprobe' in f and 'fancy' in f:
         with open(join(res_folder, f, 'params.yaml'), 'r') as file:
             info = yaml.load(file)
 
@@ -29,7 +29,6 @@ for f in files:
         system.append(int(info['performance']['system size']))
         times.append(round(float(info['performance']['time']),2))
 
-order = np.argsort(coarse)[::-1]
 coarse = np.array(coarse)
 boxsize = np.array(boxsize)
 cells = np.array(cells)
@@ -38,9 +37,10 @@ facets = np.array(facets)
 system = np.array(system)
 times = np.array(times)
 
-data = {'Coarse': coarse[order], 'Box size': boxsize[order], 'Cells': cells[order],
-        'Vertices': vertices[order], 'Facets': facets[order], 'System size': system[order], 'T (s)': times[order]}
+data = {'Coarse': coarse, 'Box size': boxsize, 'Cells': cells,
+        'Vertices': vertices, 'Facets': facets, 'System size': system, 'T (s)': times}
 
 df = pd.DataFrame(data)
+df = df.sort_values(by=['Coarse'], ascending=False)
 
 print  df.to_latex(columns=['Coarse', 'Box size', 'Cells', 'Vertices', 'Facets', 'System size', 'T (s)'], index=False)
