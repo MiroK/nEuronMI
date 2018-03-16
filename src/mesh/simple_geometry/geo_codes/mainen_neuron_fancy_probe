@@ -45,7 +45,7 @@ EndIf
 
 
 // Bounding polygon
-cz = probe_z + 62*conv + Sqrt(22*22-18*18)*conv + 9*25*conv;
+cz = 62*conv + Sqrt(22*22-18*18)*conv + 9*25*conv;
 p = newp;
 points[] = {7, p, p+1, p+2, p+3, p+4, p+5, p+6};
 Point(points[1]) = {probe_x - probe_thick/2, probe_y, probe_z};
