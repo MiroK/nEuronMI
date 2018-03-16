@@ -1,3 +1,4 @@
+contact_volumes[] = {};
 If(with_contacts)
   volume_counter = 0;
   // Contacts
@@ -9,7 +10,8 @@ If(with_contacts)
     cz = probe_z + 62*conv + i*25*conv;
     //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
     Cylinder(circle) = {cx, cy, cz, 0.1*conv, 0, 0, contact_rad};
-
+    contact_volumes[] += {circle};
+    
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
   EndFor
@@ -23,7 +25,7 @@ If(with_contacts)
     circle = newv;
     //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
     Cylinder(circle) = {cx, cy, cz, 0.1*conv, 0, 0, contact_rad};
-
+    contact_volumes[] += {circle};
 
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
@@ -34,6 +36,7 @@ If(with_contacts)
     circle = newv;
     //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
     Cylinder(circle) = {cx, cy, cz, 0.1*conv, 0, 0, contact_rad};
+    contact_volumes[] += {circle};
 
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
@@ -72,6 +75,11 @@ v[] = Extrude {probe_thick, 0, 0} { Surface{polyg}; };
 probe_free = v[1];
    
 If(with_contacts)
+  // Rotate
+  Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
+    Volume{probe_free, contact_volumes[]}; 
+  } 
+
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free, all_volumes[]}; Delete;};
   outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
   Physical Volume(2) = {outside[]};  
@@ -92,6 +100,11 @@ If(with_contacts)
   probe_contact_surface[] -= {probe_insul_surface[]};
   Physical Surface(41) = {probe_contact_surface[]};
 Else
+  // Rotate
+  Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
+    Volume{probe_free}; 
+  } 
+
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
 
   outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};

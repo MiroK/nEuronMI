@@ -294,7 +294,9 @@ if __name__ == '__main__':
                             'probe_width': 50*conv, 'probe_thick': 30*conv,
                             'contact_points': contact_pts, 'contact_rad': 5*conv})
     elif probetype == 'fancy':
-        probe = FancyProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z, 'with_contacts': 1})
+        # Angle in radians
+        probe = FancyProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
+                            'with_contacts': 1, 'rot_angle': pi/8.})
 
 
     mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
