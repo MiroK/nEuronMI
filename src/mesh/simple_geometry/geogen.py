@@ -101,8 +101,10 @@ def geofile(neuron, sizes, file_name='', probe=None):
     if probe is not None:
         # Special defs of the neuron which may not be user params
         probe_defs = probe.definitions(neuron)
+        print probe_defs, probe
         
         neuron_probe_code = read_code('_'.join(map(str, (neuron, probe))))
+        print neuron_probe_code
         
         size_code = mesh_size_code(True)
     else:
@@ -139,7 +141,7 @@ Physical Volume(2) = {outside[]};
 
 if __name__ == '__main__':
     from shapes import SphereNeuron, MainenNeuron
-    from shapes import CylinderProbe, BoxProbe, WedgeProbe, FancyProbe
+    from shapes import CylinderProbe, BoxProbe, WedgeProbe, FancyProbe, PixelProbe
     from math import pi
     import sys
 
@@ -153,7 +155,6 @@ if __name__ == '__main__':
         show=False
     if '-returnfname' in sys.argv:
         return_f=True
-        print 'ciao'
     else:
         return_f=False
     if '-probetype' in sys.argv:
@@ -181,6 +182,8 @@ if __name__ == '__main__':
             probetip=[dist, 0, 0]
         elif probetype == 'fancy':
             probetip=[dist, 0, -100]
+        elif probetype == 'pixel':
+            probetip=[dist, 0, -200]
     if '-coarse' in sys.argv:
         pos = sys.argv.index('-coarse')
         coarse = int(sys.argv[pos + 1])
@@ -301,6 +304,10 @@ if __name__ == '__main__':
     elif probetype == 'fancy':
         # Angle in radians
         probe = FancyProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
+                            'with_contacts': 1, 'rot_angle': np.deg2rad(rot)})
+    elif probetype == 'pixel':
+        # Angle in radians
+        probe = PixelProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
                             'with_contacts': 1, 'rot_angle': np.deg2rad(rot)})
 
 

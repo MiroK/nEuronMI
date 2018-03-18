@@ -1,0 +1,222 @@
+contact_volumes[] = {};
+nrows=5;
+If(with_contacts)
+  volume_counter = 0;
+  // Contacts
+  conv = 0.0001;  // from um to cm
+  For i In {0:nrows}
+    square1 = newv;
+    p1 = newp;
+
+    points1[] = {4, p1, p1+1, p1+2, p1+3};
+    cx  = probe_x - 0.5*probe_thick;
+    cy = probe_y+(2+12+6)*conv;
+    cz = probe_z + 150*conv + i*40*conv + 6*conv;
+
+    Point(points1[1]) = {cx - contact_rad/2, cy - contact_rad/2, cz};
+    Point(points1[2]) = {cx - contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[3]) = {cx + contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[4]) = {cx + contact_rad/2, cy - contact_rad/2, cz};
+
+    l1 = newl;
+    lines1[] = {4, l1, l1+1, l1+2, l1+3};
+
+    Line(lines1[1]) = {points1[1], points1[2]};
+    Line(lines1[2]) = {points1[2], points1[3]};
+    Line(lines1[3]) = {points1[3], points1[4]};
+    Line(lines1[4]) = {points1[4], points1[1]};
+
+    // The polygon
+    polyg1 = news;
+
+    Line Loop(polyg1) = {lines1[4], lines1[1], lines1[2], lines1[3]};
+
+    Plane Surface(polyg1) = {polyg1};
+    v[] = Extrude {0.1*conv, 0, 0} { Surface{polyg1}; };
+    contact_volumes[] += {square1};
+
+    all_volumes[volume_counter] = square1;
+    volume_counter += 1;
+  EndFor
+
+  For i In {0:nrows}
+    square1 = newv;
+    p1 = newp;
+    points1[] = {4, p1, p1+1, p1+2, p1+3};
+
+    cx  = probe_x - 0.5*probe_thick;
+    cy = probe_y+(-1-6)*conv;
+    cz = probe_z + 150*conv + i*40*conv + 6*conv;
+
+    Point(points1[1]) = {cx - contact_rad/2, cy - contact_rad/2, cz};
+    Point(points1[2]) = {cx - contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[3]) = {cx + contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[4]) = {cx + contact_rad/2, cy - contact_rad/2, cz};
+
+    l1 = newl;
+    lines1[] = {4, l1, l1+1, l1+2, l1+3};
+
+    Line(lines1[1]) = {points1[1], points1[2]};
+    Line(lines1[2]) = {points1[2], points1[3]};
+    Line(lines1[3]) = {points1[3], points1[4]};
+    Line(lines1[4]) = {points1[4], points1[1]};
+
+    // The polygon
+    polyg1 = news;
+
+    Line Loop(polyg1) = {lines1[4], lines1[1], lines1[2], lines1[3]};
+
+    Plane Surface(polyg1) = {polyg1};
+    v[] = Extrude {0.1*conv, 0, 0} { Surface{polyg1}; };
+    contact_volumes[] += {square1};
+
+    all_volumes[volume_counter] = square1;
+    volume_counter += 1;
+  EndFor
+
+  For i In {0:nrows}
+    square1 = newv;
+    p1 = newp;
+
+    points1[] = {4, p1, p1+1, p1+2, p1+3};
+
+    cx  = probe_x - 0.5*probe_thick;
+    cy = probe_y+(1+6)*conv;
+    cz = probe_z + 150*conv + i*40*conv + 26*conv;
+
+    Point(points1[1]) = {cx - contact_rad/2, cy - contact_rad/2, cz};
+    Point(points1[2]) = {cx - contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[3]) = {cx + contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[4]) = {cx + contact_rad/2, cy - contact_rad/2, cz};
+
+    l1 = newl;
+    lines1[] = {4, l1, l1+1, l1+2, l1+3};
+
+    Line(lines1[1]) = {points1[1], points1[2]};
+    Line(lines1[2]) = {points1[2], points1[3]};
+    Line(lines1[3]) = {points1[3], points1[4]};
+    Line(lines1[4]) = {points1[4], points1[1]};
+
+    // The polygon
+    polyg1 = news;
+
+    Line Loop(polyg1) = {lines1[4], lines1[1], lines1[2], lines1[3]};
+
+    Plane Surface(polyg1) = {polyg1};
+    v[] = Extrude {0.1*conv, 0, 0} { Surface{polyg1}; };
+    contact_volumes[] += {square1};
+
+    all_volumes[volume_counter] = square1;
+    volume_counter += 1;
+  EndFor
+
+  For i In {0:nrows}
+    square1 = newv;
+    p1 = newp;
+
+    points1[] = {4, p1, p1+1, p1+2, p1+3};
+
+    cx  = probe_x - 0.5*probe_thick;
+    cy = probe_y+(-2-12-6)*conv;
+    cz = probe_z + 150*conv + i*40*conv + 26*conv;
+
+    Point(points1[1]) = {cx - contact_rad/2, cy - contact_rad/2, cz};
+    Point(points1[2]) = {cx - contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[3]) = {cx + contact_rad/2, cy + contact_rad/2, cz};
+    Point(points1[4]) = {cx + contact_rad/2, cy - contact_rad/2, cz};
+
+    l1 = newl;
+    lines1[] = {4, l1, l1+1, l1+2, l1+3};
+
+    Line(lines1[1]) = {points1[1], points1[2]};
+    Line(lines1[2]) = {points1[2], points1[3]};
+    Line(lines1[3]) = {points1[3], points1[4]};
+    Line(lines1[4]) = {points1[4], points1[1]};
+
+    // The polygon
+    polyg1 = news;
+
+    Line Loop(polyg1) = {lines1[4], lines1[1], lines1[2], lines1[3]};
+
+    Plane Surface(polyg1) = {polyg1};
+    v[] = Extrude {0.1*conv, 0, 0} { Surface{polyg1}; };
+    contact_volumes[] += {square1};
+
+    all_volumes[volume_counter] = square1;
+    volume_counter += 1;
+  EndFor
+
+EndIf
+
+
+// Bounding polygon
+p = newp;
+points[] = {5, p, p+1, p+2, p+3, p+4};
+Point(points[1]) = {probe_x - probe_thick/2, probe_y, probe_z};
+Point(points[2]) = {probe_x - probe_thick/2, probe_y+35*conv, probe_z+150*conv};
+Point(points[3]) = {probe_x - probe_thick/2, probe_y+35*conv, probe_z+probe_top};
+Point(points[4]) = {probe_x - probe_thick/2, probe_y-35*conv, probe_z+probe_top};
+Point(points[5]) = {probe_x - probe_thick/2, probe_y-35*conv, probe_z+150*conv};
+
+l = newl;
+lines[] = {5, l, l+1, l+2, l+3, l+4};
+Line(lines[1]) = {points[1], points[2]};
+Line(lines[2]) = {points[2], points[3]};
+Line(lines[3]) = {points[3], points[4]};
+Line(lines[4]) = {points[4], points[5]};
+Line(lines[5]) = {points[5], points[1]};
+
+// The polygon
+polyg = news;
+// {133, 134, 135, 129, 130, 131, 132};
+Line Loop(polyg) = {lines[4], lines[5], lines[1], lines[2], lines[3]};
+Plane Surface(polyg) = {polyg};
+v[] = Extrude {probe_thick, 0, 0} { Surface{polyg}; };
+probe_free = v[1];
+   
+If(with_contacts)
+  // Rotate
+  // Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
+  //  Volume{probe_free, contact_volumes[]};
+  //}
+
+
+  bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free, all_volumes[]}; Delete;};
+  outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  Physical Volume(2) = {outside[]};  
+
+  outside_surface() = Boundary{ Volume{outside()}; };
+
+  Physical Surface(5) = {8, 9, 11, 12, 13};
+  Physical Surface(6) = {10};
+
+  probe_surface[] = outside_surface[];
+  probe_surface[] -= {8, 9, 10, 11, 12, 13};  // outer
+  probe_surface[] -= {1, 2, 3, 4, 5, 6, 7};       // neuron surfaces
+
+  probe_insul_surface[] = {14:21};
+  Physical Surface(4) = {probe_insul_surface[]};
+  
+  probe_contact_surface[] = probe_surface[];
+  probe_contact_surface[] -= {probe_insul_surface[]};
+  Physical Surface(41) = {probe_contact_surface[]};
+Else
+  // Rotate
+  Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
+    Volume{probe_free}; 
+  } 
+
+  bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
+
+  outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  // Physical
+  Physical Volume(2) = {outside[]};  
+
+  // Probe surfaces, no contact surface so no 41
+  probe_surface[] = {14:21};
+  Physical Surface(4) = {probe_surface[]};
+
+  // Boundaries is of the 2 volume
+  Physical Surface(5) = {8, 9, 11, 12, 13};
+  Physical Surface(6) = {10};
+EndIf

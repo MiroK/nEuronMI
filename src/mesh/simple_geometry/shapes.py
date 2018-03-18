@@ -438,3 +438,52 @@ class FancyProbe(Probe):
                           'probe_top = %g + %g;' % (neuron.geom_bbox.y[2], 200*self.conv)])
     
     def __str__(self): return 'fancy_probe'
+
+
+class PixelProbe(Probe):
+    '''The realistic probe. Everything is hardcoded...'''
+
+    def sane_inputs(self, params):
+        all_params = ('probe_x', 'probe_y', 'probe_z')
+
+        assert all(key in params for key in all_params)
+
+        for key in all_params: setattr(self, key, params[key])
+        # Additional
+        self.conv = 1E-4
+        self.probe_thick = 20 * self.conv
+        self.contact_rad = 12 * self.conv
+        self.with_contacts = int(params.get('with_contacts', 0))
+
+        self.rot_angle = float(params.get('rot_angle', 0.))
+
+        return True
+
+    def control_points(self):
+        '''Control points of the probe'''
+        # These define the tip
+        #         |
+        #       _/      150
+        #      /
+        #    /
+        #    0 35
+        points = np.array([[self.probe_x - self.probe_thick / 2., self.probe_y, self.probe_z],
+                           [self.probe_x - self.probe_thick / 2., self.probe_y + 35 * self.conv,
+                            self.probe_z + 150 * self.conv],
+                           [self.probe_x - self.probe_thick / 2., self.probe_y - 35 * self.conv,
+                            self.probe_z + 150 * self.conv]])
+
+        points = np.r_[points, points + np.array([self.probe_thick, 0, 0])]
+
+        return points
+
+    def definitions(self, neuron):
+        '''Code for contact points defition and probe top from bbox'''
+
+        return '\n'.join(['probe_thick = %g;' % self.probe_thick,
+                          'contact_rad = %g;' % self.contact_rad,
+                          'with_contacts = %d;' % self.with_contacts,
+                          'rot_angle = %g;' % self.rot_angle,
+                          'probe_top = %g + %g;' % (neuron.geom_bbox.y[2], 500 * self.conv)])
+
+    def __str__(self): return 'pixel_probe'
