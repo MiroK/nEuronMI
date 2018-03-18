@@ -278,7 +278,6 @@ if __name__ == '__main__':
         mesh_sizes = {'neuron_mesh_size': nmesh * geometrical_params['rad_axon'],
                       'probe_mesh_size': pmesh * geometrical_params['rad_axon'],
                       'rest_mesh_size': rmesh * geometrical_params['rad_axon']}
-
     if neurontype == 'sphere':
         neuron = SphereNeuron(geometrical_params)
     elif neurontype == 'mainen':

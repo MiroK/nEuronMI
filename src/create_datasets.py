@@ -50,6 +50,7 @@ for res in results:
         min_amp_wprobe = np.min(v_ext_w)
         min_amp_noprobe = np.min(v_ext_no)
         diff.append(np.abs(min_amp_wprobe - min_amp_noprobe))
+
     except:
         pass
 
@@ -61,9 +62,6 @@ data.to_pickle(join('results', 'results'))
 
 # data_fancy = data[data['probe']=='fancy']
 # data_cylinder = data[data['probe']=='cylinder']
-#
 # sns.pointplot(x='box', y='min_wprobe', hue='coarse', data=data_fancy)
 # sns.pointplot(x='box', y='min_noprobe', hue='coarse', data=data_fancy)
 # sns.pointplot(x='box', y='diff', hue='coarse', data=data_fancy)
-
-

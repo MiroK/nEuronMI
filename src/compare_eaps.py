@@ -58,21 +58,22 @@ if __name__ == '__main__':
         ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
         fig.tight_layout()
     else:
-        fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(1, 1, 1)
-        ax.plot(times, np.transpose(v_p), lw=2)
-        ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
-        ax.axis('off')
-        shift = 0.01*times[-1]
-        pos_h = [np.min(times), np.min(v_p)]
-        length_h = (np.max(v_p) - np.min(v_p))/5.
-        pos_w = [np.min(times), np.min(v_p)]
-        length_w = times[-1] / 5
+	if len(v_p.shape) == 2:
+            fig_c = plt.figure(figsize=figsize)
+            ax = fig_c.add_subplot(1, 1, 1)
+            ax.plot(times, np.transpose(v_p), lw=2)
+            ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
+            ax.axis('off')
+            shift = 0.01*times[-1]
+            pos_h = [np.min(times), np.min(v_p)]
+            length_h = (np.max(v_p) - np.min(v_p))/5.
+            pos_w = [np.min(times), np.min(v_p)]
+            length_w = times[-1] / 5
 
-        ax.plot([pos_h[0], pos_h[0]], [pos_h[1], pos_h[1] + length_h], color='k', lw=2)
-        ax.text(pos_h[0] + shift, pos_h[1] + length_h / 2., str(int((np.max(v_p) - np.min(v_p)) // 10 * 10)) + ' $\mu$V')
-        ax.plot([pos_w[0], pos_w[0] + length_w], [pos_w[1], pos_w[1]], color='k', lw=2)
-        ax.text(pos_w[0] + shift, pos_w[1] - length_h / 4., str(round(times[-1] / 5, 1)) + ' ms')
+            ax.plot([pos_h[0], pos_h[0]], [pos_h[1], pos_h[1] + length_h], color='k', lw=2)
+            ax.text(pos_h[0] + shift, pos_h[1] + length_h / 2., str(int((np.max(v_p) - np.min(v_p)) // 10 * 10)) + ' $\mu$V')
+            ax.plot([pos_w[0], pos_w[0] + length_w], [pos_w[1], pos_w[1]], color='k', lw=2)
+            ax.text(pos_w[0] + shift, pos_w[1] - length_h / 4., str(round(times[-1] / 5, 1)) + ' ms')
 
     print 'NO PROBE: ', np.min(v_noprobe)
     print 'WITH PROBE: ', np.min(v_wprobe)
@@ -99,21 +100,22 @@ if __name__ == '__main__':
         ax.legend(labels=['With probe', 'Corrected'], fontsize=fs_legend)
         fig_c.tight_layout()
     else:
-        fig_c = plt.figure(figsize=figsize)
-        ax = fig_c.add_subplot(1, 1, 1)
-        ax.plot(times, np.transpose(v_p), lw=2)
-        ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
-        ax.axis('off')
-        shift = 0.01*times[-1]
-        pos_h = [np.min(times), np.min(v_p)]
-        length_h = (np.max(v_p) - np.min(v_p))/5.
-        pos_w = [np.min(times), np.min(v_p)]
-        length_w = times[-1] / 5
+	if len(v_p.shape) == 2:
+            fig_c = plt.figure(figsize=figsize)
+            ax = fig_c.add_subplot(1, 1, 1)
+            ax.plot(times, np.transpose(v_p), lw=2)
+            ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
+            ax.axis('off')
+            shift = 0.01*times[-1]
+            pos_h = [np.min(times), np.min(v_p)]
+            length_h = (np.max(v_p) - np.min(v_p))/5.
+            pos_w = [np.min(times), np.min(v_p)]
+            length_w = times[-1] / 5
 
-        ax.plot([pos_h[0], pos_h[0]], [pos_h[1], pos_h[1] + length_h], color='k', lw=2)
-        ax.text(pos_h[0] + shift, pos_h[1] + length_h / 2., str(int((np.max(v_p) - np.min(v_p)) // 10 * 10)) + ' $\mu$V')
-        ax.plot([pos_w[0], pos_w[0] + length_w], [pos_w[1], pos_w[1]], color='k', lw=2)
-        ax.text(pos_w[0] + shift, pos_w[1] - length_h / 4., str(round(times[-1] / 5, 1)) + ' ms')
+            ax.plot([pos_h[0], pos_h[0]], [pos_h[1], pos_h[1] + length_h], color='k', lw=2)
+            ax.text(pos_h[0] + shift, pos_h[1] + length_h / 2., str(int((np.max(v_p) - np.min(v_p)) // 10 * 10)) + ' $\mu$V')
+            ax.plot([pos_w[0], pos_w[0] + length_w], [pos_w[1], pos_w[1]], color='k', lw=2)
+            ax.text(pos_w[0] + shift, pos_w[1] - length_h / 4., str(round(times[-1] / 5, 1)) + ' ms')
 
     if save_fig:
         fig.savefig(join('figures', probe + '_EAP.pdf'))
