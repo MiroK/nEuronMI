@@ -17,7 +17,7 @@ If(with_contacts)
           cz = probe_z + 150*conv + i*40*conv + z_shift;
 
           square = newv;
-          Box(square) = {cx, cy-contact_rad/2, cz-contact_rad/2, probe_thick, contact_rad, contact_rad};
+          Box(square) = {cx, cy-contact_rad/2, cz-contact_rad/2, 0.1*conv, contact_rad, contact_rad};
     
           contact_volumes[] += {square};
 
