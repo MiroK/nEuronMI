@@ -101,11 +101,9 @@ def geofile(neuron, sizes, file_name='', probe=None):
     if probe is not None:
         # Special defs of the neuron which may not be user params
         probe_defs = probe.definitions(neuron)
-        print probe_defs, probe
-        
+
         neuron_probe_code = read_code('_'.join(map(str, (neuron, probe))))
-        print neuron_probe_code
-        
+
         size_code = mesh_size_code(True)
     else:
         probe_defs = ''

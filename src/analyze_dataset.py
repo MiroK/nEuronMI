@@ -22,16 +22,17 @@ fs_ticks = 20
 lw = 3
 ms = 10
 
-save_fig=False
-plot_dist = True
-plot_conv = True
-plot_shift = False
+save_fig = True
+plot_dist = False
+plot_conv = False
+plot_shift = True
+plot_rot = True
 
 data = pd.read_pickle(join('results', 'results.pkl'))
 
 # #remove dist 2.5
-data = data[data['tip_x']!='20.0']
-data = data[data['tip_x']!='27.5']
+# data = data[data['tip_x']!='20.0']
+# data = data[data['tip_x']!='27.5']
 
 data_40 = data[data['tip_x']=='40']
 data_40 = data_40[data_40['tip_y']=='0']
@@ -42,6 +43,8 @@ data_dist = data_dist[data_dist['box']=='2']
 figsize3 = (15,7)
 figsize1 = (7,7)
 
+colors = plt.rcParams['axes.color_cycle']
+
 
 ###########################################
 # DISTANCE
@@ -51,6 +54,7 @@ ylim = [-10, 100]
 
 data_fancy_dist = data_dist[data_dist['probe']=='fancy'].sort_values(by=['tip_x'])
 data_cylinder_dist = data_dist[data_dist['probe']=='cylinder'].sort_values(by=['tip_x'])
+data_pixel_dist = data_dist[data_dist['probe']=='pixel'].sort_values(by=['tip_x'])
 
 # data_fancy = data_fancy.sort_values(by=['tip_x'])
 # data_cylinder = data_cylinder.sort_values(by=['tip_x'])
@@ -60,28 +64,17 @@ data_fancy_dist.min_wprobe = data_fancy_dist.min_wprobe*1000
 data_fancy_dist['diff'] = data_fancy_dist['diff']*1000
 data_fancy_dist['ratios'] = np.round(data_fancy_dist.min_wprobe / data_fancy_dist.min_noprobe, 2)
 
-
 data_cylinder_dist.min_noprobe = data_cylinder_dist.min_noprobe*1000
 data_cylinder_dist.min_wprobe = data_cylinder_dist.min_wprobe*1000
 data_cylinder_dist['diff'] = data_cylinder_dist['diff']*1000
 data_cylinder_dist['ratios'] = np.round(data_cylinder_dist.min_wprobe / data_cylinder_dist.min_noprobe, 2)
 
-if plot_dist:
+data_pixel_dist.min_noprobe = data_pixel_dist.min_noprobe*1000
+data_pixel_dist.min_wprobe = data_pixel_dist.min_wprobe*1000
+data_pixel_dist['diff'] = data_pixel_dist['diff']*1000
+data_pixel_dist['ratios'] = np.round(data_pixel_dist.min_wprobe / data_pixel_dist.min_noprobe, 2)
 
-    fig1 = plt.figure(figsize=figsize3)
-    ax11 = fig1.add_subplot(1,3,1)
-    ax11.plot(data_fancy_dist.tip_x.astype('float'), np.abs(data_fancy_dist.min_noprobe), linestyle='-', marker='^',
-                  label='peak without probe', lw=lw, ms=ms)
-    ax11.plot(data_fancy_dist.tip_x.astype('float'),np.abs( data_fancy_dist.min_wprobe), linestyle='-', marker='o',
-                  label='peak with probe', lw=lw, ms=ms)
-    ax11.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist['diff'], linestyle='-', marker='d',
-                  label='peak difference', lw=lw, ms=ms)
-    ax11.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
-    ax11.set_ylabel('V ($\mu$V)', fontsize = fs_label)
-    ax11.set_title('MEA probe', fontsize = fs_title)
-    ax11.legend(fontsize = fs_legend)
-    ax11.set_xlim(xlim)
-    ax11.set_ylim(ylim)
+if plot_dist:
 
     fig11 = plt.figure(figsize=figsize1)
     ax111 = fig11.add_subplot(1,1,1)
@@ -93,26 +86,11 @@ if plot_dist:
                   label='peak difference', lw=lw, ms=ms)
     ax111.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
     ax111.set_ylabel('V ($\mu$V)', fontsize = fs_label)
-    ax111.set_title('MEA probe', fontsize = fs_title)
+    ax111.set_title('Neuronexus probe', fontsize = fs_title)
     ax111.legend(fontsize = fs_legend)
     ax111.set_xlim(xlim)
     ax111.set_ylim(ylim)
 
-
-
-    ax12 = fig1.add_subplot(1,3,2)
-    ax12.plot(data_cylinder_dist.tip_x.astype('float'), np.abs(data_cylinder_dist.min_noprobe), linestyle='-', marker='^',
-                  label='peak without probe', lw=lw, ms=ms)
-    ax12.plot(data_cylinder_dist.tip_x.astype('float'), np.abs(data_cylinder_dist.min_wprobe), linestyle='-', marker='o',
-                  label='peak with probe', lw=lw, ms=ms)
-    ax12.plot(data_cylinder_dist.tip_x.astype('float'), data_cylinder_dist['diff'], linestyle='-', marker='d',
-                  label='peak difference', lw=lw, ms=ms)
-    ax12.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
-    ax12.set_ylabel('V ($\mu$V)', fontsize = fs_label)
-    ax12.set_title('Microwire probe', fontsize = fs_title)
-    ax12.legend(fontsize = fs_legend)
-    ax12.set_xlim(xlim)
-    ax12.set_ylim(ylim)
 
     fig12 = plt.figure(figsize=figsize1)
     ax112 = fig12.add_subplot(1,1,1)
@@ -129,53 +107,52 @@ if plot_dist:
     ax112.set_xlim(xlim)
     ax112.set_ylim(ylim)
 
-
-    ax13 = fig1.add_subplot(1,3,3)
-    ax13.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.ratios, marker='d',
-                  linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
-    ax13.plot(data_cylinder_dist.tip_x.astype('float'), data_cylinder_dist.ratios, marker='o',
-                  linestyle='-', lw=lw, label='Microwire', color='grey', ms=ms)
-    ax13.axhline(np.mean(data_fancy_dist.ratios), color='r', alpha=0.4, ls='--')
-    ax13.axhline(np.mean(data_cylinder_dist.ratios), color='grey', alpha=0.4, ls='--')
-    ax13.text(87, np.mean(data_fancy_dist.ratios)-10,
-             str(int(np.mean(data_fancy_dist.ratios))) + ' %', color='r',
-             alpha=0.5, fontsize=fs_label)
-    ax13.text(87, np.mean(data_cylinder_dist.ratios) - 10,
-             str(int(np.mean(data_cylinder_dist.ratios))) + ' %', color='grey',
-             alpha=0.5, fontsize=fs_label)
-
-    ax13.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
-    ax13.set_ylabel('ratio (%)', fontsize = fs_label)
-    ax13.legend(fontsize=fs_legend)
-    ax13.set_title('Peak ratio', fontsize=fs_title)
-
-
     fig13 = plt.figure(figsize=figsize1)
     ax113 = fig13.add_subplot(1,1,1)
-    ax113.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.ratios, marker='d',
-                  linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
-    ax113.plot(data_cylinder_dist.tip_x.astype('float'), data_cylinder_dist.ratios, marker='o',
+    ax113.plot(data_pixel_dist.tip_x.astype('float'), np.abs(data_pixel_dist.min_noprobe), linestyle='-', marker='^',
+                  label='peak without probe', lw=lw, ms=ms)
+    ax113.plot(data_pixel_dist.tip_x.astype('float'), np.abs(data_pixel_dist.min_wprobe), linestyle='-', marker='o',
+                  label='peak with probe', lw=lw, ms=ms)
+    ax113.plot(data_pixel_dist.tip_x.astype('float'), data_pixel_dist['diff'], linestyle='-', marker='d',
+                  label='peak difference', lw=lw, ms=ms)
+    ax113.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
+    ax113.set_ylabel('V ($\mu$V)', fontsize = fs_label)
+    ax113.set_title('Neuropixel probe', fontsize = fs_title)
+    ax113.legend(fontsize = fs_legend)
+    ax113.set_xlim(xlim)
+    ax113.set_ylim(ylim)
+
+
+    fig14 = plt.figure(figsize=figsize1)
+    ax114 = fig14.add_subplot(1,1,1)
+    ax114.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.ratios, marker='d',
+                  linestyle='-', lw=lw, label='Neuronexus probe', color='r', ms=ms)
+    ax114.plot(data_pixel_dist.tip_x.astype('float'), data_pixel_dist.ratios, marker='d',
+               linestyle='-', lw=lw, label='Neuropixel probe', color='b', ms=ms)
+    ax114.plot(data_cylinder_dist.tip_x.astype('float'), data_cylinder_dist.ratios, marker='o',
                   linestyle='-', lw=lw, label='Microwire', color='grey', ms=ms)
-    ax113.axhline(np.mean(data_fancy_dist.ratios), color='r', alpha=0.4, ls='--')
-    ax113.axhline(np.mean(data_cylinder_dist.ratios), color='grey', alpha=0.4, ls='--')
-    ax113.text(87, np.mean(data_fancy_dist.ratios)-0.10,
+    ax114.axhline(np.mean(data_fancy_dist.ratios), color='r', alpha=0.4, ls='--')
+    ax114.axhline(np.mean(data_pixel_dist.ratios), color='b', alpha=0.4, ls='--')
+    ax114.axhline(np.mean(data_cylinder_dist.ratios), color='grey', alpha=0.4, ls='--')
+    ax114.text(87, np.mean(data_fancy_dist.ratios)-0.10,
              str(np.round(np.mean(data_fancy_dist.ratios), 2)), color='r',
              alpha=0.5, fontsize=fs_label)
-    ax113.text(87, np.mean(data_cylinder_dist.ratios) - 0.10,
+    ax114.text(87, np.mean(data_pixel_dist.ratios) + 0.10,
+               str(np.round(np.mean(data_pixel_dist.ratios), 2)), color='b',
+               alpha=0.5, fontsize=fs_label)
+    ax114.text(87, np.mean(data_cylinder_dist.ratios) - 0.10,
              str(np.round(np.mean(data_cylinder_dist.ratios), 2)), color='grey',
              alpha=0.5, fontsize=fs_label)
 
-    ax113.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
-    ax113.set_ylabel('ratio', fontsize = fs_label)
-    ax113.legend(fontsize=fs_legend)
-    ax113.set_title('Peak ratio', fontsize=fs_title)
-    ax113.set_ylim([0.80, 2.00])
+    ax114.set_xlabel('Distance ($\mu$m)', fontsize = fs_label)
+    ax114.set_ylabel('ratio', fontsize = fs_label)
+    ax114.legend(fontsize=fs_legend)
+    ax114.set_title('Peak ratio', fontsize=fs_title)
+    ax114.set_ylim([0.80, 2.5])
 
 
-    mark_subplots([ax11, ax12, ax13], xpos=-0.15, ypos=1, fs=40)
-    simplify_axes([ax11, ax12, ax13])
-    simplify_axes([ax111, ax112, ax113])
-    fig1.tight_layout()
+
+    simplify_axes([ax111, ax112, ax113, ax114])
     fig11.tight_layout()
     fig12.tight_layout()
     fig13.tight_layout()
@@ -240,41 +217,75 @@ if plot_conv:
 ###########################################
 # SIDE SHIFT
 data_fancy = data[data.probe=='fancy']
-data_fancy = data_fancy[data_fancy.coarse.isin(['1','2'])]
-data_fancy = data_fancy[data_fancy.box.isin(['3', '4'])]
+data_fancy = data_fancy[data_fancy.coarse.isin(['2'])]
+data_fancy = data_fancy[data_fancy.box.isin(['5'])]
 data_fancy['ratios'] = np.round(data_fancy.min_wprobe / data_fancy.min_noprobe, 2)
 # data_fancy = data_fancy[data_fancy.box=='3']
 data_fancy_shift = data_fancy[data_fancy.tip_y.isin(['0', '10.0', '20.0', '30.0', '40.0', '50.0', '60.0'])]
 data_fancy_shift = data_fancy_shift[data_fancy_shift.tip_x.isin(['40', '40.0'])]
+data_fancy_shift = data_fancy_shift.sort_values(by=['tip_y'])
 
 if plot_shift:
     fig33 = plt.figure(figsize=figsize1)
     ax33 = fig33.add_subplot(1,1,1)
-    sns.pointplot(x="tip_y", y="ratios", data=data_fancy_shift, ax=ax33)
+    # sns.pointplot(x="tip_y", y="ratios", data=data_fancy_shift, ax=ax33)
+    ax33.plot(data_fancy_shift.tip_y.astype('float'), data_fancy_shift.ratios, marker='o', lw=2, color=colors[1])
     # sns.tsplot(data=data_fancy_shift.min_wprobe/data_fancy_shift.min_noprobe, err_style="ci_bars", color="r", ax=ax33)
     # ax33.plot(data_fancy_shift.tip_y.astype('float'), data_fancy_shift.min_wprobe/data_fancy_shift.min_noprobe, marker='d',
     #               linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
 
     ax33.set_ylim([0.80, 2.00])
-    ax33.set_xlabel('   y_shift ($\mu$m)', fontsize = fs_label)
-    ax33.set_ylabel('ratio (%)', fontsize = fs_label)
-    ax33.legend(fontsize=fs_legend)
-    ax33.set_title('Peak ratio', fontsize=fs_title)
+    ax33.set_xlabel('y_shift ($\mu$m)', fontsize = fs_label)
+    ax33.set_ylabel('ratio', fontsize = fs_label)
+    # ax33.legend(fontsize=fs_legend)
+    ax33.set_title('Lateral shift', fontsize=fs_title)
 
     simplify_axes([ax33])
     fig33.tight_layout()
 
 
+###########################################
+# ROTATION
+data_fancy = data[data.probe=='fancy']
+# data_fancy = data_fancy[data_fancy.tip_x.isin(['70.0'])]
+# data_fancy = data_fancy[data_fancy.box.isin(['4'])]
+data_fancy['ratios'] = np.round(data_fancy.min_wprobe / data_fancy.min_noprobe, 2)
+
+data_fancy_rot = data_fancy[data_fancy.tip_x.isin(['70.0'])]
+data_fancy_rot = data_fancy_rot.sort_values(by=['rot'])
+
+order = ['30', '60', '90', '120', '150', '180']
+
+if plot_rot:
+    fig44 = plt.figure(figsize=figsize1)
+    ax44 = fig44.add_subplot(1,1,1)
+    sns.pointplot(x="rot", y="ratios", data=data_fancy_rot, ax=ax44, order=order)
+    # sns.tsplot(data=data_fancy_rot.min_wprobe/data_fancy_rot.min_noprobe, err_style="ci_bars", color="r", ax=ax33)
+    # ax33.plot(data_fancy_rot.tip_y.astype('float'), data_fancy_rot.min_wprobe/data_fancy_rot.min_noprobe, marker='d',
+    #               linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
+
+    # ax44.set_ylim([0.80, 2.00])
+    ax44.set_xlabel('rotation ($\circ$)', fontsize = fs_label)
+    ax44.set_ylabel('ratio ', fontsize = fs_label)
+    ax44.legend(fontsize=fs_legend)
+    ax44.set_title('Rotation', fontsize=fs_title)
+
+    simplify_axes([ax44])
+    fig44.tight_layout()
+
+
 if save_fig:
     if plot_dist:
-        fig1.savefig('figures/distance_analysis.pdf')
         fig11.savefig('figures/mea_distance.pdf')
         fig12.savefig('figures/microwire_distance.pdf')
-        fig13.savefig('figures/ratio_distance.pdf')
+        fig13.savefig('figures/pixel_distance.pdf')
+        fig14.savefig('figures/ratio_distance.pdf')
     if plot_conv:
         fig2.savefig('figures/convergence_analysis.pdf')
     if plot_shift:
         fig33.savefig('figures/sideshift_all.pdf')
+    if plot_rot:
+        fig44.savefig('figures/rotations.pdf')
 
 plt.ion()
 plt.show()
