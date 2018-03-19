@@ -27,7 +27,7 @@ rots = []
 
 for res in results:
     if 'rot' in res:
-        ntype, ptype, tx, ty, tz, _, cc, _, bb, rot, wp = res.split('_')
+        ntype, ptype, tx, ty, tz, _, cc, _, bb, _, rot, wp = res.split('_')
     else:
         ntype, ptype, tx, ty, tz, _, cc, _, bb, wp = res.split('_')
         rot = 0
@@ -47,18 +47,18 @@ for res in results:
         tip_y.append(ty)
         tip_z.append(tz)
         rots.append(rot)
-        min_amp_wprobe = np.min(v_ext_w)
-        min_amp_noprobe = np.min(v_ext_no)
-        diff.append(np.abs(min_amp_wprobe - min_amp_noprobe))
+        min_amp_wprobe.append(np.min(v_ext_w))
+        min_amp_noprobe.append(np.min(v_ext_no))
+        diff.append(np.abs(np.min(v_ext_w) - np.min(v_ext_no)))
 
     except:
         pass
 
 data = pd.DataFrame({'neuron': neuron, 'probe': probe, 'box': box, 'coarse': coarse,
                      'tip_x': tip_x, 'tip_y': tip_y, 'tip_z': tip_z, 'min_wprobe': min_amp_wprobe,
-                     'min_noprobe': min_noprobe, 'diff': diff, 'rot': rots})
+                     'min_noprobe': min_amp_noprobe, 'diff': diff, 'rot': rots})
 
-data.to_pickle(join('results', 'results'))
+data.to_pickle(join('results', 'results.pkl'))
 
 # data_fancy = data[data['probe']=='fancy']
 # data_cylinder = data[data['probe']=='cylinder']
