@@ -59,8 +59,8 @@ if __name__ == '__main__':
 
     # curr = []
     conv = 1e-4
-    x_axis = np.arange(11, 80)*conv
-    z_axis = np.arange(-100, 100)*conv
+    x_axis = np.arange(11, 100)*conv
+    z_axis = np.arange(-200, 200)*conv
 
     # Checkout the content of h5 file with `h5ls -r FILE.h5`
     with HDF5File(comm, join(w_mesh, 'u_sol.h5'), 'r') as in_file:
@@ -103,8 +103,8 @@ if __name__ == '__main__':
                 ext_img[i, j] = v_u_n(x_i, 0, z_j)
         ext_no.append(ext_img)
 
-    ext_w = np.squeeze(np.array(ext_w))
-    ext_no = np.squeeze(np.array(ext_no))
+    ext_w = np.squeeze(np.array(ext_w))*1000
+    ext_no = np.squeeze(np.array(ext_no))*1000
 
     fig = plt.figure() #figsize=(4,15))
     ax1 = fig.add_subplot(1,2,1)
@@ -119,6 +119,29 @@ if __name__ == '__main__':
     ax2.matshow(ext_no.T, cmap = 'jet', origin = 'lower', extent=[np.min(x_axis), np.max(x_axis),
                                                              np.min(z_axis), np.max(z_axis)],
                 vmin=minv, vmax=maxv)
+    levels = [-50, -25, 0, 10]
+    CS = ax1.contour(ext_w.T, levels,
+                     origin='lower',
+                     colors='k',
+                     linewidths=1,
+                     extent=[np.min(x_axis), np.max(x_axis), np.min(z_axis), np.max(z_axis)],
+                     vmin=minv, vmax=maxv)
+    ax1.clabel(CS, levels,  # label every second level
+               inline=1,
+               fmt='%1.1f',
+               fontsize=8)
+
+
+    CS = ax2.contour(ext_no.T, levels,
+                     origin='lower',
+                     colors='k',
+                     linewidths=1,
+                     extent=[np.min(x_axis), np.max(x_axis), np.min(z_axis), np.max(z_axis)],
+                     vmin=minv, vmax=maxv)
+    ax2.clabel(CS, levels,  # label every second level
+               inline=1,
+               fmt='%1.1f',
+               fontsize=8)
 
     probe_x = 40.5*conv
     probe_y = -100*conv

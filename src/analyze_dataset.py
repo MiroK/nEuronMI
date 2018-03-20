@@ -221,20 +221,24 @@ data_fancy = data_fancy[data_fancy.coarse.isin(['2'])]
 data_fancy = data_fancy[data_fancy.box.isin(['5'])]
 data_fancy['ratios'] = np.round(data_fancy.min_wprobe / data_fancy.min_noprobe, 2)
 # data_fancy = data_fancy[data_fancy.box=='3']
-data_fancy_shift = data_fancy[data_fancy.tip_y.isin(['0', '10.0', '20.0', '30.0', '40.0', '50.0', '60.0'])]
+data_fancy_shift = data_fancy[data_fancy.tip_y.isin(['0', '10.0', '20.0', '30.0', '40.0', '50.0', '60.0', '80.0', '100.0'])]
 data_fancy_shift = data_fancy_shift[data_fancy_shift.tip_x.isin(['40', '40.0'])]
-data_fancy_shift = data_fancy_shift.sort_values(by=['tip_y'])
+# data_fancy_shift = data_fancy_shift.sort_values(by=['tip_y'])
+
+order = np.array(np.argsort(data_fancy_shift.tip_y.astype('float')))
 
 if plot_shift:
     fig33 = plt.figure(figsize=figsize1)
     ax33 = fig33.add_subplot(1,1,1)
+    # sns.pointplot(x="tip_y", y="ratios", data=data_fancy_shift, ax=ax33, order=order, color=colors[1])
     # sns.pointplot(x="tip_y", y="ratios", data=data_fancy_shift, ax=ax33)
-    ax33.plot(data_fancy_shift.tip_y.astype('float'), data_fancy_shift.ratios, marker='o', lw=2, color=colors[1])
+    ax33.plot(data_fancy_shift.tip_y.values.astype('float')[order],
+              data_fancy_shift.ratios.values.astype('float')[order],  marker='o', lw=2, color=colors[1])
     # sns.tsplot(data=data_fancy_shift.min_wprobe/data_fancy_shift.min_noprobe, err_style="ci_bars", color="r", ax=ax33)
     # ax33.plot(data_fancy_shift.tip_y.astype('float'), data_fancy_shift.min_wprobe/data_fancy_shift.min_noprobe, marker='d',
     #               linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
 
-    ax33.set_ylim([0.80, 2.00])
+    ax33.set_ylim([0.2, 2.00])
     ax33.set_xlabel('y_shift ($\mu$m)', fontsize = fs_label)
     ax33.set_ylabel('ratio', fontsize = fs_label)
     # ax33.legend(fontsize=fs_legend)
@@ -254,7 +258,7 @@ data_fancy['ratios'] = np.round(data_fancy.min_wprobe / data_fancy.min_noprobe, 
 data_fancy_rot = data_fancy[data_fancy.tip_x.isin(['70.0'])]
 data_fancy_rot = data_fancy_rot.sort_values(by=['rot'])
 
-order = ['30', '60', '90', '120', '150', '180']
+order = ['0','30', '60', '90', '120', '150', '180']
 
 if plot_rot:
     fig44 = plt.figure(figsize=figsize1)
@@ -264,7 +268,7 @@ if plot_rot:
     # ax33.plot(data_fancy_rot.tip_y.astype('float'), data_fancy_rot.min_wprobe/data_fancy_rot.min_noprobe, marker='d',
     #               linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
 
-    # ax44.set_ylim([0.80, 2.00])
+    ax44.set_ylim([0.2, 2.00])
     ax44.set_xlabel('rotation ($\circ$)', fontsize = fs_label)
     ax44.set_ylabel('ratio ', fontsize = fs_label)
     ax44.legend(fontsize=fs_legend)
