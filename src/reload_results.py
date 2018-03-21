@@ -9,6 +9,7 @@ import matplotlib.patches as patches
 import yaml
 from copy import copy
 from neuroplot import *
+from scipy import ndimage
 
 if __name__ == '__main__':
 
@@ -113,9 +114,19 @@ if __name__ == '__main__':
     ext_w = np.squeeze(np.array(ext_w))*1000
     ext_no = np.squeeze(np.array(ext_no))*1000
 
+    V = ext_w.copy()
+    V[ext_w != ext_w] = 0
+    VV = ndimage.gaussian_filter(V, sigma=(4, 4), order=0)
+    VV[ext_w != ext_w] = np.nan
+    ext_w = VV
+    ext_no = ndimage.gaussian_filter(ext_no, sigma=(4, 4), order=0)
+
+    diff = ext_w - ext_no
+
     fig = plt.figure(figsize=(10, 10))
-    ax1 = fig.add_subplot(1,2,1)
-    ax2 = fig.add_subplot(1,2,2)
+    ax1 = fig.add_subplot(1,3,1)
+    ax2 = fig.add_subplot(1,3,2)
+    ax3 = fig.add_subplot(1,3,3)
 
     minv = np.nanmin([np.min(ext_no), np.min(ext_w)])
     maxv = np.nanmax([np.max(ext_no), np.max(ext_w)])
@@ -129,7 +140,10 @@ if __name__ == '__main__':
     ax2.matshow(ext_no.T, cmap = 'jet', origin = 'lower', extent=[np.min(x_axis), np.max(x_axis),
                                                              np.min(z_axis), np.max(z_axis)],
                 vmin=minv, vmax=maxv)
-    levels = [-30, -10, 0, 10]
+    ax3.matshow(diff.T, cmap='jet', origin='lower', extent=[np.min(x_axis), np.max(x_axis),
+                                                              np.min(z_axis), np.max(z_axis)],)
+                # vmin=minv, vmax=maxv)
+    levels = [-30, -10, 0, 5, 10]
     CS = ax1.contour(ext_w.T, levels,
                      origin='lower',
                      colors='k',
@@ -152,17 +166,29 @@ if __name__ == '__main__':
                inline=1,
                fmt='%d',
                fontsize=10)
+    levels_diff = [-10, -5, -2, 2, 5, 10]
+    CS = ax3.contour(diff.T, levels_diff,
+                     origin='lower',
+                     colors='k',
+                     linewidths=1,
+                     extent=[np.min(x_axis), np.max(x_axis), np.min(z_axis), np.max(z_axis)],)
+                     # vmin=minv, vmax=maxv)
+    ax3.clabel(CS, levels_diff,  # label every second level
+               inline=1,
+               fmt='%d',
+               fontsize=10)
 
     probe_x = 32.5*conv
     probe_y = -100*conv
 
-    ax1.add_patch(patches.Rectangle((probe_x, probe_y), 15*conv, 600*conv, fill=False, hatch='\\'))
+    # ax1.add_patch(patches.Rectangle((probe_x, probe_y), 15*conv, 600*conv, fill=False, hatch='\\'))
     # ax2.add_patch(patches.Rectangle((probe_x, probe_y), 15, 600, fill=False, hatch='\\'))
 
     ax1.axis('off')
     ax2.axis('off')
+    ax3.axis('off')
 
-    mark_subplots([ax1, ax2], xpos=-0.2, fs=40)
+    mark_subplots([ax1, ax2, ax3], xpos=-0.2, fs=40)
 
     if save_fig:
         fig.savefig('figures/ext_img.pdf')

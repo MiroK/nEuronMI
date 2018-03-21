@@ -22,11 +22,11 @@ fs_ticks = 20
 lw = 3
 ms = 10
 
-save_fig = True
+save_fig = False
 plot_dist = False
 plot_conv = False
-plot_shift = True
-plot_rot = True
+plot_shift = False
+plot_rot = False
 
 data = pd.read_pickle(join('results', 'results.pkl'))
 
@@ -37,6 +37,7 @@ data = pd.read_pickle(join('results', 'results.pkl'))
 data_40 = data[data['tip_x']=='40']
 data_40 = data_40[data_40['tip_y']=='0']
 data_dist = data[data['tip_x']!='40']
+data_dist = data_dist[data_dist['tip_x']!='40.0']
 data_dist = data_dist[data_dist['tip_y']=='0']
 data_dist = data_dist[data_dist['box']=='2']
 
