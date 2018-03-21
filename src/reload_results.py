@@ -24,16 +24,18 @@ if __name__ == '__main__':
         w_mesh = file
         no_mesh = file[:w_mesh.find('wprobe')] + 'noprobe'
 
+    no_mesh = w_mesh
+    
     comm = mpi_comm_world()
-    parameters['allow_extrapolation'] = True
+    # parameters['allow_extrapolation'] = True
 
     # open params file wmesh
     with open(join(w_mesh, 'params.yaml'), 'r') as f:
         info_w = yaml.load(f)
 
     # open params file woutmesh
-    with open(join(no_mesh, 'params.yaml'), 'r') as f:
-        info_no = yaml.load(f)
+    #with open(join(no_mesh, 'params.yaml'), 'r') as f:
+    #    info_no = yaml.load(f)
 
     # find min idx
     v_p = np.load(join(file, 'v_probe.npy'))
