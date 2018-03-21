@@ -24,13 +24,18 @@ min_amp_wprobe = []
 min_amp_noprobe = []
 diff = []
 rots = []
+rads = []
 
 for res in results:
-    if 'rot' in res:
+    if 'rot' in res and 'rad' in res:
+        ntype, ptype, tx, ty, tz, _, cc, _, bb, _, rot,  _, rad, wp = res.split('_')
+    elif 'rot' in res:
         ntype, ptype, tx, ty, tz, _, cc, _, bb, _, rot, wp = res.split('_')
+        rad = 0
     else:
         ntype, ptype, tx, ty, tz, _, cc, _, bb, wp = res.split('_')
         rot = 0
+        rad = 0
 
     folder_w = join('results', res)
     folder_no = join('results', res[:res.find('wprobe')] + 'noprobe')
@@ -47,6 +52,7 @@ for res in results:
         tip_y.append(ty)
         tip_z.append(tz)
         rots.append(rot)
+        rads.append(rad)
         min_amp_wprobe.append(np.min(v_ext_w))
         min_amp_noprobe.append(np.min(v_ext_no))
         diff.append(np.abs(np.min(v_ext_w) - np.min(v_ext_no)))
@@ -56,7 +62,7 @@ for res in results:
 
 data = pd.DataFrame({'neuron': neuron, 'probe': probe, 'box': box, 'coarse': coarse,
                      'tip_x': tip_x, 'tip_y': tip_y, 'tip_z': tip_z, 'min_wprobe': min_amp_wprobe,
-                     'min_noprobe': min_amp_noprobe, 'diff': diff, 'rot': rots})
+                     'min_noprobe': min_amp_noprobe, 'diff': diff, 'rot': rots, 'rad': rads})
 
 data.to_pickle(join('results', 'results.pkl'))
 
