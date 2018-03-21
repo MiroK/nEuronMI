@@ -170,6 +170,14 @@ if __name__ == '__main__':
         dist = float(sys.argv[pos + 1])
     else:
         dist=40
+    if '-rad' in sys.argv:
+        pos = sys.argv.index('-rad')
+        rad = float(sys.argv[pos + 1])
+    else:
+	if probetype == 'cylinder':
+            rad = 15
+	else:
+	    rad = 0
     if '-probetip' in sys.argv:
         pos = sys.argv.index('-probetip')
         probetip = sys.argv[pos + 1].split(',')
@@ -288,7 +296,7 @@ if __name__ == '__main__':
     print probe_x, probe_y, probe_z
 
     if probetype == 'cylinder':
-        probe = CylinderProbe({'rad_probe': 15*conv, 'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
+        probe = CylinderProbe({'rad_probe': rad*conv, 'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
     elif probetype == 'box':
         probe = BoxProbe({'probe_dx': 20*conv, 'probe_dy': 20*conv,
                           'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
@@ -309,7 +317,7 @@ if __name__ == '__main__':
 
 
     mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
-                + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(rot)
+                + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(rot) + '_rad_' + str(rad)
 
     if not os.path.isdir(join(root, probetype)):
         os.mkdir(join(root, probetype))

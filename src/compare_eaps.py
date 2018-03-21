@@ -26,18 +26,22 @@ if __name__ == '__main__':
         w_mesh = mesh
         no_mesh = mesh[:w_mesh.find('wprobe')] + 'noprobe'
 
+    conv = 1E-4
+    colors = plt.rcParams['axes.color_cycle']
+    fs_legend = 20
+    save_fig = False
+    figsize = (9, 14)
+
     if 'fancy' in no_mesh:
         probe = 'MEA'
+        pitch = np.array([18., 25.]) * conv
     elif 'pixel' in no_mesh:
         probe = 'pixel'
+        pitch = np.array([12., 12.]) * conv
     else:
         probe = 'microwire'
 
-    conv=1E-4
-    colors = plt.rcParams['axes.color_cycle']
-    fs_legend = 20
-    save_fig = True
-    figsize = (9, 14)
+
 
     with open(join(no_mesh, 'params.yaml'), 'r') as f:
         info = yaml.load(f)
@@ -52,13 +56,12 @@ if __name__ == '__main__':
 
     v_p = np.squeeze(np.array([v_noprobe, v_wprobe]))
 
-    pitch = np.array([18., 25.])*conv
 
     if neur_plot and len(v_p.shape) == 3:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
         ax = plot_mea_recording(v_p, sites, pitch, ax=ax, time=T, lw=2, scalebar=True, vscale=40)
-        ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend)
+        ax.legend(labels=['Without probe', 'With probe'], fontsize=fs_legend, loc='upper right')
         fig.tight_layout()
     else:
         fig = plt.figure(figsize=figsize)
@@ -81,7 +84,7 @@ if __name__ == '__main__':
     print 'WITH PROBE: ', np.min(v_wprobe)
     print 'Average: ', np.mean(np.abs(v_wprobe - v_noprobe)), ' +- ', np.std(np.abs(v_wprobe - v_noprobe))
     abs_diff = np.abs(v_wprobe - v_noprobe)
-    print 'DIFF: ', np.min(v_noprobe) - np.min(v_wprobe)
+    print 'DIFF: ', np.min(v_noprobe) - np.min(v_wprobe),
 
     print 'Min occurrence with probe: ', np.unravel_index(v_wprobe.argmin(), v_wprobe.shape)
     print 'Min occurrence no probe: ', np.unravel_index(v_noprobe.argmin(), v_noprobe.shape)
@@ -98,7 +101,7 @@ if __name__ == '__main__':
         fig_c = plt.figure(figsize=figsize)
         ax = fig_c.add_subplot(1,1,1)
         ax = plot_mea_recording(v_p_corr, sites, pitch, ax=ax, time=T, lw=2, colors=colors[1:3], scalebar=True, vscale=40)
-        ax.legend(labels=['With probe', 'Corrected'], fontsize=fs_legend)
+        ax.legend(labels=['With probe', 'Corrected'], fontsize=fs_legend, loc='upper right')
         fig_c.tight_layout()
     else:
         fig_c = plt.figure(figsize=figsize)
