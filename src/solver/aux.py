@@ -1,7 +1,21 @@
 from dolfin import *
+import itertools
 import numpy as np
 
 
+def mesh_statistics(mesh_file):
+    '''Get num vertices, num cells and num facets on neuron'''
+    mesh, surfaces, _, _ = load_mesh(mesh_file)
+
+    nvertices = mesh.num_vertices()
+    ncells = mesh.num_cells()
+    # 1 2 3 21 31 are possible tags
+    neuron_iterators = (SubsetIterator(surfaces, tag) for tag in (1, 2, 3, 21, 31))
+    ncells_neuron = sum(1 for _ in itertools.chain(*neuron_iterators))
+
+    return nvertices, ncells, ncells_neuron
+
+ 
 def load_mesh(mesh_file):
     '''
     The sane input is a msh file containing mesh with markers for neuron 
