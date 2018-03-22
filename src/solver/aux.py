@@ -4,16 +4,19 @@ import numpy as np
 
 
 def mesh_statistics(mesh_file):
-    '''Get num vertices, num cells and num facets on neuron'''
+    '''Get num vertices, num cells, num facets on neuron, all facets'''
     mesh, surfaces, _, _ = load_mesh(mesh_file)
 
-    nvertices = mesh.num_vertices()
-    ncells = mesh.num_cells()
+    tdim = mesh.topology().dim()
+    
+    nvertices = mesh.topology().size_global(0)
+    ncells = mesh.topology().size_global(tdim)
     # 1 2 3 21 31 are possible tags
     neuron_iterators = (SubsetIterator(surfaces, tag) for tag in (1, 2, 3, 21, 31))
     ncells_neuron = sum(1 for _ in itertools.chain(*neuron_iterators))
 
-    return nvertices, ncells, ncells_neuron
+    nfacets = mesh.topology().size_global(tdim-1)
+    return nvertices, ncells, ncells_neuron, nfacets
 
  
 def load_mesh(mesh_file):
