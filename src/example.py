@@ -36,7 +36,7 @@ geometrical_params.update({'dist': 120*conv})
 #                          'dist': 2})
 
 
-neuron = SphereNeurons2(geometrical_params)
+neuron = MainenNeurons2(geometrical_params)
 
 # Mainen - no probe / pixel / fancy
 # Sphere - no probe / fancy
