@@ -15,7 +15,7 @@ import subprocess, os
 conv = 1E-4
 
 dxp = 200
-dxn = 20
+dxn = 40
 dy = 20
 dz = 20
 
@@ -36,10 +36,13 @@ geometrical_params.update({'dist': 120*conv})
 #                          'dist': 2})
 
 
-neuron = MainenNeurons2(geometrical_params)
+neuron = SphereNeurons2(geometrical_params)
+
+# Mainen - no probe / pixel / fancy
+# Sphere - no probe / fancy
                       
 probe = PixelProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
-                    'with_contacts': 1})
+                    'with_contacts': 0})
     
 mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 
