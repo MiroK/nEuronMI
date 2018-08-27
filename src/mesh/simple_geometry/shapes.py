@@ -148,6 +148,48 @@ class SphereNeuron(Neuron):
         else:
             return False
 
+class SphereNeurons2(SphereNeuron):
+    '''Two sphere neurons which are dist in x direction apart'''    
+    def sane_inputs(self, params):
+        all_params = ('rad_soma',
+                      'rad_dend', 'length_dend',
+                      'rad_axon', 'length_axon',
+                      'dxp', 'dxn', 'dy', 'dz',
+                      'dist')
+
+        assert all(key in params for key in all_params)
+
+        assert all(params[key] > 0 for key in all_params)
+
+        assert all((params['rad_soma'] > params['rad_dend'],
+                    params['rad_soma'] > params['rad_axon']))
+        for key in all_params: setattr(self, key, params[key])
+
+        return True
+
+    def compute_bbox(self):
+        '''Bounding box of the geomery'''
+        x = -self.rad_soma - self.dxn;
+        dx = self.rad_soma + self.dxp + self.dist - x;
+
+        y = -self.rad_soma - self.dy;
+        dy = 2*abs(y);
+
+        base_dend = sqrt(self.rad_soma**2 - self.rad_dend**2);
+        base_axon = sqrt(self.rad_soma**2 - self.rad_axon**2);
+
+        z0 = -base_axon - self.length_axon - self.dz;
+        z1 = base_dend + self.length_dend + self.dz;
+        dz = z1 - z0;
+        
+        return BBox([x, y, z0], [dx, dy, dz])
+
+    def __str__(self): return 'sphere_neurons2'
+
+    def is_inside(self, x, tol=1E-13):
+        '''Is x conained in the neuron'''
+        return SphereNeuron.is_inside(self, x, tol) or SphereNeuron.is_inside(self, x-np.array([self.dist, 0, 0]), tol)
+
         
 class MainenNeuron(Neuron):
     '''
@@ -226,6 +268,53 @@ class MainenNeuron(Neuron):
             return x[0]**2 + x[1]**2 < self.rad_axon**2 + tol
         else:
             return False
+
+        
+class MainenNeurons2(MainenNeuron):
+    '''2 Mainen neuons which are dist apart in x direction'''
+
+    def sane_inputs(self, params):
+        all_params = ('rad_soma',
+                      'rad_dend', 'length_dend',
+                      'rad_axon', 'length_axon',
+                      'rad_hilox_d', 'length_hilox_d',
+                      'rad_hilox_a', 'length_hilox_a',
+                      'dxp', 'dxn', 'dy', 'dz',
+                      'dist')
+
+        assert all(key in params for key in all_params)
+
+        assert all(params[key] > 0 for key in all_params)
+
+        assert all((params['rad_soma'] > params['rad_hilox_d'] >= params['rad_dend'],
+                    params['rad_soma'] > params['rad_hilox_a'] >= params['rad_axon']))
+        for key in all_params: setattr(self, key, params[key])
+
+        return True
+
+    def compute_bbox(self):
+        '''Bounding box of the geomery'''
+        x = -self.rad_soma - self.dxn;
+        dx = self.rad_soma + self.dxp + self.dist - x;
+
+        y = -self.rad_soma - self.dy;
+        dy = 2*abs(y);
+
+        base_d = sqrt(self.rad_soma**2 - self.rad_hilox_d**2);
+        base_a = sqrt(self.rad_soma**2 - self.rad_hilox_a**2);
+
+        z0 = -base_a - self.length_hilox_a - self.length_axon - self.dz;
+        z1 = base_d + self.length_hilox_d + self.length_dend + self.dz;
+        dz = z1 - z0;
+        
+        return BBox([x, y, z0], [dx, dy, dz])
+
+    def __str__(self): return 'mainen_neurons2'
+
+    def is_inside(self, x, tol=1E-13):
+        '''Is x conained in the neuron'''
+        return MainenNeuron.is_inside(self, x, tol) or MainenNeuron.is_inside(self, x-np.array([self.dist, 0, 0]), tol)
+
         
 #########
 # PROBES
@@ -431,7 +520,8 @@ class FancyProbe(Probe):
     def definitions(self, neuron):
         '''Code for contact points defition and probe top from bbox'''
 
-        return '\n'.join(['probe_thick = %g;' % self.probe_thick,
+        return '\n'.join(['conv = %g;' % self.conv, 
+                          'probe_thick = %g;' % self.probe_thick,
                           'contact_rad = %g;' % self.contact_rad,
                           'with_contacts = %d;' % self.with_contacts,
                           'rot_angle = %g;' % self.rot_angle,
@@ -480,7 +570,8 @@ class PixelProbe(Probe):
     def definitions(self, neuron):
         '''Code for contact points defition and probe top from bbox'''
 
-        return '\n'.join(['probe_thick = %g;' % self.probe_thick,
+        return '\n'.join(['conv = %g;' % self.conv,
+                          'probe_thick = %g;' % self.probe_thick,
                           'contact_rad = %g;' % self.contact_rad,
                           'with_contacts = %d;' % self.with_contacts,
                           'rot_angle = %g;' % self.rot_angle,

@@ -329,6 +329,8 @@ if __name__ == '__main__':
     fname_noprobe = join(root, probetype, mesh_name, mesh_name + '_noprobe')
     out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
 
+
+    sys.exit
     import subprocess
     if show:
         subprocess.call(['gmsh %s' % out_wprobe], shell=True)
