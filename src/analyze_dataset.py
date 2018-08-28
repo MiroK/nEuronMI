@@ -22,14 +22,14 @@ fs_ticks = 20
 lw = 3
 ms = 10
 
-save_fig = True
-plot_dist = True
+save_fig = False
+plot_dist = False
 plot_conv = False
 plot_shift = True
-plot_rot = False
+plot_rot = True
 plot_rad = False
 
-data = pd.read_pickle(join('results', 'results.pkl'))
+data = pd.read_pickle(join('results', 'results_new.pkl'))
 
 # #remove dist 2.5
 # data = data[data['tip_x']!='20.0']
@@ -136,7 +136,7 @@ if plot_dist:
 
     fig14 = plt.figure(figsize=figsize1)
     ax114 = fig14.add_subplot(1,1,1)
-    ax114.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.ratios, marker='d',
+    ax114.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.ratios, marker='^',
                   linestyle='-', lw=lw, label='Neuronexus probe', color='r', ms=ms)
     ax114.plot(data_pixel_dist.tip_x.astype('float'), data_pixel_dist.ratios, marker='d',
                linestyle='-', lw=lw, label='Neuropixel probe', color='b', ms=ms)
@@ -163,7 +163,7 @@ if plot_dist:
 
     fig15 = plt.figure(figsize=figsize1)
     ax115 = fig15.add_subplot(1, 1, 1)
-    ax115.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.rel_err, marker='d',
+    ax115.plot(data_fancy_dist.tip_x.astype('float'), data_fancy_dist.rel_err, marker='^',
                linestyle='-', lw=lw, label='Neuronexus probe', color='r', ms=ms)
     ax115.plot(data_pixel_dist.tip_x.astype('float'), data_pixel_dist.rel_err, marker='d',
                linestyle='-', lw=lw, label='Neuropixel probe', color='b', ms=ms)
@@ -202,7 +202,65 @@ data_fancy_conv['diff'] = np.round(data_fancy_conv['diff']*1000, 2)
 data_fancy_conv['ratios'] = np.round(data_fancy_conv.min_wprobe / data_fancy_conv.min_noprobe, 2)
 
 data_fancy_conv = data_fancy_conv.sort_values(by=['box', 'coarse'])
-print  data_fancy_conv.to_latex(columns=['coarse', 'box', 'min_wprobe', 'min_noprobe', 'diff', 'ratios'], index=False)
+print  data_fancy_conv.to_latex(columns=['coarse', 'box', 'min_wprobe',
+                                         'min_noprobe', 'diff', 'ratios'], index=False)
+
+data_fancy_conv_2 = data_fancy_conv[data_fancy_conv.box == '2']
+
+gb = data_fancy_conv.groupby('box')
+gc = data_fancy_conv_2.groupby('coarse')
+
+mean_bybox_noprobe = np.round(gb.min_noprobe.mean().values, 2)
+mean_bybox_wprobe = np.round(gb.min_wprobe.mean().values, 2)
+mean_bybox_ratios = np.round(gb.ratios.mean().values, 2)
+mean_bybox_diff = np.round(gb['diff'].mean().values, 2)
+std_bybox_noprobe = np.round(gb.min_noprobe.std().values, 2)
+std_bybox_wprobe = np.round(gb.min_wprobe.std().values, 2)
+std_bybox_ratios = np.round(gb.ratios.std().values, 2)
+std_bybox_diff = np.round(gb['diff'].std().values, 2)
+boxes = sorted(gb.min_noprobe.groups.keys())
+
+
+dic = {'Box size': boxes, 'mean peak with MEA': mean_bybox_wprobe, 'mean peak without MEA': mean_bybox_noprobe,
+        'mean peak difference': mean_bybox_diff, 'peak ratios': mean_bybox_ratios}
+
+df = pd.DataFrame(dic)
+df = df.sort_values(by=['Box size'], ascending=True)
+
+print 'Relative error v_wprobe: ', (mean_bybox_wprobe[-1] - mean_bybox_wprobe[0])/ mean_bybox_wprobe[-1] *100
+print 'Relative error v_noprobe: ', (mean_bybox_noprobe[-1] - mean_bybox_noprobe[0])/ mean_bybox_noprobe[-1] *100
+print 'Relative error ratio: ', (mean_bybox_ratios[-1] - mean_bybox_ratios[0])/ mean_bybox_ratios[-1] *100
+
+
+print  df.to_latex(columns=['Box size','mean peak with MEA','mean peak without MEA','mean peak difference',  'peak ratios' ]
+                   , index=False)
+
+mean_bybox_noprobe = np.round(gc.min_noprobe.mean().values, 2)
+mean_bybox_wprobe = np.round(gc.min_wprobe.mean().values, 2)
+mean_bybox_ratios = np.round(gc.ratios.mean().values, 2)
+mean_bybox_diff = np.round(gc['diff'].mean().values, 2)
+std_bybox_noprobe = np.round(gc.min_noprobe.std().values, 2)
+std_bybox_wprobe = np.round(gc.min_wprobe.std().values, 2)
+std_bybox_ratios = np.round(gc.ratios.std().values, 2)
+std_bybox_diff = np.round(gc['diff'].std().values, 2)
+coarse = sorted(gc.min_noprobe.groups.keys())
+
+print 'Relative error v_wprobe: ', np.ptp(mean_bybox_wprobe)/ np.mean(mean_bybox_wprobe) *100
+print 'Relative error v_noprobe: ', np.ptp(mean_bybox_noprobe)/ np.mean(mean_bybox_noprobe) *100
+print 'Relative error ratio: ', np.ptp(mean_bybox_ratios)/ np.mean(mean_bybox_ratios) *100
+
+dic = {'Coarseness': coarse, 'mean peak with MEA': mean_bybox_wprobe, 'mean peak without MEA': mean_bybox_noprobe,
+        'mean peak difference': mean_bybox_diff, 'peak ratios': mean_bybox_ratios}
+
+df = pd.DataFrame(dic)
+df = df.sort_values(by=['Coarseness'], ascending=True)
+
+
+print  df.to_latex(columns=['Coarseness','mean peak with MEA','mean peak without MEA','mean peak difference',  'peak ratios' ]
+                   , index=False)
+
+
+
 
 if plot_conv:
     fig2 = plt.figure(figsize=(12, 7))
@@ -255,17 +313,31 @@ data_fancy['ratios'] = np.round(data_fancy.min_wprobe / data_fancy.min_noprobe, 
 # data_fancy = data_fancy[data_fancy.box=='3']
 data_fancy_shift = data_fancy[data_fancy.tip_y.isin(['0', '10.0', '20.0', '30.0', '40.0', '50.0', '60.0', '80.0', '100.0'])]
 data_fancy_shift = data_fancy_shift[data_fancy_shift.tip_x.isin(['40', '40.0'])]
-# data_fancy_shift = data_fancy_shift.sort_values(by=['tip_y'])
 
-order = np.array(np.argsort(data_fancy_shift.tip_y.astype('float')))
+data_pixel = data[data.probe=='pixel']
+data_pixel = data_pixel[data_pixel.coarse.isin(['2'])]
+data_pixel = data_pixel[data_pixel.box.isin(['5'])]
+data_pixel['ratios'] = np.round(data_pixel.min_wprobe / data_pixel.min_noprobe, 2)
+# data_pixel = data_pixel[data_pixel.box=='3']
+data_pixel_shift = data_pixel[data_pixel.tip_y.isin(['0', '10.0', '20.0', '30.0', '40.0', '50.0', '60.0', '80.0', '100.0'])]
+data_pixel_shift = data_pixel_shift[data_pixel_shift.tip_x.isin(['40', '40.0'])]
+# data_pixel_shift = data_pixel_shift.sort_values(by=['tip_y'])
+
+order_fancy = np.array(np.argsort(data_fancy_shift.tip_y.astype('float')))
+order_pixel = np.array(np.argsort(data_pixel_shift.tip_y.astype('float')))
+
 
 if plot_shift:
     fig33 = plt.figure(figsize=figsize1)
     ax33 = fig33.add_subplot(1,1,1)
     # sns.pointplot(x="tip_y", y="ratios", data=data_fancy_shift, ax=ax33, order=order, color=colors[1])
     # sns.pointplot(x="tip_y", y="ratios", data=data_fancy_shift, ax=ax33)
-    ax33.plot(data_fancy_shift.tip_y.values.astype('float')[order],
-              data_fancy_shift.ratios.values.astype('float')[order],  marker='o', lw=2, color=colors[1])
+    ax33.plot(data_fancy_shift.tip_y.values.astype('float')[order_fancy],
+              data_fancy_shift.ratios.values.astype('float')[order_fancy],  marker='^', lw=lw, color='r',
+              label='Neuronexus probe', ms=ms)
+    ax33.plot(data_pixel_shift.tip_y.values.astype('float')[order_pixel],
+              data_pixel_shift.ratios.values.astype('float')[order_pixel], marker='d', lw=lw, color='b',
+              label='Neuropixel probe', ms=ms)
     # sns.tsplot(data=data_fancy_shift.min_wprobe/data_fancy_shift.min_noprobe, err_style="ci_bars", color="r", ax=ax33)
     # ax33.plot(data_fancy_shift.tip_y.astype('float'), data_fancy_shift.min_wprobe/data_fancy_shift.min_noprobe, marker='d',
     #               linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
@@ -273,6 +345,7 @@ if plot_shift:
     ax33.set_ylim([0.2, 2.00])
     ax33.set_xlabel('y_shift ($\mu$m)', fontsize = fs_label)
     ax33.set_ylabel('ratio', fontsize = fs_label)
+    ax33.legend(fontsize=fs_legend)
     # ax33.legend(fontsize=fs_legend)
     ax33.set_title('Lateral shift', fontsize=fs_title)
 
@@ -290,18 +363,36 @@ data_fancy['ratios'] = np.round(data_fancy.min_wprobe / data_fancy.min_noprobe, 
 data_fancy_rot = data_fancy[data_fancy.tip_x.isin(['70.0'])]
 data_fancy_rot = data_fancy_rot.sort_values(by=['rot'])
 
-order = ['0','30', '60', '90', '120', '150', '180']
+data_pixel = data[data.probe=='pixel']
+# data_pixel = data_pixel[data_pixel.tip_x.isin(['70.0'])]
+# data_pixel = data_pixel[data_pixel.box.isin(['4'])]
+data_pixel['ratios'] = np.round(data_pixel.min_wprobe / data_pixel.min_noprobe, 2)
+
+data_pixel_rot = data_pixel[data_pixel.tip_x.isin(['70.0'])]
+data_pixel_rot = data_pixel_rot.sort_values(by=['rot'])
+
+order_fancy = np.array(np.argsort(data_fancy_rot.rot.astype('float')))
+order_pixel = np.array(np.argsort(data_pixel_rot.rot.astype('float')))
+
 
 if plot_rot:
     fig44 = plt.figure(figsize=figsize1)
     ax44 = fig44.add_subplot(1,1,1)
-    sns.pointplot(x="rot", y="ratios", data=data_fancy_rot, ax=ax44, order=order)
+    ax44.plot(data_fancy_rot.rot.values.astype('float')[order_fancy],
+              data_fancy_rot.ratios.values.astype('float')[order_fancy], marker='^', lw=lw, color='r',
+              label='Neuronexus probe', ms=ms)
+    ax44.plot(data_pixel_rot.rot.values.astype('float')[order_pixel],
+              data_pixel_rot.ratios.values.astype('float')[order_pixel], marker='d', lw=lw, color='b',
+              label='Neuropixel probe', ms=ms)
+    # sns.pointplot(x="rot", y="ratios", data=data_fancy_rot, ax=ax44, order=order_fancy, color='r', label='Neuronexus probe')
+    # sns.pointplot(x="rot", y="ratios", data=data_pixel_rot, ax=ax44, order=order_pixel, color='b', label='Neuropixel probe')
     # sns.tsplot(data=data_fancy_rot.min_wprobe/data_fancy_rot.min_noprobe, err_style="ci_bars", color="r", ax=ax33)
     # ax33.plot(data_fancy_rot.tip_y.astype('float'), data_fancy_rot.min_wprobe/data_fancy_rot.min_noprobe, marker='d',
     #               linestyle='-', lw=lw, label='MEA probe', color='r', ms=ms)
 
     ax44.set_ylim([0.2, 2.00])
     ax44.set_xlabel('rotation ($\circ$)', fontsize = fs_label)
+    ax44.set_xticks(data_fancy_rot.rot.values.astype('float')[order_fancy])
     ax44.set_ylabel('ratio ', fontsize = fs_label)
     ax44.legend(fontsize=fs_legend)
     ax44.set_title('Rotation', fontsize=fs_title)

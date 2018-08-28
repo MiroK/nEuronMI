@@ -26,18 +26,19 @@ if __name__ == '__main__':
         w_mesh = file
         no_mesh = file[:w_mesh.find('wprobe')] + 'noprobe'
 
-    no_mesh = w_mesh
-    
+    print no_mesh, w_mesh
+
     comm = mpi_comm_world()
-    save_fig = True
+    save_fig = False
+    smooth = 4 # 4
 
     # open params file wmesh
     with open(join(w_mesh, 'params.yaml'), 'r') as f:
         info_w = yaml.load(f)
 
     # open params file woutmesh
-    #with open(join(no_mesh, 'params.yaml'), 'r') as f:
-    #    info_no = yaml.load(f)
+    with open(join(no_mesh, 'params.yaml'), 'r') as f:
+        info_no = yaml.load(f)
 
     # find min idx
     v_p = np.load(join(file, 'v_probe.npy'))
@@ -116,12 +117,13 @@ if __name__ == '__main__':
     ext_w = np.squeeze(np.array(ext_w))*1000
     ext_no = np.squeeze(np.array(ext_no))*1000
 
-    V = ext_w.copy()
-    V[ext_w != ext_w] = 0
-    VV = ndimage.gaussian_filter(V, sigma=(4, 4), order=0)
-    VV[ext_w != ext_w] = np.nan
-    ext_w = VV
-    ext_no = ndimage.gaussian_filter(ext_no, sigma=(4, 4), order=0)
+    if smooth != 0:
+        V = ext_w.copy()
+        V[ext_w != ext_w] = 0
+        VV = ndimage.gaussian_filter(V, sigma=(smooth, smooth), order=0)
+        VV[ext_w != ext_w] = np.nan
+        ext_w = VV
+        ext_no = ndimage.gaussian_filter(ext_no, sigma=(smooth, smooth), order=0)
 
     diff = ext_w - ext_no
 
@@ -142,7 +144,7 @@ if __name__ == '__main__':
     ax2.matshow(ext_no.T, cmap = 'jet', origin = 'lower', extent=[np.min(x_axis), np.max(x_axis),
                                                              np.min(z_axis), np.max(z_axis)],
                 vmin=minv, vmax=maxv)
-    ax3.matshow(diff.T, cmap='jet', origin='lower', extent=[np.min(x_axis), np.max(x_axis),
+    im = ax3.matshow(diff.T, cmap='jet', origin='lower', extent=[np.min(x_axis), np.max(x_axis),
                                                               np.min(z_axis), np.max(z_axis)],)
                 # vmin=minv, vmax=maxv)
     levels = [-30, -10, 0, 5, 10]
@@ -189,33 +191,9 @@ if __name__ == '__main__':
     ax1.axis('off')
     ax2.axis('off')
     ax3.axis('off')
+    # plt.colorbar(im)
 
     mark_subplots([ax1, ax2, ax3], xpos=-0.2, fs=40)
 
     if save_fig:
         fig.savefig('figures/ext_img.pdf')
-
-    # assert (v.vector() - true.vector()).norm('linf') < 1E-15
-
-    # # Load neuron currents
-    # with HDF5File(comm, neuron_mesh_path, 'r') as in_file:
-    #     in_file.read(neuron_mesh, 'mesh', False)
-    #
-    # # Now recreate a function space on iter
-    # V_c = FunctionSpace(neuron_mesh, 'DG', 0)
-    # v_c = Function(V_c)  # All 0
-    #
-    # # Checkout the content of h5 file with `h5ls -r FILE.h5`
-    # with HDF5File(comm, join(file, 'current_sol.h5'), 'r') as in_file:
-    #     for i in range(500):
-    #         in_file.read(v_c.vector(), '/VisualisationVector/%d' % i, False)
-    #
-    #         true = interpolate(Expression('A*(x[0]+x[1]+x[1])', A=i + 1, degree=1), V_c)
-    #         curr.append(copy(v_c))
-    #         # assert (v.vector() - true.vector()).norm('linf') < 1E-15
-
-    # plot x-z cross section
-    # grid = np.zeros()
-
-
-

@@ -18,6 +18,9 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     '''Solver for the Hdiv formulation of the EMI equations'''
     # Let's see if there is another neuron
     other_neuron = problem_parameters.get('other_neuron', None)
+
+
+
     # Tag will have 'other_neuron' with set() or set([other_neuron])
     mesh, facet_marking_f, volume_marking_f, tags = load_mesh(mesh_path, other_neuron)
 
@@ -55,7 +58,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
         axon.remove(21)
         for c in SubsetIterator(facet_marking_f, 21):
             facet_marking_f[c] = 2
-    assert len(soma) == len(axon) == len(dendrite) == 1
+    # assert len(soma) == len(axon) == len(dendrite) == 1
 
     insulated_surfaces = tags['probe_surfaces']
     grounded_surfaces = {5, 6}

@@ -34,10 +34,10 @@ if __name__ == '__main__':
 
     if 'fancy' in no_mesh:
         probe = 'MEA'
-        pitch = np.array([18., 25.]) * conv
+        pitch = np.array([18., 25.])
     elif 'pixel' in no_mesh:
         probe = 'pixel'
-        pitch = np.array([12., 12.]) * conv
+        pitch = np.array([12., 12.])
     else:
         probe = 'microwire'
 
@@ -49,7 +49,8 @@ if __name__ == '__main__':
     T = info['problem']['Tstop']
 
     times = np.load(join(no_mesh, 'times.npy'))
-    sites = np.load(join(no_mesh, 'sites.npy'))
+    sites = np.load(join(no_mesh, 'sites.npy')) / conv
+    dist = np.array([np.linalg.norm(p) for p in sites])
 
     v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
     v_wprobe = np.load(join(w_mesh, 'v_probe.npy'))*1000
@@ -84,7 +85,12 @@ if __name__ == '__main__':
     print 'WITH PROBE: ', np.min(v_wprobe)
     print 'Average: ', np.mean(np.abs(v_wprobe - v_noprobe)), ' +- ', np.std(np.abs(v_wprobe - v_noprobe))
     abs_diff = np.abs(v_wprobe - v_noprobe)
-    print 'DIFF: ', np.min(v_noprobe) - np.min(v_wprobe),
+    v_max_w = np.max(np.abs(v_wprobe), axis=1)
+    v_max_no = np.max(np.abs(v_noprobe), axis=1)
+    ratios = v_max_w / v_max_no
+
+
+    print 'DIFF: ', np.max(np.abs(v_wprobe - v_noprobe)) #np.min(v_noprobe) - np.min(v_wprobe)
 
     print 'Min occurrence with probe: ', np.unravel_index(v_wprobe.argmin(), v_wprobe.shape)
     print 'Min occurrence no probe: ', np.unravel_index(v_noprobe.argmin(), v_noprobe.shape)
@@ -96,6 +102,7 @@ if __name__ == '__main__':
     print 'Average: ', np.mean(np.abs(v_wprobe - v_corr)), ' +- ', np.std(np.abs(v_wprobe - v_corr))
     abs_diff_corr = np.abs(v_wprobe - v_corr)
     print 'DIFFERENCE AFTER CORRECTION: ', np.max(np.abs(v_wprobe - v_corr))
+    print 'Max difference after correction', np.unravel_index(np.argmax(np.abs(v_wprobe - v_corr)), (v_wprobe - v_corr).shape)
 
     if neur_plot and len(v_p.shape) == 3:
         fig_c = plt.figure(figsize=figsize)

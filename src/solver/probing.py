@@ -6,9 +6,9 @@ import numpy as np
 import os
 
 
-def probing_locations(path, tag):
+def probing_locations(path, tag, other_neuron):
     '''Extract probing locations of the mesh on path'''
-    surfaces = load_mesh(path)[1]
+    surfaces = load_mesh(path, other_neuron=other_neuron)[1]
     submesh, surfaces = EmbeddedMesh(surfaces, tag)  
     centers = probing_locations_for_surfaces(surfaces, tag)
     return centers
