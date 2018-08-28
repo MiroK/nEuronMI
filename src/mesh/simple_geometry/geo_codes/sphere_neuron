@@ -64,3 +64,7 @@ dz_box = z1 - z0;
 // Bounding box
 bbox = newv;
 Box(bbox) = {x0, y0, z0, dx_box, dy_box, dz_box};
+
+//! REMOVE IF PROBE DEFINES SURFACES
+Physical Surface(5) = {6, 7, 9, 11, 10};
+Physical Surface(6) = {8};

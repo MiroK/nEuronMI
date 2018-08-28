@@ -60,7 +60,10 @@ If(with_contacts)
   }
 
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free, all_volumes[]}; Delete;};
-  outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  
+  outside2() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  outside() = BooleanDifference { Volume{outside2}; Delete; }{ Volume{neuron2};};
+
   Physical Volume(2) = {outside[]};  
 
   outside_surface() = Boundary{ Volume{outside()}; };
@@ -87,7 +90,9 @@ Else
 
   bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
 
-  outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  outside2() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  outside() = BooleanDifference { Volume{outside2}; Delete; }{ Volume{neuron2};};
+
   // Physical
   Physical Volume(2) = {outside[]};  
 

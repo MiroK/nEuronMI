@@ -20,24 +20,24 @@ If(with_contacts)
   For i In {0:9}
     cx = probe_x - 0.5*probe_thick;
     cz = probe_z + 62*conv + Sqrt(22*22-18*18)*conv +i*25*conv;
-
+  
     cy = probe_y + 18*conv;
     circle = newv;
     //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
     Cylinder(circle) = {cx, cy, cz, 0.1*conv, 0, 0, contact_rad};
     contact_volumes[] += {circle};
-
+  
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
 
     //--------
-
+  
     cy = probe_y - 18*conv;
     circle = newv;
     //Cylinder(circle) = {cx, cy, cz, probe_thick, 0, 0, contact_rad};
     Cylinder(circle) = {cx, cy, cz, 0.1*conv, 0, 0, contact_rad};
     contact_volumes[] += {circle};
-
+    
     all_volumes[volume_counter] = circle;
     volume_counter += 1;
   EndFor
@@ -45,7 +45,7 @@ EndIf
 
 
 // Bounding polygon
-cz = 62*conv + Sqrt(22*22-18*18)*conv + 9*25*conv;
+cz = probe_z + 62*conv + Sqrt(22*22-18*18)*conv + 9*25*conv;
 p = newp;
 points[] = {7, p, p+1, p+2, p+3, p+4, p+5, p+6};
 Point(points[1]) = {probe_x - probe_thick/2, probe_y, probe_z};
@@ -89,15 +89,16 @@ If(with_contacts)
 
   outside_surface() = Boundary{ Volume{outside()}; };
 
-  Physical Surface(5) = {15, 16, 18, 19, 20};
-  Physical Surface(6) = {17};
+  Physical Surface(5) = {11, 12, 14, 15, 16};
+  Physical Surface(6) = {13};
 
   probe_surface[] = outside_surface[];
-  probe_surface[] -= {15, 16, 17, 18, 19, 20};  // outer
-  probe_surface[] -= {1, 2, 3, 4, 5, 6, 7};       // neuron1 surfaces
-  probe_surface[] -= {8, 9, 10, 11, 12, 13, 14};       // neuron1 surfaces
+  probe_surface[] -= {11, 12, 13, 14, 15, 16};  // outer
+  probe_surface[] -= {1, 2, 3, 4, 5};       // neuron surfaces1
+  probe_surface[] -= {6, 7, 8, 9, 10};       // neuron surfaces2
 
-  probe_insul_surface[] = {21:28};
+
+  probe_insul_surface[] = {17:24};
   Physical Surface(4) = {probe_insul_surface[]};
   
   probe_contact_surface[] = probe_surface[];
@@ -118,10 +119,10 @@ Else
   Physical Volume(2) = {outside[]};  
 
   // Probe surfaces, no contact surface so no 41
-  probe_surface[] = {21:28};
+  probe_surface[] = {17:24};
   Physical Surface(4) = {probe_surface[]};
 
   // Boundaries is of the 2 volume
-  Physical Surface(5) = {15, 16, 18, 19, 20};
-  Physical Surface(6) = {17};
+  Physical Surface(5) = {11, 12, 14, 15, 16};
+  Physical Surface(6) = {13};
 EndIf

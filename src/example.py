@@ -41,8 +41,8 @@ neuron = MainenNeurons2(geometrical_params)
 # Mainen - no probe / pixel / fancy
 # Sphere - no probe / fancy
                       
-probe = PixelProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
-                    'with_contacts': 0})
+probe = FancyProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
+                    'with_contacts': 1})
     
 mesh_sizes = {'neuron_mesh_size': 0.2, 'probe_mesh_size': 0.2, 'rest_mesh_size': 0.4}
 

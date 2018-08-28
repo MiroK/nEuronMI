@@ -99,6 +99,11 @@ def geofile(neuron, sizes, file_name='', probe=None):
     neuron_code = read_code(str(neuron))
     # Code when probe included
     if probe is not None:
+        # Remove possible duplicate defs of box boundaries
+        if '//! REMOVE' in neuron_code:
+            print 'REMOVING DUPLICATE TAGS'
+            neuron_code = neuron_code[:neuron_code.index('//! REMOVE')]
+
         # Special defs of the neuron which may not be user params
         probe_defs = probe.definitions(neuron)
 
@@ -107,11 +112,19 @@ def geofile(neuron, sizes, file_name='', probe=None):
         size_code = mesh_size_code(True)
     else:
         probe_defs = ''
-        
-        neuron_probe_code = '''
+        # 2 neurons
+        if 'neuron2' not in neuron_code:
+            neuron_probe_code = '''
 outside() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{neuron};};
 Physical Volume(2) = {outside[]};  
 '''
+        else:
+            neuron_probe_code = '''
+outside2() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{neuron};};
+outside() = BooleanDifference { Volume{outside2}; Delete; }{ Volume{neuron2};};
+Physical Volume(2) = {outside[]};  
+'''
+
         size_code = mesh_size_code(False)
 
     delim = '\n' + '//----' + '\n'
