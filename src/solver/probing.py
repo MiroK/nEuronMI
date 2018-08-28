@@ -152,6 +152,11 @@ if __name__ == '__main__':
     from dolfin import *
     mesh = UnitCubeMesh(10, 10, 10)
 
+    mesh_file = '../test.h5'
+    # mesh, surfaces, volumes, tags = load_mesh(mesh_file, other_neuron=99)
+    rec_sites = probing_locations(mesh_file, 41, 99)
+
+    sys.exit()
     if False:
         surfaces = FacetFunction('size_t', mesh, 0)
         DomainBoundary().mark(surfaces, 1)
