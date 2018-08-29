@@ -151,7 +151,7 @@ Physical Volume(2) = {outside[]};
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from shapes import SphereNeuron, MainenNeuron
+    from shapes import SphereNeuron, MainenNeuron, MainenNeurons2
     from shapes import CylinderProbe, BoxProbe, WedgeProbe, FancyProbe, PixelProbe
     from math import pi
     import sys
@@ -183,6 +183,8 @@ if __name__ == '__main__':
         dist = float(sys.argv[pos + 1])
     else:
         dist=40
+        if neurontype == 'mainen2':
+            dist = 70
     if '-rad' in sys.argv:
         pos = sys.argv.index('-rad')
         rad = float(sys.argv[pos + 1])
@@ -218,6 +220,8 @@ if __name__ == '__main__':
         rot = int(sys.argv[pos + 1])
     else:
         rot = 0
+
+
 
     if len(sys.argv) == 1:
         print 'Generate GEO and msh files with and without probe. '\
@@ -301,6 +305,10 @@ if __name__ == '__main__':
         neuron = SphereNeuron(geometrical_params)
     elif neurontype == 'mainen':
         neuron = MainenNeuron(geometrical_params)
+    elif neurontype == 'mainen2':
+        dist_pass = 30
+        geometrical_params.update({'dist': dist_pass * conv})
+        neuron = MainenNeurons2(geometrical_params)
 
     probe_x = probetip[0]*conv
     probe_y = probetip[1]*conv

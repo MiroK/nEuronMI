@@ -51,8 +51,8 @@ geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
 # assert os.path.exists('test.GEO')
 
 # Generate msh file, test.msh
-# subprocess.call(['gmsh -3 test.GEO'], shell=True)
-# assert os.path.exists('test.msh')
+subprocess.call(['gmsh -3 test.GEO'], shell=True)
+assert os.path.exists('test.msh')
 
 # Conversion to h5 file
 # convert('test.msh', 'test.h5')
