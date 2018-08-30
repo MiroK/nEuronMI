@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ $# == 0 ]; then
-    echo "Supply neurontype (sphere-mainen) and probetype (cylinder-fancy), and (optional) coarse and box size"
+    echo "Supply neurontype (sphere-mainen) and probetype (cylinder-fancy), and (optional) coarse and box size (optional) dist"
 elif [ $# == 2 ]; then
     neuron=$1
     probe=$2
@@ -32,4 +32,18 @@ elif [ $# == 4 ]; then
             echo $m
             python ../msh_convert.py $m
         done
+elif [ $# == 5 ]; then
+    neuron=$1
+    probe=$2
+    coarse=$3
+    box=$4
+    dist=$5
+
+    meshes=$(python geogen.py -neurontype $neuron -probetype $probe -boxsize $box -coarse $coarse -dist $dist -returnfname 2>&1 >/dev/null)
+    for m in $meshes
+        do
+            echo $m
+            python ../msh_convert.py $m
+        done
+
 fi

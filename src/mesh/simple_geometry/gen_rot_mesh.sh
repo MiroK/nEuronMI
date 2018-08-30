@@ -13,6 +13,11 @@ else
 	rot='30 60 90 120 150 180'
     fi
 
+    if [ $probe == 'pixel' ]; then
+        dist=70
+        rot='30 60 90 120 150 180'
+    fi
+
     for r in $rot
     do
         echo $r
