@@ -4,19 +4,22 @@ import numpy as np
 
 
 def mesh_statistics(mesh_file):
-    '''Get num vertices, num cells and num facets on neuron'''
+    '''Get num vertices, num cells, num facets on neuron, all facets'''
     mesh, surfaces, _, _ = load_mesh(mesh_file)
 
-    nvertices = mesh.num_vertices()
-    ncells = mesh.num_cells()
+    tdim = mesh.topology().dim()
+    
+    nvertices = mesh.topology().size_global(0)
+    ncells = mesh.topology().size_global(tdim)
     # 1 2 3 21 31 are possible tags
     neuron_iterators = (SubsetIterator(surfaces, tag) for tag in (1, 2, 3, 21, 31))
     ncells_neuron = sum(1 for _ in itertools.chain(*neuron_iterators))
 
-    return nvertices, ncells, ncells_neuron
+    nfacets = mesh.topology().size_global(tdim-1)
+    return nvertices, ncells, ncells_neuron, nfacets
 
  
-def load_mesh(mesh_file):
+def load_mesh(mesh_file, other_neuron=None):
     '''
     The sane input is a msh file containing mesh with markers for neuron 
     domains(1) and the outside(2) and markers for surfaces (1, 2, 3) for 
@@ -25,6 +28,8 @@ def load_mesh(mesh_file):
     parts marked with (4). Probe might not be present. Moreover there 
     might optionally be surfaces tagged as 41 which are conducting probe 
     surfaces adn (21 and 31) which are hillocks of soma and dendrite
+
+    Other neuron is passive!
     '''
     comm = mpi_comm_world()
     h5 = HDF5File(comm, mesh_file, 'r')
@@ -41,19 +46,32 @@ def load_mesh(mesh_file):
     # Check for presence of markers. Volume is mandatory
     local_tags = list(set(volumes.array()))
     global_tags = set(comm_py.allreduce(local_tags))
-    assert global_tags == set([1, 2]), global_tags
+
+    if other_neuron is None:
+        assert global_tags == set([1, 2]), global_tags            ###
+    else:
+        assert isinstance(other_neuron, int)
+         # Reserved tags
+        assert other_neuron not in {0, 1, 2, 3, 5, 6, 4, 41, 21, 31}
+        assert global_tags == set([1, 2, other_neuron]), global_tags            ###
 
     # Surface, 21, 31, 41 are maybe
     local_tags = list(set(surfaces.array()))
     global_tags = set(comm_py.allreduce(local_tags))
     # assert {1, 2, 3, 5, 6} <= global_tags, global_tags
     assert {1, 2, 3} <= global_tags, global_tags
-    assert global_tags <= {0, 1, 2, 3, 5, 6, 4, 41, 21, 31} 
+    
+    if other_neuron is None:
+        assert global_tags <= {0, 1, 2, 3, 5, 6, 4, 41, 21, 31}   ###
+    else:
+        # Surface of other neuron is marked with the same tag
+        assert global_tags <= {0, 1, 2, 3, 5, 6, 4, 41, 21, 31, other_neuron}   ###
 
     # Build the axiliary mapping which identidies the surfaces
     aux_tags = {'axon': {2, 21} & global_tags,
                 'dendrite': {3, 31} & global_tags,
-                'probe_surfaces': {4, 41} & global_tags}
+                'probe_surfaces': {4, 41} & global_tags,
+                'other_neuron': set() if other_neuron is None else set((other_neuron, ))}      ###
 
     return mesh, surfaces, volumes, aux_tags
 

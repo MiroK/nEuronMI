@@ -99,6 +99,11 @@ def geofile(neuron, sizes, file_name='', probe=None):
     neuron_code = read_code(str(neuron))
     # Code when probe included
     if probe is not None:
+        # Remove possible duplicate defs of box boundaries
+        if '//! REMOVE' in neuron_code:
+            print 'REMOVING DUPLICATE TAGS'
+            neuron_code = neuron_code[:neuron_code.index('//! REMOVE')]
+
         # Special defs of the neuron which may not be user params
         probe_defs = probe.definitions(neuron)
 
@@ -107,11 +112,19 @@ def geofile(neuron, sizes, file_name='', probe=None):
         size_code = mesh_size_code(True)
     else:
         probe_defs = ''
-        
-        neuron_probe_code = '''
+        # 2 neurons
+        if 'neuron2' not in neuron_code:
+            neuron_probe_code = '''
 outside() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{neuron};};
 Physical Volume(2) = {outside[]};  
 '''
+        else:
+            neuron_probe_code = '''
+outside2() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{neuron};};
+outside() = BooleanDifference { Volume{outside2}; Delete; }{ Volume{neuron2};};
+Physical Volume(2) = {outside[]};  
+'''
+
         size_code = mesh_size_code(False)
 
     delim = '\n' + '//----' + '\n'
@@ -138,7 +151,7 @@ Physical Volume(2) = {outside[]};
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from shapes import SphereNeuron, MainenNeuron
+    from shapes import SphereNeuron, MainenNeuron, MainenNeurons2
     from shapes import CylinderProbe, BoxProbe, WedgeProbe, FancyProbe, PixelProbe
     from math import pi
     import sys
@@ -170,6 +183,8 @@ if __name__ == '__main__':
         dist = float(sys.argv[pos + 1])
     else:
         dist=40
+        if neurontype == 'mainen2':
+            dist = 70
     if '-rad' in sys.argv:
         pos = sys.argv.index('-rad')
         rad = float(sys.argv[pos + 1])
@@ -205,6 +220,8 @@ if __name__ == '__main__':
         rot = int(sys.argv[pos + 1])
     else:
         rot = 0
+
+
 
     if len(sys.argv) == 1:
         print 'Generate GEO and msh files with and without probe. '\
@@ -288,6 +305,10 @@ if __name__ == '__main__':
         neuron = SphereNeuron(geometrical_params)
     elif neurontype == 'mainen':
         neuron = MainenNeuron(geometrical_params)
+    elif neurontype == 'mainen2':
+        dist_pass = 30
+        geometrical_params.update({'dist': dist_pass * conv})
+        neuron = MainenNeurons2(geometrical_params)
 
     probe_x = probetip[0]*conv
     probe_y = probetip[1]*conv
@@ -329,6 +350,8 @@ if __name__ == '__main__':
     fname_noprobe = join(root, probetype, mesh_name, mesh_name + '_noprobe')
     out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
 
+
+    sys.exit
     import subprocess
     if show:
         subprocess.call(['gmsh %s' % out_wprobe], shell=True)

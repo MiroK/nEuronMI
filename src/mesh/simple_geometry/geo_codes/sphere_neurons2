@@ -50,9 +50,18 @@ Physical Surface(3) = {neuron_surface[0], neuron_surface[1]}; // Dend
 Physical Surface(1) = {neuron_surface[2]}; // Soma
 Physical Surface(2) = {neuron_surface[3], neuron_surface[4]}; // Axon
 
+// The other neuron
+neuron2[] = Translate {dist, 0, 0} {Duplicata { Volume{neuron()}; } };
+// Shall refer to it by physical volume 99
+Physical Volume(99) = {neuron2[]};
+// and the surface will be marked in the same way
+neuron2_surface() = Unique(Abs(Boundary{ Volume{neuron2()}; }));
+Physical Surface(99) = {neuron2_surface[]};
+
+
 // Bbox based on axon geometry
 x0 = -rad_soma - dxn;
-dx_box = rad_soma + dxp - x0;
+dx_box = dist + rad_soma + dxp - x0;
 
 y0 = -rad_soma - dy;
 dy_box = 2*Abs(y0);
@@ -66,5 +75,5 @@ bbox = newv;
 Box(bbox) = {x0, y0, z0, dx_box, dy_box, dz_box};
 
 //! REMOVE IF PROBE DEFINES SURFACES
-Physical Surface(5) = {6, 7, 9, 11, 10};
-Physical Surface(6) = {8};
+Physical Surface(5) = {11, 12, 14, 15, 16};
+Physical Surface(6) = {13};

@@ -39,6 +39,11 @@ if __name__ == '__main__':
     conv = 1E-4
     t_start = time.time()
 
+    # if 'mainen2' in mesh_name or 'sphere2' in mesh_name:
+    other_neuron = 99
+    # else:
+    #     other_neuron = None
+
     problem_params = {'C_m': 1.0,    # uF/um^2
                       'stim_strength': 10.0,             # mS/cm^2
                       'stim_start': 0.01,                # ms
@@ -48,12 +53,13 @@ if __name__ == '__main__':
                       'cond_ext': 3.0,                   # mS/cm^2
                       'I_ion': 0.0,
                       'grounded_bottom_only': False,
-                      'Tstop': 5.}                       # ms
+                      'Tstop': 5.,
+                      'other_neuron': other_neuron}                       # ms
     solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
                      'dt_ode': 1E-2, #1E-3,               # ms
                      'linear_solver': 'direct'}
 
-    mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
+    mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path, other_neuron=problem_params['other_neuron'])
     mesh_params = {'path': mesh_path, 'name': mesh_name ,'cells': mesh.num_cells(), 'facets': mesh.num_facets(),
                    'vertices': mesh.num_vertices(), 'faces': mesh.num_faces(), 'edges': mesh.num_edges(),}
     performance = {}
@@ -69,7 +75,7 @@ if __name__ == '__main__':
     if not os.path.isdir(join('results', mesh_root)):
         os.mkdir(join('results', mesh_root))
 
-    rec_sites =  np.array(probing_locations(probe_mesh_path, 41))
+    rec_sites =  np.array(probing_locations(probe_mesh_path, 41, problem_params['other_neuron']))
 
     # u_file = File(join('results', mesh_root, 'u_sol.pvd'))
     # I_file = File(join('results', mesh_root, 'current_sol.pvd'))
@@ -94,6 +100,7 @@ if __name__ == '__main__':
     i_m = []
 
     p_x, p_y, p_z = rec_sites[0]
+    # p_x, p_y, p_z = np.array([200*conv, 0, 0])
     soma_m = [7.5*conv, 0, 0]
 
     # Do something with the solutions

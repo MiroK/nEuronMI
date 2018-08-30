@@ -16,7 +16,13 @@ parameters['ghost_mode'] = 'shared_facet'
 
 def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     '''Solver for the Hdiv formulation of the EMI equations'''
-    mesh, facet_marking_f, volume_marking_f, tags = load_mesh(mesh_path)
+    # Let's see if there is another neuron
+    other_neuron = problem_parameters.get('other_neuron', None)
+
+
+
+    # Tag will have 'other_neuron' with set() or set([other_neuron])
+    mesh, facet_marking_f, volume_marking_f, tags = load_mesh(mesh_path, other_neuron)
 
     cell = mesh.ufl_cell()
     # We have 3 spaces S for sigma = -kappa*grad(u)   [~electric field]
@@ -30,7 +36,17 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     sigma, u, p = TrialFunctions(W)
     tau, v, q = TestFunctions(W)
 
-    soma, axon, dendrite = {1}, tags['axon'], tags['dendrite']        
+    soma, axon, dendrite = {1}, tags['axon'], tags['dendrite']
+    
+    has_other_neuron = bool(tags['other_neuron'])
+    # NOTE: in the current ODE model the dendrite part is passive. The simplest
+    # way to handle an additional passive neuron is therefore to bundle it with
+    # dendrite
+    if has_other_neuron:
+        assert len(tags['other_neuron']) == 1
+        other_neuron = next(iter(tags['other_neuron']))
+        dendrite.add(other_neuron)  # Bundle
+
     # For simplicity there shall be the same physics on hillock as on the
     # connected dendrite/exon. So we rename 31->3 and 21->2
     if 31 in dendrite:
@@ -42,7 +58,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
         axon.remove(21)
         for c in SubsetIterator(facet_marking_f, 21):
             facet_marking_f[c] = 2
-    assert len(soma) == len(axon) == len(dendrite) == 1
+    # assert len(soma) == len(axon) == len(dendrite) == 1
 
     insulated_surfaces = tags['probe_surfaces']
     grounded_surfaces = {5, 6}
@@ -83,7 +99,12 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
 
     # To integrate over inside and outside of the neuron we define a volume
     # measure. Note that interior is mared as 1 and outside is 2
-    neuron_int = 1
+    # NOTE: here other_neuron is using the same PDE as the first one
+    if has_other_neuron:
+        neuron_int = (1, other_neuron)
+    else:
+        neuron_int = (1, )
+        
     neuron_ext = 2
     dx = Measure('dx', domain=mesh, subdomain_data=volume_marking_f)
 
@@ -117,10 +138,16 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     # -(div sigma, v)*dx                                            = 0
     # (sigma.n - Cm/dt*p, q)*dS                                     = (I_ion - Cm/dt*p0)*dS
 
-    a = ((1/cond_int)*inner(sigma, tau)*dx(neuron_int)+(1/cond_ext)*inner(sigma, tau)*dx(neuron_ext)
-         - inner(div(tau), u)*dx(neuron_int) - inner(div(tau), u)*dx(neuron_ext)
+    a = (# Volume interior
+        sum((1/cond_int)*inner(sigma, tau)*dx(nInt)
+            - inner(div(tau), u)*dx(nInt)
+            - inner(div(sigma), v)*dx(nInt) for nInt in neuron_int)
+        # Volume exterior
+         +(1/cond_ext)*inner(sigma, tau)*dx(neuron_ext)
+         - inner(div(tau), u)*dx(neuron_ext)
+         - inner(div(sigma), v)*dx(neuron_ext)
+        # Surfaces
          + sum(inner(p('+'), dot(tau('+'), n))*dS(i) for i in neuron_surfaces)
-         - inner(div(sigma), v)*dx(neuron_int) - inner(div(sigma), v)*dx(neuron_ext)
          + sum(inner(q('+'), dot(sigma('+'), n))*dS(i) for i in neuron_surfaces)
          - sum((C_m/dt_fem)*inner(q('+'), p('+'))*dS(i) for i in neuron_surfaces))
 
@@ -139,7 +166,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     ode_solver = ODESolver(neuron_subdomains,
                            soma=next(iter(soma)),
                            axon=next(iter(axon)),
-                           dendrite=next(iter(dendrite)),
+                           dendrite=next(iter(dendrite)),  # Includes other neuron
                            problem_parameters=problem_parameters)
 
     Tstop = problem_parameters['Tstop']; assert Tstop > 0.0
@@ -190,7 +217,7 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     w_aux = Function(W)
     current_form = sum(1./FacetArea(mesh)('+')*inner(dot(w.sub(0)('+'), n), q('+'))*dS(i)
                        for i in neuron_surfaces)
-    current_form += inner(Constant(0), v)*dx(neuron_int)  # Fancy zero for orientation
+    current_form += sum(inner(Constant(0), v)*dx(nInt)  for nInt in neuron_int)# Fancy zero for orientation
     # The idea here is that assembling the current form gives the right
     # dof values to assign to the DLT space (evals at cell midpoints).
     # Then we reduce as normal to the subcomponent and submesh space
