@@ -77,7 +77,13 @@ If(with_contacts)
   
   probe_contact_surface[] = probe_surface[];
   probe_contact_surface[] -= {probe_insul_surface[]};
-  Physical Surface(41) = {probe_contact_surface[]};
+
+  // Give probes their names
+  ncontacts = #probe_contact_surface[];
+
+  For i In {0:ncontacts-1}
+      Physical Surface(41 + i) = {probe_contact_surface[i]};  
+  EndFor
 Else
   // Rotate
   Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
