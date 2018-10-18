@@ -48,7 +48,15 @@ if __name__ == '__main__':
                       'cond_ext': 3.0,                   # mS/cm^2
                       'I_ion': 0.0,
                       'grounded_bottom_only': False,
-                      'Tstop': 5.}                       # ms
+                      'Tstop': 5.}                     # ms            
+    # Spefication of stimulation consists of 2 parts: 
+    # probe tag to be stimulated and the current to be prescribed. The
+    # current has the form normal*A amplitude where normal is INWARD (wrt to probe)
+    # surface normal at the site (assuming the site is flat). This is because we set
+    # bcs on extracellular and use its outward normal. A = A(t) is okay
+    problem_params.update({'stimulated_site': 41,  # ¤1 or higher by convention
+                           'site_current': Expression(('A', '0', '0'), degree=0, A=1, t=0)})
+
     solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
                      'dt_ode': 1E-2, #1E-3,               # ms
                      'linear_solver': 'direct'}
@@ -69,7 +77,8 @@ if __name__ == '__main__':
     if not os.path.isdir(join('results', mesh_root)):
         os.mkdir(join('results', mesh_root))
 
-    rec_sites =  np.array(probing_locations(probe_mesh_path, 41))
+    # Get the probes for evary contact surface
+    rec_sites =  np.array(probing_locations(probe_mesh_path, aux_tags['contact_surfaces']))
 
     # u_file = File(join('results', mesh_root, 'u_sol.pvd'))
     # I_file = File(join('results', mesh_root, 'current_sol.pvd'))

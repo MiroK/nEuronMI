@@ -26,8 +26,9 @@ def load_mesh(mesh_file):
     soma, axon, dendrite, (6, 5) for the bounding volume surfaces that 
     are intersected/not intersected by the probe. Probe surface has insulated 
     parts marked with (4). Probe might not be present. Moreover there 
-    might optionally be surfaces tagged as 41 which are conducting probe 
-    surfaces adn (21 and 31) which are hillocks of soma and dendrite
+    might optionally be surfaces tagged as 41 (then increasing monoton.
+    by 1) which are conducting probe surfaces and (21 and 31) which are 
+    hillocks of soma and dendrite
     '''
     comm = mpi_comm_world()
     h5 = HDF5File(comm, mesh_file, 'r')
@@ -51,12 +52,21 @@ def load_mesh(mesh_file):
     global_tags = set(comm_py.allreduce(local_tags))
     # assert {1, 2, 3, 5, 6} <= global_tags, global_tags
     assert {1, 2, 3} <= global_tags, global_tags
-    assert global_tags <= {0, 1, 2, 3, 5, 6, 4, 41, 21, 31} 
+
+    # Look for probe recording sites
+    probe_sites = filter(lambda t: t >= 41, global_tags)
+    # Check assertions
+    if probe_sites:
+        probe_sites = sorted(probe_sites)
+        assert np.all(np.diff(probe_sites) == 1)
+    else:
+        assert global_tags <= {0, 1, 2, 3, 5, 6, 4, 41, 21, 31} 
 
     # Build the axiliary mapping which identidies the surfaces
     aux_tags = {'axon': {2, 21} & global_tags,
                 'dendrite': {3, 31} & global_tags,
-                'probe_surfaces': {4, 41} & global_tags}
+                'probe_surfaces': {4} & global_tags,
+                'contact_surfaces': set(probe_sites)}
 
     return mesh, surfaces, volumes, aux_tags
 

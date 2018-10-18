@@ -48,12 +48,15 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     grounded_surfaces = {5, 6}
     neuron_surfaces = soma | axon | dendrite
     other_surfaces = {0}
-    # Boundary conditions are that (for now) (4, 41) are insulated, i.e
-    # sigma*grad(u).n = 0, and (5, 6) are grounded meaning u = 0. In this
-    # formulation the grounding condition is enforced weakly meaning that
-    # integrals over 5, 6 are not included in the weak form (vanish). On
-    # the other hand insulated condition is enforced strongly, that is
-    # on the function space level
+    
+    # We now want to add all but the stimulated probe site to insulated
+    # surfaces and for the stimulated probe prescribe ...
+    stimulated_site = problem_params['stimulated_site']
+    all_sites = tags['contact_surfaces']
+    assert stimulated_site in all_sites
+
+    all_sites.remove(stimulated_site)
+    insulated_surfaces.update(all_sites)  # Rest is insulated
 
     # It might be useful to reduce the size of grounded domain keeping it
     # only at the plane z_min. We do this by tagging as 6 everything but the
@@ -72,7 +75,13 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
                     for tag in insulated_surfaces]
     # NOTE: (0, 0, 0) means that the dof is set based on (0, 0, 0).n
+    # Add the stimulated site
+    site_current = problem_params['site_current']
+    assert len(site_current) == 3
+    bc_insulated.append(DirichletBC(W.sub(0), Constant(site_current), facet_marking_f, tag))
 
+    # Conraint dofe where there are no bcs
+    other_surfaces.add(site_current)   # Will not be constrained, others are in insulated
     all_surfaces = insulated_surfaces | grounded_surfaces | neuron_surfaces | other_surfaces
     # A specific of the setup is that the facet space is too large. It
     # should be defined only on the neuron surfaces but it is defined
@@ -212,7 +221,10 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
             # Upscale p0_neuron->p0
             assign_toQ_fromQ_neuron(p0, p0_neuron)
         
-            # Assemble right-hand side (changes with time, so need to reassemble)
+            # We could have changing in time simulation
+            if 't' in site_current.user_parameters:
+                site_current.t = float(t1)
+            # Assemble right-hand side (changes with time, so need to reassemble)                
             assembler.assemble(b)  # Also applies bcs
             # New (sigma, u, p) ...
             info('\tSolving linear system of size %d' % A.size(0))
