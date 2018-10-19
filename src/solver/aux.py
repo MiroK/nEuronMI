@@ -54,7 +54,7 @@ def load_mesh(mesh_file):
     assert {1, 2, 3} <= global_tags, global_tags
 
     # Look for probe recording sites
-    probe_sites = filter(lambda t: t >= 41, global_tags)
+    probe_sites = map(int, filter(lambda t: t >= 41, global_tags))
     # Check assertions
     if probe_sites:
         probe_sites = sorted(probe_sites)

@@ -1,14 +1,78 @@
 from dolfin import SubsetIterator, Point, Cell, MPI
 from embedding import EmbeddedMesh
 from aux import load_mesh
+
+
+import matplotlib
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
+import matplotlib.pyplot as plt
+import operator
+
 import networkx as nx
 import numpy as np
 import os
 
 
+def plot_contacts(surfaces, contacts, project=lambda x: x[1:], ax=None):
+    '''
+    Plot where the contacts are on the probes. Project is mapping which 
+    collapsed 3d coordinates to 2d (assuming that the probe is flat). Default
+    is that the probe is in plane x=value
+    '''
+    # Collect first triangles of contacts defined in terms of their
+    # vertex index
+    mesh = surfaces.mesh()
+    mesh.init(surfaces.dim(), 0)
+    f2v = mesh.topology()(surfaces.dim(), 0)
+    
+    contacts_cells = [map(f2v, map(lambda f: f.index(), SubsetIterator(surfaces, contact)))
+                      for contact in contacts]
+    
+    x = surfaces.mesh().coordinates()
+    patches = []
+    centers = []
+    for contact, contact_cells in zip(contacts, contacts_cells):
+
+        patches.extend([Polygon(np.array([project(x[v]) for v in cell]))
+                        for cell in contact_cells])
+        # Vertices of the patch
+        vertices = list(reduce(operator.or_, map(set, contact_cells)))
+        centers.append(project(np.mean(x[vertices], axis=0)))
+    centers = np.array(centers)
+
+    # Heuristic for min/max coords of the plot
+    xmin, ymin = np.min(centers, axis=0)
+    xmax, ymax = np.max(centers, axis=0)
+
+    xmin = xmin - (xmax-xmin)/10
+    xmax = xmax + (xmax-xmin)/10
+
+    ymin = ymin - (xmax-xmin)/10
+    ymax = ymax + (xmax-xmin)/10
+
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    p = PatchCollection(patches, alpha=0.4)
+    p.set_array(20*np.ones(len(patches)))
+    
+    ax.add_collection(p)
+    
+    for contact, center in zip(contacts, centers):
+        ax.text(center[0], center[1], str(contact))
+
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
+    ax.axis('equal')
+
+    return ax
+    
+
 def probing_locations(path, tag):
     '''Extract probing locations of the mesh on path'''
     surfaces = load_mesh(path)[1]
+
     submesh, surfaces = EmbeddedMesh(surfaces, tag)  
     centers = probing_locations_for_surfaces(surfaces, tag)
     return centers
@@ -26,10 +90,9 @@ def probing_locations_for_surfaces(surfaces, tag):
                        tag), [])
     except TypeError:
         pass
-    
     mesh = surfaces.mesh()
     # The actual computations
-    assert isinstance(tag, int)
+    assert isinstance(tag, (int, np.uint, np.uint32, np.uint64))
     # For we do this only from the cell function
     assert surfaces.dim() == mesh.topology().dim()
     # which represent a manifol
@@ -179,7 +242,6 @@ if __name__ == '__main__':
     for t in [0.1, 0.2, 0.3, 0.4]:
         f.t = t
         u.assign(interpolate(f, V))
-
         probes.probe(t)
 
     for record in probes.data:

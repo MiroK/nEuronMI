@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # current has the form normal*A amplitude where normal is INWARD (wrt to probe)
     # surface normal at the site (assuming the site is flat). This is because we set
     # bcs on extracellular and use its outward normal. A = A(t) is okay
-    problem_params.update({'stimulated_site': 41,  # ¤1 or higher by convention
+    problem_params.update({'stimulated_site': 41,  # or higher by convention
                            'site_current': Expression(('A', '0', '0'), degree=0, A=1, t=0)})
 
     solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
