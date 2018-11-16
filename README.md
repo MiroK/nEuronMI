@@ -1,4 +1,4 @@
-# FEM simulator for relaistic neuron models and probes
+# FEM simulator for realistic neuron models and probes
 
 ### Dependencies
 - mesh generation relies on [Gmsh](https://gmsh.info/#Download)
