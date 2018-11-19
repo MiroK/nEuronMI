@@ -45,13 +45,24 @@ def load_mesh(mesh_file):
     # Check for presence of markers. Volume is mandatory
     local_tags = list(set(volumes.array()))
     global_tags = set(comm_py.allreduce(local_tags))
-    assert global_tags == set([1, 2]), global_tags
+    # Neuron or Poisson
+    try:
+        assert global_tags == set([1, 2]), global_tags
+        is_poisson = False
+    except AssertionError:
+        assert global_tags == set((2, )), global_tags
+        is_poisson = True
+        
 
-    # Surface, 21, 31, 41 are maybe
     local_tags = list(set(surfaces.array()))
     global_tags = set(comm_py.allreduce(local_tags))
-    # assert {1, 2, 3, 5, 6} <= global_tags, global_tags
-    assert {1, 2, 3} <= global_tags, global_tags
+
+    if not is_poisson:
+        # Surface, 21, 31, 41 are maybe
+        # assert {1, 2, 3, 5, 6} <= global_tags, global_tags
+        assert {1, 2, 3} <= global_tags, global_tags
+    else:
+        assert {5, 6} <= global_tags
 
     # Look for probe recording sites
     probe_sites = map(int, filter(lambda t: t >= 41, global_tags))

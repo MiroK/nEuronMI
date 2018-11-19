@@ -50,7 +50,6 @@ geo_file = geofile(neuron, mesh_sizes, probe=probe, hide_neuron=True, file_name=
 assert os.path.exists('test.GEO')
 
 
-exit()
 # Generate msh file, test.msh
 if not os.path.exists('test.h5'):
     subprocess.call(['gmsh -3 -clscale 0.5 test.GEO'], shell=True)
@@ -88,23 +87,32 @@ solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
                  'linear_solver': 'direct'}
 
 mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
-
-ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 # Where are the probes?
-plt.show()
+ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 
-# Solver setup
-stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
-                      problem_parameters=problem_params,                      # ms
-                      solver_parameters=solver_params)
+# Neuron solver
+if aux_tags['axon']:
+    # Solver setup
+    stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
+                           problem_parameters=problem_params,                      # ms
+                           solver_parameters=solver_params)
 
-# Compute the areas of neuron subdomains for current normalization
-# NOTE: on the first yield the stream returns the subdomain function
-# marking the subdomains of the neuron surface
-neuron_subdomains = next(stream)
-# Advance a few times to see if we can solve
-for i in range(10):
-    _, u, I, _ = next(stream)
+    # Compute the areas of neuron subdomains for current normalization
+    # NOTE: on the first yield the stream returns the subdomain function
+    # marking the subdomains of the neuron surface
+    neuron_subdomains = next(stream)
+    # Advance a few times to see if we can solve
+    for i in range(10):
+        _, u, I, _ = next(stream)
 
-File('test_u.pvd') << u
+    File('test_u.pvd') << u
 
+# Poisson solver
+else:
+    from solver.simple_poisson_solver import solve_poisson
+
+    Eh, uh = solve_poisson(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
+                           problem_parameters=problem_params,                      # ms
+                           solver_parameters=solver_params)
+    
+    File('test_uu.pvd') << uh
