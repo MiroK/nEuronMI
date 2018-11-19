@@ -36,9 +36,9 @@ class Neuron(object):
         '''Is x inside the bounding box of the geometry'''
         return self.geom_bbox.is_inside(x, tol)
 
-    def definitions(self):
+    def definitions(self, is_masked=False):
         '''Addtional code for geo file'''
-        return ''
+        return 'is_masked=%g;' % int(is_masked)
 
     def __str__(self):
         '''String encoding used to loopup correct geo file'''

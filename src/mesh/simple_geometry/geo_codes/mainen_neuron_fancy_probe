@@ -73,7 +73,9 @@ Line Loop(polyg) = {lines[5], lines[6], lines[7], lines[1], lines[2], lines[3], 
 Plane Surface(polyg) = {polyg};
 v[] = Extrude {probe_thick, 0, 0} { Surface{polyg}; };
 probe_free = v[1];
-   
+
+
+If(is_masked == 0)
 If(with_contacts)
   // Rotate
   Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
@@ -123,4 +125,56 @@ Else
   // Boundaries is of the 2 volume
   Physical Surface(5) = {8, 9, 11, 12, 13};
   Physical Surface(6) = {10};
+EndIf
+// No neuron
+Else
+If(with_contacts)
+  // Rotate
+  Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
+    Volume{probe_free, contact_volumes[]}; 
+  } 
+
+  outside() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free, all_volumes[]}; Delete;};
+  Physical Volume(2) = {outside[]};  
+
+  outside_surface() = Boundary{ Volume{outside()}; };
+  neuron_surface[] = {};
+  
+  Physical Surface(5) = {1, 2, 4, 5, 6};
+  Physical Surface(6) = {3};
+
+  probe_surface[] = outside_surface[];
+  probe_surface[] -= {1, 2, 3, 4, 5, 6};  // outer
+
+  probe_insul_surface[] = {7, 8, 9, 10, 11, 12, 13, 14};
+  Physical Surface(4) = {probe_insul_surface[]};
+  
+  probe_contact_surface[] = probe_surface[];
+  probe_contact_surface[] -= {probe_insul_surface[]};
+  // Give probes their names
+  ncontacts = #probe_contact_surface[];
+  For i In {0:ncontacts-1}
+      Physical Surface(41 + i) = {probe_contact_surface[i]};  
+  EndFor
+
+Else
+  // Rotate
+  Rotate {{0, 0, 1}, {probe_x, probe_y, probe_z}, rot_angle} {
+    Volume{probe_free}; 
+  } 
+
+  outside() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
+  // Physical
+  Physical Volume(2) = {outside[]};  
+
+  // Probe surfaces, no contact surface so no 41
+  neuron_surface[] = {};      
+  probe_surface[] = {8, 9, 10, 11, 18, 19, 20, 21};
+  Physical Surface(4) = {probe_surface[]};
+
+  // Boundaries is of the 2 volume
+  Physical Surface(5) = {12, 13, 15, 16, 17};
+  Physical Surface(6) = {14};
+EndIf
+
 EndIf

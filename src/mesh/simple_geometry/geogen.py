@@ -77,7 +77,7 @@ Background Field = 4;
 
 # ---
 
-def geofile(neuron, sizes, file_name='', probe=None):
+def geofile(neuron, sizes, file_name='', probe=None, hide_neuron=False):
     '''
     Write the geo file for given neuron [probe] and mesh sizes. Note that
     all the code pieces rely on existence of variables like rad_soma etc ...
@@ -93,7 +93,7 @@ def geofile(neuron, sizes, file_name='', probe=None):
     header = header_code(neuron, sizes, probe)
 
     # Special defs of the neuron which may not be user params
-    neuron_defs = neuron.definitions()
+    neuron_defs = neuron.definitions(hide_neuron)
     
     # The neuron - relies on defined vars
     neuron_code = read_code(str(neuron))

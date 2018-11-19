@@ -38,16 +38,19 @@ neuron = MainenNeuron(geometrical_params)
 
 # Mainen - no probe / pixel / fancy
 # Sphere - no probe / fancy
-                      
-probe = PixelProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
+probe = FancyProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
                     'with_contacts': 1})
     
 mesh_sizes = {'neuron_mesh_size': 0.1, 'probe_mesh_size': 0.1, 'rest_mesh_size': 0.2}
 
 # This will give us test.GEO
-geo_file = geofile(neuron, mesh_sizes, probe=probe, file_name='test')
+# NOTE: hide_neuron uses geometry of the neuron to get bounding box etc
+# but the neuron is not included in the mesh size
+geo_file = geofile(neuron, mesh_sizes, probe=probe, hide_neuron=False, file_name='test')
 assert os.path.exists('test.GEO')
 
+
+exit()
 # Generate msh file, test.msh
 if not os.path.exists('test.h5'):
     subprocess.call(['gmsh -3 -clscale 0.5 test.GEO'], shell=True)

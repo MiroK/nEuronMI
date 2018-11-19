@@ -32,55 +32,61 @@
 // [bottom of axon - dz, top of dend + dz]
 //
 
-soma = newv;
-Sphere(soma) = {0, 0, 0, rad_soma}; //1
-
-hilox_d = newv;
-base_hilox_d = Sqrt(rad_soma*rad_soma-rad_hilox_d*rad_hilox_d);
-
-If(Abs(rad_hilox_d - rad_dend) < 1E-10)
-Cylinder(hilox_d) = {0, 0, base_hilox_d,
-                     0, 0, length_hilox_d,
-                     rad_dend}; //2
-Else
-Cone(hilox_d) = {0, 0, base_hilox_d,
-                 0, 0, length_hilox_d,
-                 rad_hilox_d, rad_dend}; //2
-EndIf
-
-dend = newv;
-base_dend = base_hilox_d + length_hilox_d;
-Cylinder(dend) = {0, 0, base_dend,
-                  0, 0, length_dend, rad_dend, 2*Pi}; // 3
-
-hilox_a = newv;
+base_hilox_d = Sqrt(rad_soma*rad_soma-rad_hilox_d*rad_hilox_d);        
+base_dend = base_hilox_d + length_hilox_d;                            
 base_hilox_a = Sqrt(rad_soma*rad_soma-rad_hilox_a*rad_hilox_a);
-
-If(Abs(rad_hilox_a - rad_axon) < 1E-10)
-Cylinder(hilox_a) = {0, 0, -base_hilox_a,
-                     0, 0, -length_hilox_a,
-                     rad_axon}; //4
-Else
-Cone(hilox_a) = {0, 0, -base_hilox_a,
-                 0, 0, -length_hilox_a,
-                 rad_hilox_a, rad_axon}; //4
-EndIf
-               
-axon = newv;         
 base_axon = base_hilox_a + length_hilox_a;
-Cylinder(axon) = {0, 0, -base_axon,
-                  0, 0, -length_axon, rad_axon, 2*Pi};
 
-neuron() = BooleanUnion{ Volume{soma}; Delete;}{ Volume{dend, hilox_d, axon, hilox_a}; Delete;};
-neuron_surface() = Unique(Abs(Boundary{ Volume{neuron()}; }));
 
-Physical Volume(1) = {neuron[]};
-// Bake the surface into pieces
-Physical Surface(3) = {neuron_surface[0], neuron_surface[1]}; // Dend
-Physical Surface(31) = {neuron_surface[2]}; // Dend hilux
-Physical Surface(1) = {neuron_surface[3]}; // Soma
-Physical Surface(21) = {neuron_surface[4]}; // Axon hilux
-Physical Surface(2) = {neuron_surface[5], neuron_surface[6]}; // Axon
+If(is_masked == 0)
+ soma = newv;
+ Sphere(soma) = {0, 0, 0, rad_soma}; //1
+
+ hilox_d = newv;
+
+ If(Abs(rad_hilox_d - rad_dend) < 1E-10)
+  Cylinder(hilox_d) = {0, 0, base_hilox_d,
+                       0, 0, length_hilox_d,
+                       rad_dend}; //2
+ Else
+  Cone(hilox_d) = {0, 0, base_hilox_d,
+                   0, 0, length_hilox_d,
+                   rad_hilox_d, rad_dend}; //2
+ EndIf
+
+ dend = newv;
+
+ Cylinder(dend) = {0, 0, base_dend,
+                   0, 0, length_dend, rad_dend, 2*Pi}; // 3
+
+ hilox_a = newv;
+
+
+ If(Abs(rad_hilox_a - rad_axon) < 1E-10)
+  Cylinder(hilox_a) = {0, 0, -base_hilox_a,
+                       0, 0, -length_hilox_a,
+                       rad_axon}; //4
+ Else
+  Cone(hilox_a) = {0, 0, -base_hilox_a,
+                   0, 0, -length_hilox_a,
+                   rad_hilox_a, rad_axon}; //4
+  EndIf
+               
+ axon = newv;         
+ Cylinder(axon) = {0, 0, -base_axon,
+                   0, 0, -length_axon, rad_axon, 2*Pi};
+
+ neuron() = BooleanUnion{ Volume{soma}; Delete;}{ Volume{dend, hilox_d, axon, hilox_a}; Delete;};
+ neuron_surface() = Unique(Abs(Boundary{ Volume{neuron()}; }));
+
+ Physical Volume(1) = {neuron[]};
+ // Bake the surface into pieces
+ Physical Surface(3) = {neuron_surface[0], neuron_surface[1]}; // Dend
+ Physical Surface(31) = {neuron_surface[2]}; // Dend hilux
+ Physical Surface(1) = {neuron_surface[3]}; // Soma
+ Physical Surface(21) = {neuron_surface[4]}; // Axon hilux
+ Physical Surface(2) = {neuron_surface[5], neuron_surface[6]}; // Axon
+EndIf
 
 // Bbox based on axon geometry
 x0 = -rad_soma - dxn;
