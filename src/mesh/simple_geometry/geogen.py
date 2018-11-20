@@ -160,6 +160,10 @@ if __name__ == '__main__':
         probetype = sys.argv[pos + 1]
     else:
         probetype='fancy'
+    if '-noneuron' in sys.argv:
+        hide_neuron=True
+    else:
+        hide_neuron=False
     if '-neurontype' in sys.argv:
         pos = sys.argv.index('-neurontype')
         neurontype = sys.argv[pos + 1]
@@ -233,6 +237,11 @@ if __name__ == '__main__':
         nmesh = 4
         pmesh = 10
         rmesh = 15
+    if hide_neuron:
+        nmesh = 4
+        pmesh = 10
+        rmesh = 15
+        coarse = -1
 
     if box == 1:
         dxp = 80
@@ -259,31 +268,47 @@ if __name__ == '__main__':
         dxn = 200
         dy = 200
         dz = 150
+    if hide_neuron:
+        dxp = 100
+        dxn = 100
+        dy = 100
+        dz = 100
+        box = -1
+
 
     root = os.getcwd()
 
-    ########################
-    # SIMPLE
-    ########################
-    if simple:
-        geometrical_params = {'rad_soma': 30 * conv, 'rad_dend': 10 * conv, 'rad_axon': 6 * conv,
-                              'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 16 * conv,
-                              'length_hilox_d': 10 * conv, 'rad_hilox_a': 10 * conv, 'length_hilox_a': 10 * conv,
-                              'dxp': dxp * conv, 'dxn': dxn * conv, 'dy': dy * conv, 'dz': dz * conv}
-        mesh_sizes = {'neuron_mesh_size': 2 * geometrical_params['rad_axon'],
-                      'probe_mesh_size': 2 * geometrical_params['rad_axon'],
-                      'rest_mesh_size': 4 * geometrical_params['rad_axon']}
-    #####################################
-    # DETAILED
-    #####################################
-    else:
-        geometrical_params = {'rad_soma': 10 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
-                              'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 4 * conv,
-                              'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
-                              'dxp': dxp * conv, 'dxn': dxn * conv, 'dy': dy * conv, 'dz': dz * conv}
-        mesh_sizes = {'neuron_mesh_size': nmesh * geometrical_params['rad_axon'],
-                      'probe_mesh_size': pmesh * geometrical_params['rad_axon'],
-                      'rest_mesh_size': rmesh * geometrical_params['rad_axon']}
+    # ########################
+    # # SIMPLE
+    # ########################
+    # if simple:
+    #     geometrical_params = {'rad_soma': 30 * conv, 'rad_dend': 10 * conv, 'rad_axon': 6 * conv,
+    #                           'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 16 * conv,
+    #                           'length_hilox_d': 10 * conv, 'rad_hilox_a': 10 * conv, 'length_hilox_a': 10 * conv,
+    #                           'dxp': dxp * conv, 'dxn': dxn * conv, 'dy': dy * conv, 'dz': dz * conv}
+    #     mesh_sizes = {'neuron_mesh_size': 2 * geometrical_params['rad_axon'],
+    #                   'probe_mesh_size': 2 * geometrical_params['rad_axon'],
+    #                   'rest_mesh_size': 4 * geometrical_params['rad_axon']}
+    # #####################################
+    # # DETAILED
+    # #####################################
+    # else:
+
+    if hide_neuron:
+        if probetype == 'cylinder':
+            probetip = [0, 0, 0]
+        elif probetype == 'fancy':
+            probetip = [0, 0, -100]
+        elif probetype == 'pixel':
+            probetip = [0, 0, -200]
+
+    geometrical_params = {'rad_soma': 10 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
+                          'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 4 * conv,
+                          'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
+                          'dxp': dxp * conv, 'dxn': dxn * conv, 'dy': dy * conv, 'dz': dz * conv}
+    mesh_sizes = {'neuron_mesh_size': nmesh * geometrical_params['rad_axon'],
+                  'probe_mesh_size': pmesh * geometrical_params['rad_axon'],
+                  'rest_mesh_size': rmesh * geometrical_params['rad_axon']}
     if neurontype == 'sphere':
         neuron = SphereNeuron(geometrical_params)
     elif neurontype == 'mainen':
@@ -315,32 +340,45 @@ if __name__ == '__main__':
         probe = PixelProbe({'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z,
                             'with_contacts': 1, 'rot_angle': np.deg2rad(rot)})
 
-
-    mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
-                + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(rot) + '_rad_' + str(rad)
+    if not hide_neuron:
+        mesh_name = neurontype + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
+                    + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(rot) + '_rad_' + str(rad)
+    else:
+        mesh_name = 'noneuron' + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
+                    + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(
+            rot) + '_rad_' + str(rad)
 
     if not os.path.isdir(join(root, probetype)):
         os.mkdir(join(root, probetype))
     if not os.path.isdir(join(root, probetype, mesh_name)):
         os.mkdir(join(root, probetype, mesh_name))
 
-    fname_wprobe = join(root, probetype, mesh_name, mesh_name + '_wprobe')
-    out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe)
-    fname_noprobe = join(root, probetype, mesh_name, mesh_name + '_noprobe')
-    out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe)
+    if not hide_neuron:
+        fname_wprobe = join(root, probetype, mesh_name, mesh_name + '_wprobe')
+        out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe, hide_neuron=hide_neuron)
+        fname_noprobe = join(root, probetype, mesh_name, mesh_name + '_noprobe')
+        out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe, hide_neuron=hide_neuron)
+    else:
+        if not os.path.isdir(join(root, 'noneuron', probetype)):
+            os.makedirs(join(root, 'noneuron', probetype, mesh_name))
+        fname_wprobe = join(root, 'noneuron', probetype, mesh_name, mesh_name + '_wprobe')
+        out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe, hide_neuron=hide_neuron)
 
 
     sys.exit
     import subprocess
     if show:
         subprocess.call(['gmsh %s' % out_wprobe], shell=True)
-        subprocess.call(['gmsh %s' % out_noprobe], shell=True)
+        if not hide_neuron:
+            subprocess.call(['gmsh %s' % out_noprobe], shell=True)
     else:
         subprocess.call(['gmsh -3 %s' % out_wprobe], shell=True)
-        subprocess.call(['gmsh -3 %s' % out_noprobe], shell=True)
+        if not hide_neuron:
+            subprocess.call(['gmsh -3 %s' % out_noprobe], shell=True)
 
-    out_msh_noprobe = out_noprobe[:-3] + 'msh'
     out_msh_wprobe = out_wprobe[:-3] + 'msh'
+    if not hide_neuron:
+        out_msh_noprobe = out_noprobe[:-3] + 'msh'
 
     if return_f:
         sys.exit(out_msh_noprobe + ' ' + out_msh_wprobe)
