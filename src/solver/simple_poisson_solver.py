@@ -121,13 +121,17 @@ def solve_poisson(mesh_path, problem_parameters, solver_parameters):
                    for tag in grounded_surfaces]
     # Get the linear system
     assembler = SystemAssembler(a, L, bcs=bc_grounded)
-    A, b = Matrix(), Vector()
+    A, b = PETScMatrix(), PETScVector()
     assembler.assemble(A) 
     assembler.assemble(b)
 
-    # FIXME: point sources
+    # Use iterative solver here to get it a bit faster
+    solver = PETScKrylovSolver('cg', 'hypre_amg')
+    solver.parameters['relative_tolerance'] = 1E-12
+    solver.parameters['absolute_tolerance'] = 1E-14
+    solver.parameters['monitor_convergence'] = True
 
     uh = Function(V)
-    solve(A, uh.vector(), b)
+    solver.solve(A, uh.vector(), b)
 
     return (None, uh)

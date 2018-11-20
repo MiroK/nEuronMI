@@ -14,9 +14,11 @@ from solver.probing import probing_locations, plot_contacts, probe_contact_map
 from dolfin import *
 import numpy as np
 
+# Shut fenics info up
+set_log_level(WARNING)
+
 import subprocess, os
 import matplotlib.pyplot as plt
-
 
 conv = 1E-4
 
@@ -92,7 +94,6 @@ plt.show()
 
 print probe_contact_map(mesh_path, aux_tags['contact_surfaces'])
 
-exit()
 # Neuron solver
 if aux_tags['axon']:
     # Solver setup
