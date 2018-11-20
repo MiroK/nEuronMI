@@ -130,4 +130,23 @@ else:
     uh = s(None)
     # Now with some values for points
     uh = s(np.random.rand(nsources))
+
+    site = 41
+    # Store uh efficiently
+    hdf5_file = HDF5File(mesh.mpi_comm(), 'test_uh.h5', "w")
+    hdf5_file.write(uh, '/function_%d' % site)
+    hdf5_file.close()
+
+    # Read back from file later
+    hdf5_file = HDF5File(mesh.mpi_comm(), 'test_uh.h5', "r")
+    # Recreate the function space on mesh and fill the vector
+    V = FunctionSpace(mesh, 'CG', 1)
+    f = Function(V)
+    hdf5_file.read(f, '/function_%d' % site)
+
+    # Finally this is how to do shifted potentials
+    f_shift = lambda x, f=f, c=np.array([0, 0, 0.]): f(x-c)
+
+    print f_shift(x[2])
+
     
