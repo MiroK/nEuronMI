@@ -82,10 +82,9 @@ problem_params = {'C_m': 1.0,    # uF/um^2
 problem_params.update({'stimulated_site': 41,  # or higher by convention
                        'site_current': Expression(('A', '0', '0'), degree=0, A=200, t=0)})
 
-
 solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
-                 'dt_ode': 1E-2, #1E-3,               # ms
-                 'linear_solver': 'direct'}
+                 'dt_ode': 1E-2, #1E-3,              # ms
+                 'linear_solver': 'direct'}  # Poisson solver ignores this
 
 mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
 # Where are the probes?
@@ -113,12 +112,22 @@ if aux_tags['axon']:
 
 # Poisson solver
 else:
-    from solver.simple_poisson_solver import solve_poisson
+    from solver.simple_poisson_solver import PoissonSolver
 
-    Eh, uh = solve_poisson(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
-                           problem_parameters=problem_params,                      # ms
-                           solver_parameters=solver_params)
+    # Suppose now the poisson solver should use point source. For this well
+    # pass in a list of positions. We send it values later
+    x = mesh.coordinates()
+    nsources = 5
+    problem_params['point_sources'] = x[np.random.randint(len(x), size=nsources)]
+
+    print problem_params['point_sources']
+
+    s = PoissonSolver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
+                      problem_parameters=problem_params,                      # ms
+                      solver_parameters=solver_params)
     
-    # File('test_41.pvd') << uh
-
-    f = lambda x : uh(x - electrode)
+    # Solve as if the points were not there
+    uh = s(None)
+    # Now with some values for points
+    uh = s(np.random.rand(nsources))
+    
