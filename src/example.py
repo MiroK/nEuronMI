@@ -10,18 +10,20 @@ from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
 from solver.aux import snap_to_nearest
 from solver.aux import load_mesh
-from solver.probing import probing_locations, plot_contacts
+from solver.probing import probing_locations, plot_contacts, probe_contact_map
 from dolfin import *
 import numpy as np
+
+# Shut fenics info up
+set_log_level(WARNING)
 
 import subprocess, os
 import matplotlib.pyplot as plt
 
-
 conv = 1E-4
 
 dxp = 200
-dxn = 40
+dxn = 200
 dy = 20
 dz = 20
 
@@ -38,17 +40,16 @@ neuron = MainenNeuron(geometrical_params)
 
 # Mainen - no probe / pixel / fancy
 # Sphere - no probe / fancy
-probe = PixelProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
+probe = PixelProbe({'probe_x': 0*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
                     'with_contacts': 1})
     
-mesh_sizes = {'neuron_mesh_size': 0.1, 'probe_mesh_size': 0.1, 'rest_mesh_size': 0.2}
+mesh_sizes = {'neuron_mesh_size': 0.1, 'probe_mesh_size': 0.01, 'rest_mesh_size': 0.2}
 
 # This will give us test.GEO
 # NOTE: hide_neuron uses geometry of the neuron to get bounding box etc
 # but the neuron is not included in the mesh size
 geo_file = geofile(neuron, mesh_sizes, probe=probe, hide_neuron=True, file_name='test')
 assert os.path.exists('test.GEO')
-
 
 # Generate msh file, test.msh
 if not os.path.exists('test.h5'):
@@ -81,14 +82,16 @@ problem_params = {'C_m': 1.0,    # uF/um^2
 problem_params.update({'stimulated_site': 41,  # or higher by convention
                        'site_current': Expression(('A', '0', '0'), degree=0, A=200, t=0)})
 
-
 solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
-                 'dt_ode': 1E-2, #1E-3,               # ms
-                 'linear_solver': 'direct'}
+                 'dt_ode': 1E-2, #1E-3,              # ms
+                 'linear_solver': 'direct'}  # Poisson solver ignores this
 
 mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
 # Where are the probes?
 ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
+plt.show()
+
+print probe_contact_map(mesh_path, aux_tags['contact_surfaces'])
 
 # Neuron solver
 if aux_tags['axon']:
@@ -109,10 +112,22 @@ if aux_tags['axon']:
 
 # Poisson solver
 else:
-    from solver.simple_poisson_solver import solve_poisson
+    from solver.simple_poisson_solver import PoissonSolver
 
-    Eh, uh = solve_poisson(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
-                           problem_parameters=problem_params,                      # ms
-                           solver_parameters=solver_params)
+    # Suppose now the poisson solver should use point source. For this well
+    # pass in a list of positions. We send it values later
+    x = mesh.coordinates()
+    nsources = 5
+    problem_params['point_sources'] = x[np.random.randint(len(x), size=nsources)]
+
+    print problem_params['point_sources']
+
+    s = PoissonSolver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
+                      problem_parameters=problem_params,                      # ms
+                      solver_parameters=solver_params)
     
-    File('test_uu.pvd') << uh
+    # Solve as if the points were not there
+    uh = s(None)
+    # Now with some values for points
+    uh = s(np.random.rand(nsources))
+    

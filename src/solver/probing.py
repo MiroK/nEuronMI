@@ -14,6 +14,11 @@ import numpy as np
 import os
 
 
+def probe_contact_map(path, contacts):
+    '''A tag (contact) to center-point map'''
+    return dict(zip(contacts, probing_locations(path, contacts)))
+
+                    
 def plot_contacts(surfaces, contacts, project=lambda x: x[1:], ax=None):
     '''
     Plot where the contacts are on the probes. Project is mapping which 
