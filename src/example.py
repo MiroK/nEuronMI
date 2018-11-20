@@ -10,7 +10,7 @@ from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
 from solver.aux import snap_to_nearest
 from solver.aux import load_mesh
-from solver.probing import probing_locations, plot_contacts
+from solver.probing import probing_locations, plot_contacts, probe_contact_map
 from dolfin import *
 import numpy as np
 
@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 conv = 1E-4
 
 dxp = 200
-dxn = 40
+dxn = 200
 dy = 20
 dz = 20
 
@@ -38,17 +38,16 @@ neuron = MainenNeuron(geometrical_params)
 
 # Mainen - no probe / pixel / fancy
 # Sphere - no probe / fancy
-probe = PixelProbe({'probe_x': 200*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
+probe = PixelProbe({'probe_x': 0*conv, 'probe_y': 0*conv, 'probe_z': -200*conv,
                     'with_contacts': 1})
     
-mesh_sizes = {'neuron_mesh_size': 0.1, 'probe_mesh_size': 0.1, 'rest_mesh_size': 0.2}
+mesh_sizes = {'neuron_mesh_size': 0.1, 'probe_mesh_size': 0.01, 'rest_mesh_size': 0.2}
 
 # This will give us test.GEO
 # NOTE: hide_neuron uses geometry of the neuron to get bounding box etc
 # but the neuron is not included in the mesh size
 geo_file = geofile(neuron, mesh_sizes, probe=probe, hide_neuron=True, file_name='test')
 assert os.path.exists('test.GEO')
-
 
 # Generate msh file, test.msh
 if not os.path.exists('test.h5'):
@@ -89,7 +88,11 @@ solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
 mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
 # Where are the probes?
 ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
+plt.show()
 
+print probe_contact_map(mesh_path, aux_tags['contact_surfaces'])
+
+exit()
 # Neuron solver
 if aux_tags['axon']:
     # Solver setup
@@ -115,4 +118,6 @@ else:
                            problem_parameters=problem_params,                      # ms
                            solver_parameters=solver_params)
     
-    File('test_uu.pvd') << uh
+    # File('test_41.pvd') << uh
+
+    f = lambda x : uh(x - electrode)
