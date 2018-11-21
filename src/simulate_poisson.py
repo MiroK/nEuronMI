@@ -11,7 +11,7 @@ from solver.aux import load_mesh
 from solver.probing import probing_locations, plot_contacts, probe_contact_map
 from solver.simple_poisson_solver import PoissonSolver
 from dolfin import *
-import matplotlib.pylab as plt
+#import matplotlib.pylab as plt
 import numpy as np
 import yaml
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
     # Where are the probes?
-    ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
+ #   ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 
     s = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
                     problem_parameters=problem_params,  # ms
@@ -149,6 +149,6 @@ if __name__ == '__main__':
 	# info = {'problem': problem_params, 'solver': solver_params, 'mesh': mesh_params, 'performance': performance}
 	# yaml.dump(info, f, default_flow_style=False)
 
-    plt.ion()
-    plt.show()
+  #  plt.ion()
+   # plt.show()
 

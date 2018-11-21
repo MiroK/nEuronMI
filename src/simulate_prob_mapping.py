@@ -43,7 +43,7 @@ if __name__ == '__main__':
         problem_params = {'cond_ext': 3.0,
                           'stimulated_site': elec,  # or higher by convention
                           'site_current': Expression(('A', '0', '0'), degree=0, A=177.777, t=0),
-                          'point_sources': position}
+                          'point_sources': [position]}
 
         solver_params = {'dt_fem': 1E-2,  # 1E-3,              # ms
                          'dt_ode': 1E-2,  # 1E-3,               # ms
@@ -58,11 +58,14 @@ if __name__ == '__main__':
                                    solver_parameters=solver_params)
 
         uh_distr = s(None)
-        uh_point = s(1e-6)
+        uh_point = s([1e-6])
         print(uh_distr(30*conv,0,0))
         print(uh_point(30*conv,0,0))
         # uh = s()
         print 'Elapsed time: ', time.time() - t_start
+        
+        uh_distr_shift = lambda x, f=uh_distr, c=np.array(position).astype(float): f([x]-c)
+	uh_point_shift = lambda x, f=uh_point, c=np.array(position).astype(float): f([x]-c)
 
         fem_sol_point = join('results/probe_map', mesh_root, 'point', 'u_ext.h5')
         fem_sol_distr = join('results/probe_map', mesh_root, 'distr', 'u_ext.h5')
@@ -70,8 +73,8 @@ if __name__ == '__main__':
         # File(fem_sol) << uh
         hdf5_file_distr = HDF5File(mesh.mpi_comm(), fem_sol_distr, "w")
         hdf5_file_point = HDF5File(mesh.mpi_comm(), fem_sol_point, "w")
-        hdf5_file_distr.write(uh_distr, '/function_%d' % elec)
-        hdf5_file_point.write(uh_point, '/function_%d' % elec)
+        hdf5_file_distr.write(uh_distr_shift, '/function_%d' % elec)
+        hdf5_file_point.write(uh_point_shift, '/function_%d' % elec)
         hdf5_file_distr.close()
         hdf5_file_point.close()
 
