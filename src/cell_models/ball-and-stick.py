@@ -165,7 +165,7 @@ v_ordered_noprobe = v_noprobe[pairs[:, 1]]
 v_ordered_wprobe = v_wprobe[pairs[:, 1]]
 
 v_p_noprobe = np.squeeze(np.array([v_ordered_noprobe, v_ext]))
-v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext]))
+v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext, v_ext*2]))
 
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -178,9 +178,9 @@ fig1.tight_layout()
 
 fig2 = plt.figure(figsize=figsize)
 ax2 = fig2.add_subplot(1,1,1)
-ax2 = mea.plot_mea_recording(v_p_wprobe, nn, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3]],
+ax2 = mea.plot_mea_recording(v_p_wprobe, nn, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3], colors[2]],
                              vscale=40, scalebar=True)
-ax2.legend(labels=['EMI with probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
+ax2.legend(labels=['EMI with probe', 'Cable Equation', 'Cable Equation + MoI'], fontsize=fs_legend, loc='upper right')
 fig2.tight_layout()
 
 print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
