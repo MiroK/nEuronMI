@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parameters['allow_extrapolation'] = True
     conv = 1E-4
     t_start = time.time()
+    mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
 
     elec_dict = probe_contact_map(mesh_path, aux_tags['contact_surfaces'])
 
