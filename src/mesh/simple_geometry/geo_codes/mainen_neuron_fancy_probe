@@ -140,13 +140,17 @@ If(with_contacts)
   outside_surface() = Boundary{ Volume{outside()}; };
   neuron_surface[] = {};
   
-  Physical Surface(5) = {1, 2, 4, 5, 6};
-  Physical Surface(6) = {3};
+  //Physical Surface(5) = {1, 2, 4, 5, 6};
+  //Physical Surface(6) = {3};
+  Physical Surface(5) = {108, 109, 111, 112, 113};
+  Physical Surface(6) = {110};
 
   probe_surface[] = outside_surface[];
-  probe_surface[] -= {1, 2, 3, 4, 5, 6};  // outer
+  //probe_surface[] -= {1, 2, 3, 4, 5, 6};  // outer
+  probe_surface[] -= {108, 109, 110, 111, 112, 113};  // outer
 
-  probe_insul_surface[] = {7, 8, 9, 10, 11, 12, 13, 14};
+  //probe_insul_surface[] = {7, 8, 9, 10, 11, 12, 13, 14};
+  probe_insul_surface[] = {104, 105, 106, 107, 114, 115, 116, 117};
   Physical Surface(4) = {probe_insul_surface[]};
   
   probe_contact_surface[] = probe_surface[];

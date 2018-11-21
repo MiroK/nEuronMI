@@ -4,8 +4,9 @@ import LFPy
 import neuron
 import yaml
 import MEAutility as mea
-from neuroplot import *
+# from neuroplot import *
 import time
+from os.path import join
 
 plt.ion()
 plt.show()
@@ -54,14 +55,13 @@ for sec in neuron.h.axon:
 # Align cell
 # cell.set_rotation(x=4.99, y=-4.33, z=3.14)
 
-pos, dim, pitch = mea.return_site_positions('Neuronexus-32')
+nn = mea.return_mea('Neuronexus-32')
+pos = nn.positions
 pos[:, 0] += 32.5
 pos[:, 2] += 99.5
 
 stim_area = np.pi * cell.diam[cell.get_idx('dend')[0]] * cell_parameters['max_nsegs_length'] #um^2
 I_max = 50 # (from EMI)
-
-
 
 # Define synapse parameters
 synapse_parameters = {
@@ -69,17 +69,18 @@ synapse_parameters = {
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.043,            # synaptic weight
+    'weight' : 0.043,           # synaptic weight
     'record_current' : True,    # record synapse current
 }
 
 # Create synapse and set time of synaptic input
 synapse = LFPy.Synapse(cell, **synapse_parameters)
 synapse.set_spike_times(np.array([0.01]))
+# synapse.set_spike_times(np.array([0.00]))
 
 N = np.empty((pos.shape[0], 3))
 n = 50
-for i in xrange(N.shape[0]):
+for i in range(N.shape[0]):
     N[i, ] = [1, 0, 0]  # normal vec. of contacts
 
 # Add square electrodes (instead of circles)
@@ -96,6 +97,14 @@ if n > 1:
         'method': 'pointsource'
     }
 
+ref_electrode_param = {
+        'sigma': 0.3,  # extracellular conductivity
+        'x': 0,  # x,y,z-coordinates of contact points
+        'y': 0,
+        'z': 500,
+        'n': 1,
+}
+
 
 # Run simulation, electrode object argument in cell.simulate
 print("running simulation...")
@@ -103,16 +112,19 @@ cell.simulate(rec_imem=True, rec_vmem=True, rec_ipas=True, rec_icap=True)
 
 # Create electrode objects
 electrode = LFPy.RecExtElectrode(cell,**electrode_parameters)
+ref_electrode = LFPy.RecExtElectrode(cell,**ref_electrode_param)
+
 
 # Calculate LFPs
 electrode.calc_lfp()
-v_ext = electrode.LFP * 1000
+ref_electrode.calc_lfp()
+v_ext = electrode.LFP * 1000 #- ref_electrode.LFP * 1000
 
 processing_time = time.time() - t_start
-print 'Processing time: ', processing_time
+print('Processing time: ', processing_time)
 
 
-plot_mea_recording(v_ext, pos, pitch, time=end_T)
+mea.plot_mea_recording(v_ext, nn, time=end_T)
 
 # #plot currents
 # fig = plt.figure()
@@ -134,7 +146,8 @@ plot_mea_recording(v_ext, pos, pitch, time=end_T)
 ### Compare with EMI ###
 no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
 w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
-
+# no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
+# w_mesh =  '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
 
 with open(join(no_mesh, 'params.yaml'), 'r') as f:
     info = yaml.load(f)
@@ -154,33 +167,34 @@ v_ordered_wprobe = v_wprobe[pairs[:, 1]]
 v_p_noprobe = np.squeeze(np.array([v_ordered_noprobe, v_ext]))
 v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext]))
 
-colors = plt.rcParams['axes.color_cycle']
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
 fig1 = plt.figure(figsize=figsize)
 ax1 = fig1.add_subplot(1,1,1)
-ax1 = plot_mea_recording(v_p_noprobe, pos, pitch, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
+ax1 = mea.plot_mea_recording(v_p_noprobe, nn, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
                          vscale=40, scalebar=True)
 ax1.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
 fig1.tight_layout()
 
 fig2 = plt.figure(figsize=figsize)
 ax2 = fig2.add_subplot(1,1,1)
-ax2 = plot_mea_recording(v_p_wprobe, pos, pitch, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3]],
-                         vscale=40, scalebar=True)
+ax2 = mea.plot_mea_recording(v_p_wprobe, nn, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3]],
+                             vscale=40, scalebar=True)
 ax2.legend(labels=['EMI with probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
 fig2.tight_layout()
 
-print 'NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape)
-print 'EMI min at: ', np.unravel_index(v_ordered_noprobe.argmin(), v_ordered_noprobe.shape)
+print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
+print('EMI min at: ', np.unravel_index(v_ordered_noprobe.argmin(), v_ordered_noprobe.shape))
 
-print 'peak NEURON: ', np.min(v_ext)
-print 'peak EMI noprobe: ', np.min(v_ordered_noprobe)
-print 'difference noprobe: ', np.min(v_ordered_noprobe) - np.min(v_ext)
-print 'peak EMI wprobe: ', np.min(v_ordered_wprobe)
-print 'difference wprobe: ', np.min(v_ordered_wprobe) - np.min(v_ext)
+print('peak NEURON: ', np.min(v_ext))
+print('peak EMI noprobe: ', np.min(v_ordered_noprobe))
+print('difference noprobe: ', np.min(v_ordered_noprobe) - np.min(v_ext))
+print('peak EMI wprobe: ', np.min(v_ordered_wprobe))
+print('difference wprobe: ', np.min(v_ordered_wprobe) - np.min(v_ext))
 
 
-if save_fig:
-    fig1.savefig(join('../figures', 'bas_emi_noprobe_EAP.pdf'))
-    fig2.savefig(join('../figures', 'bas_emi_wprobe_EAP.pdf'))
+# if save_fig:
+#     fig1.savefig(join('../figures', 'bas_emi_noprobe_EAP.pdf'))
+#     fig2.savefig(join('../figures', 'bas_emi_wprobe_EAP.pdf'))
 
 

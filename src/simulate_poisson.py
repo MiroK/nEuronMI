@@ -8,7 +8,8 @@ from mesh.msh_convert import convert
 from solver.neuron_solver import neuron_solver
 from solver.aux import snap_to_nearest
 from solver.aux import load_mesh
-from solver.probing import probing_locations
+from solver.probing import probing_locations, plot_contacts, probe_contact_map
+from solver.simple_poisson_solver import PoissonSolver
 from dolfin import *
 import matplotlib.pylab as plt
 import numpy as np
@@ -34,8 +35,9 @@ if __name__ == '__main__':
     conv = 1E-4
     t_start = time.time()
 
-    problem_params = {'stimulated_site': 41,  # or higher by convention
-                           'site_current': Expression(('A', '0', '0'), degree=0, A=200, t=0)}
+    problem_params = {'cond_ext': 3.0,
+                      'stimulated_site': 41,  # or higher by convention
+                      'site_current': Expression(('A', '0', '0'), degree=0, A=200, t=0)}
 
     solver_params = {'dt_fem': 1E-2,  # 1E-3,              # ms
                      'dt_ode': 1E-2,  # 1E-3,               # ms
@@ -45,12 +47,12 @@ if __name__ == '__main__':
     # Where are the probes?
     ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 
-    from solver.simple_poisson_solver import solve_poisson
+    s = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
+                    problem_parameters=problem_params,  # ms
+                               solver_parameters=solver_params)
 
-    Eh, uh = solve_poisson(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
-                           problem_parameters=problem_params,  # ms
-                           solver_parameters=solver_params)
-
+    uh = s(None)
+    # uh = s()
     print 'Elapsed time: ', time.time() - t_start
 
     fem_sol = join('results', mesh_root, 'u_ext.pvd')

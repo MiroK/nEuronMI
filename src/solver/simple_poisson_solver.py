@@ -114,7 +114,7 @@ class PoissonSolver(object):
         # Integrate over entire volume
         dx = Measure('dx')
 
-        cond_int = Constant(problem_parameters['cond_int'])
+        # cond_int = Constant(problem_parameters['cond_int'])
         cond_ext = Constant(problem_parameters['cond_ext'])
 
         a = inner(cond_ext*grad(u), grad(v))*dx
@@ -129,7 +129,8 @@ class PoissonSolver(object):
         assembler.assemble(b)
 
         # Use iterative solver here to get it a bit faster
-        solver = PETScKrylovSolver('cg', 'hypre_amg')
+        # solver = PETScKrylovSolver('cg', 'hypre_amg')
+        solver = PETScKrylovSolver('cg', 'petsc_amg')
         solver.parameters['relative_tolerance'] = 1E-12
         solver.parameters['absolute_tolerance'] = 1E-14
         solver.parameters['monitor_convergence'] = True
