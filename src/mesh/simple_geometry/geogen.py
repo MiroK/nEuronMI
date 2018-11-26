@@ -238,9 +238,9 @@ if __name__ == '__main__':
         pmesh = 10
         rmesh = 15
     if hide_neuron:
-        nmesh = 4
-        pmesh = 10
-        rmesh = 15
+        nmesh = 2
+        pmesh = 5
+        rmesh = 7.5
         coarse = -1
 
     if box == 1:
@@ -269,10 +269,10 @@ if __name__ == '__main__':
         dy = 200
         dz = 150
     if hide_neuron:
-        dxp = 100
-        dxn = 100
-        dy = 100
-        dz = 100
+        dxp = 300
+        dxn = 300
+        dy = 300
+        dz = 300
         box = -1
 
 
