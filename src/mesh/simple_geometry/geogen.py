@@ -221,7 +221,11 @@ if __name__ == '__main__':
     
     conv=1E-4
     
-    if coarse == 0:
+    if coarse == 00:
+        nmesh = 2
+        pmesh = 3
+        rmesh = 5
+    elif coarse == 0:
         nmesh = 2
         pmesh = 5
         rmesh = 7.5
@@ -237,11 +241,11 @@ if __name__ == '__main__':
         nmesh = 4
         pmesh = 10
         rmesh = 15
-    if hide_neuron:
-        nmesh = 2
-        pmesh = 5
-        rmesh = 7.5
-        coarse = -1
+#    if hide_neuron:
+#        nmesh = 2
+#        pmesh = 5
+#        rmesh = 7.5
+#        coarse = -2
 
     if box == 1:
         dxp = 80
@@ -268,13 +272,11 @@ if __name__ == '__main__':
         dxn = 200
         dy = 200
         dz = 150
-    if hide_neuron:
+    elif box==6:
         dxp = 300
         dxn = 300
         dy = 300
         dz = 300
-        box = -1
-
 
     root = os.getcwd()
 
@@ -318,7 +320,7 @@ if __name__ == '__main__':
     probe_y = probetip[1]*conv
     probe_z = probetip[2]*conv
 
-    print probe_x, probe_y, probe_z
+    print 'Probe tip: ', probe_x, probe_y, probe_z
 
     if probetype == 'cylinder':
         probe = CylinderProbe({'rad_probe': rad*conv, 'probe_x': probe_x, 'probe_y': probe_y, 'probe_z': probe_z})
@@ -347,7 +349,7 @@ if __name__ == '__main__':
         mesh_name = 'noneuron' + '_' + probetype + '_' + str(probetip[0]) + '_' + str(probetip[1]) + '_' \
                     + str(probetip[2]) + '_coarse_' + str(coarse) + '_box_' + str(box) + '_rot_' + str(
             rot) + '_rad_' + str(rad)
-
+    
     if not os.path.isdir(join(root, probetype)):
         os.mkdir(join(root, probetype))
     if not os.path.isdir(join(root, probetype, mesh_name)):
@@ -359,8 +361,10 @@ if __name__ == '__main__':
         fname_noprobe = join(root, probetype, mesh_name, mesh_name + '_noprobe')
         out_noprobe = geofile(neuron, mesh_sizes, probe=None, file_name=fname_noprobe, hide_neuron=hide_neuron)
     else:
-        if not os.path.isdir(join(root, 'noneuron', probetype)):
+        print 'Mesh name', mesh_name
+        if not os.path.isdir(join(root, 'noneuron', probetype, mesh_name)):
             os.makedirs(join(root, 'noneuron', probetype, mesh_name))
+            print 'Created ', join(root, 'noneuron', probetype, mesh_name)
         fname_wprobe = join(root, 'noneuron', probetype, mesh_name, mesh_name + '_wprobe')
         out_wprobe = geofile(neuron, mesh_sizes, probe=probe, file_name=fname_wprobe, hide_neuron=hide_neuron)
 
