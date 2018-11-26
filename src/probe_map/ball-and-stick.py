@@ -19,6 +19,10 @@ def order_recording_sites(sites1, sites2):
 
     return np.array(pairs)
 
+# load mesh
+### Compare with EMI ###
+no_mesh = '/media/terror/code/source/nEuronMI/src/mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
+sites = np.load(join(no_mesh, 'sites.npy'))/conv
 t_start = time.time()
 
 conv=1E-4
@@ -26,22 +30,6 @@ fs_legend = 20
 save_fig = False
 figsize = (9, 14)
 end_T = 5.
-
-# Load sites
-### Compare with EMI ###
-no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
-# no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
-# w_mesh =  '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
-
-with open(join(no_mesh, 'params.yaml'), 'r') as f:
-    info = yaml.load(f)
-
-T = info['problem']['Tstop']
-
-times = np.load(join(no_mesh, 'times.npy'))
-sites = np.load(join(no_mesh, 'sites.npy'))/conv
-
 
 # Define cell parameters
 cell_parameters = {
@@ -73,9 +61,8 @@ for sec in neuron.h.axon:
 
 nn = mea.return_mea('Neuronexus-32')
 pos = nn.positions
-# nn.positions = sites
-# pos[:, 0] += 32.5
-# pos[:, 2] += 99.5
+pos[:, 0] += 32.5
+pos[:, 2] += 99.5
 pos = sites
 
 stim_area = np.pi * cell.diam[cell.get_idx('dend')[0]] * cell_parameters['max_nsegs_length'] #um^2
@@ -144,6 +131,15 @@ print('Processing time: ', processing_time)
 
 mea.plot_mea_recording(v_ext, nn, time=end_T)
 
+
+np.savetxt('bas_imem.txt', cell.imem)
+np.savetxt('bas_vext.txt', v_ext)
+
+np.savetxt('seg_pos.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))
+
+
+
+
 # #plot currents
 # fig = plt.figure()
 # ax1 = fig.add_subplot(1,3,1)
@@ -161,41 +157,55 @@ mea.plot_mea_recording(v_ext, nn, time=end_T)
 # ax3.set_title('cap')
 
 
+### Compare with EMI ###
+no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
+w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
+no_mesh = '/media/terror/code/source/nEuronMI/src/mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
+# no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
+# w_mesh =  '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
 
-v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
-v_wprobe = np.load(join(w_mesh, 'v_probe.npy'))*1000
+# with open(join(no_mesh, 'params.yaml'), 'r') as f:
+#     info = yaml.load(f)
 
-pairs = order_recording_sites(pos, sites)
-v_ordered_noprobe = v_noprobe[pairs[:, 1]]
-v_ordered_wprobe = v_wprobe[pairs[:, 1]]
+# T = info['problem']['Tstop']
 
-v_p_noprobe = np.squeeze(np.array([v_ordered_noprobe, v_ext]))
-v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext, v_ext*2]))
+# times = np.load(join(no_mesh, 'times.npy'))
+sites = np.load(join(no_mesh, 'sites.npy'))/conv
 
-colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+# v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
+# v_wprobe = np.load(join(w_mesh, 'v_probe.npy'))*1000
 
-fig1 = plt.figure(figsize=figsize)
-ax1 = fig1.add_subplot(1,1,1)
-ax1 = mea.plot_mea_recording(v_p_noprobe, nn, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
-                         vscale=40, scalebar=True)
-ax1.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
-fig1.tight_layout()
+# pairs = order_recording_sites(pos, sites)
+# v_ordered_noprobe = v_noprobe[pairs[:, 1]]
+# v_ordered_wprobe = v_wprobe[pairs[:, 1]]
 
-fig2 = plt.figure(figsize=figsize)
-ax2 = fig2.add_subplot(1,1,1)
-ax2 = mea.plot_mea_recording(v_p_wprobe, nn, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3], colors[2]],
-                             vscale=40, scalebar=True)
-ax2.legend(labels=['EMI with probe', 'Cable Equation', 'Cable Equation + MoI'], fontsize=fs_legend, loc='upper right')
-fig2.tight_layout()
+# v_p_noprobe = np.squeeze(np.array([v_ordered_noprobe, v_ext]))
+# v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext, v_ext*2]))
 
-print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
-print('EMI min at: ', np.unravel_index(v_ordered_noprobe.argmin(), v_ordered_noprobe.shape))
+# colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-print('peak NEURON: ', np.min(v_ext))
-print('peak EMI noprobe: ', np.min(v_ordered_noprobe))
-print('difference noprobe: ', np.min(v_ordered_noprobe) - np.min(v_ext))
-print('peak EMI wprobe: ', np.min(v_ordered_wprobe))
-print('difference wprobe: ', np.min(v_ordered_wprobe) - np.min(v_ext))
+# fig1 = plt.figure(figsize=figsize)
+# ax1 = fig1.add_subplot(1,1,1)
+# ax1 = mea.plot_mea_recording(v_p_noprobe, nn, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
+#                          vscale=40, scalebar=True)
+# ax1.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
+# fig1.tight_layout()
+
+# fig2 = plt.figure(figsize=figsize)
+# ax2 = fig2.add_subplot(1,1,1)
+# ax2 = mea.plot_mea_recording(v_p_wprobe, nn, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3], colors[2]],
+#                              vscale=40, scalebar=True)
+# ax2.legend(labels=['EMI with probe', 'Cable Equation', 'Cable Equation + MoI'], fontsize=fs_legend, loc='upper right')
+# fig2.tight_layout()
+
+# print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
+# print('EMI min at: ', np.unravel_index(v_ordered_noprobe.argmin(), v_ordered_noprobe.shape))
+
+# print('peak NEURON: ', np.min(v_ext))
+# print('peak EMI noprobe: ', np.min(v_ordered_noprobe))
+# print('difference noprobe: ', np.min(v_ordered_noprobe) - np.min(v_ext))
+# print('peak EMI wprobe: ', np.min(v_ordered_wprobe))
+# print('difference wprobe: ', np.min(v_ordered_wprobe) - np.min(v_ext))
 
 
 # if save_fig:
