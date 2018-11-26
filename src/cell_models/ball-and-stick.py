@@ -27,6 +27,22 @@ save_fig = False
 figsize = (9, 14)
 end_T = 5.
 
+# Load sites
+### Compare with EMI ###
+no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
+w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
+# no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
+# w_mesh =  '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
+
+with open(join(no_mesh, 'params.yaml'), 'r') as f:
+    info = yaml.load(f)
+
+T = info['problem']['Tstop']
+
+times = np.load(join(no_mesh, 'times.npy'))
+sites = np.load(join(no_mesh, 'sites.npy'))/conv
+
+
 # Define cell parameters
 cell_parameters = {
     'morphology' : 'ball_and_stick_waxon.hoc', # from Mainen & Sejnowski, J Comput Neurosci, 1996
@@ -57,8 +73,10 @@ for sec in neuron.h.axon:
 
 nn = mea.return_mea('Neuronexus-32')
 pos = nn.positions
-pos[:, 0] += 32.5
-pos[:, 2] += 99.5
+# nn.positions = sites
+# pos[:, 0] += 32.5
+# pos[:, 2] += 99.5
+pos = sites
 
 stim_area = np.pi * cell.diam[cell.get_idx('dend')[0]] * cell_parameters['max_nsegs_length'] #um^2
 I_max = 50 # (from EMI)
@@ -143,19 +161,6 @@ mea.plot_mea_recording(v_ext, nn, time=end_T)
 # ax3.set_title('cap')
 
 
-### Compare with EMI ###
-no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
-# no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
-# w_mesh =  '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
-
-with open(join(no_mesh, 'params.yaml'), 'r') as f:
-    info = yaml.load(f)
-
-T = info['problem']['Tstop']
-
-times = np.load(join(no_mesh, 'times.npy'))
-sites = np.load(join(no_mesh, 'sites.npy'))/conv
 
 v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
 v_wprobe = np.load(join(w_mesh, 'v_probe.npy'))*1000
