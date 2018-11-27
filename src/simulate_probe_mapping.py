@@ -45,12 +45,17 @@ if __name__ == '__main__':
 
     for elec, position in elec_dict.items():
 
+        if 'fancy' in mesh_name:
+            area = (7.5*conv)**2 * np.pi
+        elif 'pixel' in mesh_name:
+            area = (12*conv)**2
+
         problem_params = {'cond_ext': 3.0,
                           'stimulated_site': elec,  # or higher by convention
-                          'site_current': Expression(('A', '0', '0'), degree=0, A=177.777, t=0),
+                          'site_current': Expression(('A', '0', '0'), degree=0, A=1./area, t=0),
                           'point_sources': [position]}
 
-        solver_params = {'dt_fem': 1E-2,  # 1E-3,              # ms
+        solver_params = {'dt_fem': 1E-3,  # 1E-3,              # ms
                          'dt_ode': 1E-2,  # 1E-3,               # ms
                          'linear_solver': 'direct'}
 
@@ -59,8 +64,8 @@ if __name__ == '__main__':
         # ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 
         s = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
-                        problem_parameters=problem_params,  # ms
-                                   solver_parameters=solver_params)
+                          problem_parameters=problem_params,  # ms
+                          solver_parameters=solver_params)
 
         uh_distr = s(None)
         uh_point = s([1e-6])

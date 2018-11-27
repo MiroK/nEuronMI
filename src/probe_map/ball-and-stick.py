@@ -8,6 +8,7 @@ import MEAutility as mea
 import time
 from os.path import join
 
+
 plt.ion()
 plt.show()
 
@@ -20,12 +21,10 @@ def order_recording_sites(sites1, sites2):
     return np.array(pairs)
 
 # load mesh
-### Compare with EMI ###
-no_mesh = '/media/terror/code/source/nEuronMI/src/mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-sites = np.load(join(no_mesh, 'sites.npy'))/conv
+conv=1E-4
+sites = np.loadtxt('fem_pos.txt')
 t_start = time.time()
 
-conv=1E-4
 fs_legend = 20
 save_fig = False
 figsize = (9, 14)
@@ -59,11 +58,10 @@ for sec in neuron.h.axon:
 # Align cell
 # cell.set_rotation(x=4.99, y=-4.33, z=3.14)
 
-nn = mea.return_mea('Neuronexus-32')
-pos = nn.positions
-pos[:, 0] += 32.5
-pos[:, 2] += 99.5
+info_mea = {'electrode_name': 'nn_emi', 'pos': sites, 'center': False}
+nn = mea.return_mea(info=info_mea)
 pos = sites
+print(sites)
 
 stim_area = np.pi * cell.diam[cell.get_idx('dend')[0]] * cell_parameters['max_nsegs_length'] #um^2
 I_max = 50 # (from EMI)
@@ -110,6 +108,7 @@ ref_electrode_param = {
         'n': 1,
 }
 
+cell.set_pos(-40, 0, 0)
 
 # Run simulation, electrode object argument in cell.simulate
 print("running simulation...")
@@ -134,82 +133,7 @@ mea.plot_mea_recording(v_ext, nn, time=end_T)
 
 np.savetxt('bas_imem.txt', cell.imem)
 np.savetxt('bas_vext.txt', v_ext)
-
+np.savetxt('elec_pos.txt', pos)
 np.savetxt('seg_pos.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))
-
-
-
-
-# #plot currents
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,3,1)
-# [ax1.plot(cell.tvec, cell.imem[i]) for i in cell.get_idx('dend')]
-# ax1.set_title('transmembrane total currents')
-#
-# #plot currents
-# ax2 = fig.add_subplot(1,3,2)
-# [ax2.plot(cell.tvec, cell.ipas[i]) for i in cell.get_idx('dend')]
-# ax2.set_title('passive')
-#
-# #plot currents
-# ax3 = fig.add_subplot(1,3,3)
-# [ax3.plot(cell.tvec, cell.icap[i]) for i in cell.get_idx('dend')]
-# ax3.set_title('cap')
-
-
-### Compare with EMI ###
-no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
-no_mesh = '/media/terror/code/source/nEuronMI/src/mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-# no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
-# w_mesh =  '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
-
-# with open(join(no_mesh, 'params.yaml'), 'r') as f:
-#     info = yaml.load(f)
-
-# T = info['problem']['Tstop']
-
-# times = np.load(join(no_mesh, 'times.npy'))
-sites = np.load(join(no_mesh, 'sites.npy'))/conv
-
-# v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
-# v_wprobe = np.load(join(w_mesh, 'v_probe.npy'))*1000
-
-# pairs = order_recording_sites(pos, sites)
-# v_ordered_noprobe = v_noprobe[pairs[:, 1]]
-# v_ordered_wprobe = v_wprobe[pairs[:, 1]]
-
-# v_p_noprobe = np.squeeze(np.array([v_ordered_noprobe, v_ext]))
-# v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext, v_ext*2]))
-
-# colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
-# fig1 = plt.figure(figsize=figsize)
-# ax1 = fig1.add_subplot(1,1,1)
-# ax1 = mea.plot_mea_recording(v_p_noprobe, nn, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
-#                          vscale=40, scalebar=True)
-# ax1.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
-# fig1.tight_layout()
-
-# fig2 = plt.figure(figsize=figsize)
-# ax2 = fig2.add_subplot(1,1,1)
-# ax2 = mea.plot_mea_recording(v_p_wprobe, nn, ax=ax2, time=end_T, lw=2, colors=[colors[1], colors[3], colors[2]],
-#                              vscale=40, scalebar=True)
-# ax2.legend(labels=['EMI with probe', 'Cable Equation', 'Cable Equation + MoI'], fontsize=fs_legend, loc='upper right')
-# fig2.tight_layout()
-
-# print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
-# print('EMI min at: ', np.unravel_index(v_ordered_noprobe.argmin(), v_ordered_noprobe.shape))
-
-# print('peak NEURON: ', np.min(v_ext))
-# print('peak EMI noprobe: ', np.min(v_ordered_noprobe))
-# print('difference noprobe: ', np.min(v_ordered_noprobe) - np.min(v_ext))
-# print('peak EMI wprobe: ', np.min(v_ordered_wprobe))
-# print('difference wprobe: ', np.min(v_ordered_wprobe) - np.min(v_ext))
-
-
-# if save_fig:
-#     fig1.savefig(join('../figures', 'bas_emi_noprobe_EAP.pdf'))
-#     fig2.savefig(join('../figures', 'bas_emi_wprobe_EAP.pdf'))
 
 

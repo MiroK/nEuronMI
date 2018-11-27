@@ -42,7 +42,7 @@ if __name__ == '__main__':
     problem_params = {'C_m': 1.0,    # uF/um^2
                       'stim_strength': 10.0,             # mS/cm^2
                       'stim_start': 0.01,                # ms
-                      'stim_pos': 350*conv,              #[0., 0., 350*conv],    # cm
+                      'stim_pos': 350*conv,              # [0., 0., 350*conv],    # cm
                       'stim_length': 20*conv,            # cm
                       'cond_int': 7.0,                   # mS/cm^2
                       'cond_ext': 3.0,                   # mS/cm^2
