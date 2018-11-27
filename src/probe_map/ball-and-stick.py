@@ -12,14 +12,6 @@ from os.path import join
 plt.ion()
 plt.show()
 
-def order_recording_sites(sites1, sites2):
-    pairs = []
-    for i_s1, s1 in enumerate(sites1):
-        distances = [np.linalg.norm(s1 - s2) for s2 in sites2]
-        pairs.append([i_s1, np.argmin(distances)])
-
-    return np.array(pairs)
-
 # load mesh
 conv=1E-4
 sites = np.loadtxt('fem_pos.txt')
@@ -57,9 +49,9 @@ for sec in neuron.h.axon:
 
 # Align cell
 # cell.set_rotation(x=4.99, y=-4.33, z=3.14)
-
 info_mea = {'electrode_name': 'nn_emi', 'pos': sites, 'center': False}
 nn = mea.return_mea(info=info_mea)
+pos_mea = nn.positions
 pos = sites
 print(sites)
 
@@ -127,9 +119,7 @@ v_ext = electrode.LFP * 1000 #- ref_electrode.LFP * 1000
 processing_time = time.time() - t_start
 print('Processing time: ', processing_time)
 
-
 mea.plot_mea_recording(v_ext, nn, time=end_T)
-
 
 np.savetxt('bas_imem.txt', cell.imem)
 np.savetxt('bas_vext.txt', v_ext)

@@ -33,7 +33,7 @@ def monopolar(I, elec, pos, den=4):
     -------
 
     '''
-    return np.array([I*1e-4 / (den*np.pi*0.3*np.linalg.norm(elec - p)) for p in pos])
+    return np.array([I / (den*np.pi*0.3*np.linalg.norm(elec - p)*1e4) for p in pos]) * 1000
 
 conv = 1E-4
 probe_map_folder = '/home/alessio/Documents/Codes/nEuronMI/src/probe_map/simulations/' \
@@ -84,7 +84,7 @@ dist = np.array(dist)
 gain = np.array(gain)
 
 scaling = np.max(np.abs(v_ext_bas))/np.max(np.abs(v_ext_corr))
-v_ext = np.array([-v_ext_corr*scaling, v_ext_bas])
+v_ext = np.array([-v_ext_corr, v_ext_bas])
 
 mea.plot_mea_recording(-v_ext_corr, nn, scalebar=True)
 mea.plot_mea_recording(v_ext_bas, nn)
@@ -104,3 +104,13 @@ v_mono4 = monopolar(-1, elec, dec_pos)
 v_mono2 = monopolar(-1, elec, dec_pos, den=2)
 v_mono3 = monopolar(-1, elec, dec_pos, den=3)
 
+plt.plot(dist_line, v_dec)
+
+y_probe = np.linspace(-0.01, 0.02, 100)
+z_probe = np.linspace(-0.01, 0.02, 100)
+
+v_probe = np.zeros((1000,1000))
+for i, yp in enumerate(y_probe):
+    for j, zp in enumerate(z_probe):
+        v_probe[i,j] = f([-7.5*conv, yp, zp])
+plt.matshow(v_probe)

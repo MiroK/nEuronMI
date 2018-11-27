@@ -12,14 +12,15 @@ plt.ion()
 plt.show()
 
 def order_recording_sites(sites1, sites2):
-    pairs = []
+    order = []
     for i_s1, s1 in enumerate(sites1):
         distances = [np.linalg.norm(s1 - s2) for s2 in sites2]
-        pairs.append([i_s1, np.argmin(distances)])
+        order.append(np.argmin(distances))
 
-    return np.array(pairs)
+    return np.array(order)
 
 t_start = time.time()
+# TODO add sort order
 
 conv=1E-4
 fs_legend = 20
@@ -70,12 +71,14 @@ for sec in neuron.h.axon:
 
 # Align cell
 # cell.set_rotation(x=4.99, y=-4.33, z=3.14)
+info_mea = {'electrode_name': 'nn_emi', 'pos': sites, 'center': False}
+nn = mea.return_mea(info=info_mea)
+pos_mea = nn.positions
 
-nn = mea.return_mea('Neuronexus-32')
-pos = nn.positions
-# nn.positions = sites
-# pos[:, 0] += 32.5
-# pos[:, 2] += 99.5
+# shift mea
+# z_shift = [0, 0, np.max(pos_mea[:, 2]) - np.max(sites[:, 2])]
+# shifted_pos = pos_mea - z_shift
+# order = order_recording_sites(pos_mea - z_shift, sites)
 pos = sites
 
 stim_area = np.pi * cell.diam[cell.get_idx('dend')[0]] * cell_parameters['max_nsegs_length'] #um^2
@@ -144,33 +147,12 @@ print('Processing time: ', processing_time)
 
 mea.plot_mea_recording(v_ext, nn, time=end_T)
 
-# #plot currents
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,3,1)
-# [ax1.plot(cell.tvec, cell.imem[i]) for i in cell.get_idx('dend')]
-# ax1.set_title('transmembrane total currents')
-#
-# #plot currents
-# ax2 = fig.add_subplot(1,3,2)
-# [ax2.plot(cell.tvec, cell.ipas[i]) for i in cell.get_idx('dend')]
-# ax2.set_title('passive')
-#
-# #plot currents
-# ax3 = fig.add_subplot(1,3,3)
-# [ax3.plot(cell.tvec, cell.icap[i]) for i in cell.get_idx('dend')]
-# ax3.set_title('cap')
-
-
-
 v_noprobe = np.load(join(no_mesh, 'v_probe.npy'))*1000
 v_wprobe = np.load(join(w_mesh, 'v_probe.npy'))*1000
 
-pairs = order_recording_sites(pos, sites)
-v_ordered_noprobe = v_noprobe[pairs[:, 1]]
-v_ordered_wprobe = v_wprobe[pairs[:, 1]]
 
-v_p_noprobe = np.squeeze(np.array([v_ordered_noprobe, v_ext]))
-v_p_wprobe = np.squeeze(np.array([v_ordered_wprobe, v_ext, v_ext*2]))
+v_p_noprobe = np.squeeze(np.array([v_noprobe, v_ext]))
+v_p_wprobe = np.squeeze(np.array([v_wprobe, v_ext, v_ext*2]))
 
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -189,13 +171,13 @@ ax2.legend(labels=['EMI with probe', 'Cable Equation', 'Cable Equation + MoI'], 
 fig2.tight_layout()
 
 print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
-print('EMI min at: ', np.unravel_index(v_ordered_noprobe.argmin(), v_ordered_noprobe.shape))
+print('EMI min at: ', np.unravel_index(v_noprobe.argmin(), v_noprobe.shape))
 
 print('peak NEURON: ', np.min(v_ext))
-print('peak EMI noprobe: ', np.min(v_ordered_noprobe))
-print('difference noprobe: ', np.min(v_ordered_noprobe) - np.min(v_ext))
-print('peak EMI wprobe: ', np.min(v_ordered_wprobe))
-print('difference wprobe: ', np.min(v_ordered_wprobe) - np.min(v_ext))
+print('peak EMI noprobe: ', np.min(v_noprobe))
+print('difference noprobe: ', np.min(v_noprobe) - np.min(v_ext))
+print('peak EMI wprobe: ', np.min(v_wprobe))
+print('difference wprobe: ', np.min(v_wprobe) - np.min(v_ext))
 
 
 # if save_fig:

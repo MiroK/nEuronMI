@@ -50,10 +50,11 @@ if __name__ == '__main__':
         elif 'pixel' in mesh_name:
             area = (12*conv)**2
 
-        problem_params = {'cond_ext': 3.0,
+        problem_params_distr = {'cond_ext': 3.0,
                           'stimulated_site': elec,  # or higher by convention
                           'site_current': Expression(('A', '0', '0'), degree=0, A=1./area, t=0),
-                          'point_sources': [position]}
+                          }
+        problem_params_point = {'point_sources': [position]}
 
         solver_params = {'dt_fem': 1E-3,  # 1E-3,              # ms
                          'dt_ode': 1E-2,  # 1E-3,               # ms
@@ -63,12 +64,15 @@ if __name__ == '__main__':
         # Where are the probes?
         # ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 
-        s = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
-                          problem_parameters=problem_params,  # ms
-                          solver_parameters=solver_params)
+        s_distr = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
+                                problem_parameters=problem_params_distr,  # ms
+                                solver_parameters=solver_params)
+        s_point = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
+                                problem_parameters=problem_params_point,  # ms
+                                solver_parameters=solver_params)
 
-        uh_distr = s(None)
-        uh_point = s([1e-6])
+        uh_distr = s_distr(None)
+        uh_point = s_point([1e-6])
         print(uh_distr(30*conv,0,0))
         print(uh_point(30*conv,0,0))
         # uh = s()
