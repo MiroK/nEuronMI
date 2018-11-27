@@ -72,7 +72,7 @@ if __name__ == '__main__':
                                 solver_parameters=solver_params)
 
         uh_distr = s_distr(None)
-        uh_point = s_point([1e-6])
+        uh_point = s_point([1])
         print(uh_distr(30*conv,0,0))
         print(uh_point(30*conv,0,0))
         # uh = s()
