@@ -4,7 +4,7 @@ import LFPy
 import neuron
 import yaml
 import MEAutility as mea
-# from neuroplot import *
+import neuroplot as neurop
 import time
 from os.path import join
 
@@ -38,6 +38,7 @@ cell_parameters = {
     'dt' : 1E-2,      # simulation time step size
     'tstart' : 0.,      # start time of simulation, recorders start at t=0
     'tstop' : end_T,     # stop simulation at 100 ms.
+    'pt3d': True
 }
 
 # Create cell
@@ -53,6 +54,7 @@ info_mea = {'electrode_name': 'nn_emi', 'pos': sites, 'center': False}
 nn = mea.return_mea(info=info_mea)
 pos_mea = nn.positions
 pos = sites
+print(sites)
 
 stim_area = np.pi * cell.diam[cell.get_idx('dend')[0]] * cell_parameters['max_nsegs_length'] #um^2
 I_max = 50 # (from EMI)
@@ -63,7 +65,7 @@ synapse_parameters = {
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.0465,           # synaptic weight
+    'weight' : 0.047,           # synaptic weight
     'record_current' : True,    # record synapse current
 }
 
@@ -118,14 +120,9 @@ v_ext = electrode.LFP * 1000 #- ref_electrode.LFP * 1000
 processing_time = time.time() - t_start
 print('Processing time: ', processing_time)
 
-mea.plot_mea_recording(v_ext, nn, time=end_T)
+nn_plot = mea.return_mea('Neuronexus-32')
+ax = neurop.plot_neuron(cell, plane='3d', c_soma='g')
+mea.plot_probe_3d(nn_plot, ax=ax)
 
-print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
-
-
-np.savetxt('bas_imem.txt', cell.imem)
-np.savetxt('bas_vext.txt', v_ext)
-np.savetxt('elec_pos.txt', pos)
-np.savetxt('seg_pos.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))
 
 

@@ -73,13 +73,9 @@ if __name__ == '__main__':
 
         uh_distr = s_distr(None)
         uh_point = s_point([1])
-        print(uh_distr(30*conv,0,0))
-        print(uh_point(30*conv,0,0))
-        # uh = s()
+        print(uh_distr(position - [30*conv,0,0]))
+        print(uh_point(position - [30*conv,0,0]))
         print 'Electrode: ' , elec,' Elapsed time: ', time.time() - t_start
-        
-#        uh_distr_shift = lambda x, f=uh_distr, c=position: f(x-c)
-#	uh_point_shift = lambda x, f=uh_point, c=position: f(x-c)
 
         hdf5_file_distr.write(uh_distr, '/function_%d' % elec)
         hdf5_file_point.write(uh_point, '/function_%d' % elec)

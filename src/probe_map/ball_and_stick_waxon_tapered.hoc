@@ -1,0 +1,105 @@
+/* ----------------------------------------------------
+example_morphology.hoc
+
+This hoc file creates a neuron of the following shape:
+
+
+                |
+                |
+                |
+                O
+                
+Note the conventions:
+ - soma needs to be a list (soma[0], not soma),
+ - use soma for the soma compartment,
+ - use a name starting with dend for the dendrites.
+-----------------------------------------------------*/
+
+
+somaseg = 10
+dendhseg = 10
+axonhseg = 10
+
+create soma[6]
+create dend[4]
+create axon[5]
+
+
+soma[0] {
+    pt3dadd(0, 0, 0, 8)
+    pt3dadd(0, 0, 3.5, 12)
+}
+soma[1] {
+    pt3dadd(0, 0, 3.5, 12)
+    pt3dadd(0, 0, 7, 15)
+}
+soma[2] {
+    pt3dadd(0, 0, 7, 15)
+    pt3dadd(0, 0, 10.5, 20)
+}
+soma[3] {
+    pt3dadd(0, 0, 10.5, 20)
+    pt3dadd(0, 0, 14, 15)
+}
+soma[4] {
+    pt3dadd(0, 0, 14, 15)
+    pt3dadd(0, 0, 17.5, 12)
+}
+soma[5] {
+    pt3dadd(0, 0, 17.5, 12)
+    pt3dadd(0, 0, 20, 8)
+}
+
+
+dend[0] {
+    pt3dadd(0, 0, 20, 8)
+    pt3dadd(0, 0, 26.67, 7)
+}
+dend[1] {
+    pt3dadd(0, 0, 26.67,  7)
+    pt3dadd(0, 0, 33.34, 6)
+}
+dend[2] {
+    pt3dadd(0, 0, 33.34, 6)
+    pt3dadd(0, 0, 40, 5)
+}
+dend[3] {
+    pt3dadd(0, 0, 40, 5)
+    pt3dadd(0, 0, 440, 5)
+}
+
+axon[0] {
+    pt3dadd(0, 0, 0, 4)
+    pt3dadd(0, 0, -2.5, 3.5)
+}
+axon[1] {
+    pt3dadd(0, 0, -2.5, 3.5)
+    pt3dadd(0, 0, -5, 3)
+}
+axon[2] {
+    pt3dadd(0, 0, -5, 3)
+    pt3dadd(0, 0, -7.5, 2.5)
+}
+axon[3] {
+    pt3dadd(0, 0, -7.5, 2.5)
+    pt3dadd(0, 0, -10, 2)
+}
+axon[4] {
+    pt3dadd(0, 0, -10, 2)
+    pt3dadd(0, 0, -210, 2)
+}
+
+connect soma[1](0), soma[0](1)
+connect soma[2](0), soma[1](1)
+connect soma[3](0), soma[2](1)
+connect soma[4](0), soma[3](1)
+connect soma[5](0), soma[4](1)
+connect dend[0](0), soma[5](1)
+connect dend[1](0), dend[0](1)
+connect dend[2](0), dend[1](1)
+connect dend[3](0), dend[2](1)
+connect soma[0](0), axon[0](0)
+connect axon[1](0), axon[0](1)
+connect axon[2](0), axon[1](1)
+connect axon[3](0), axon[2](1)
+connect axon[4](0), axon[3](1)

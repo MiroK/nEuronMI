@@ -42,11 +42,12 @@ T = info['problem']['Tstop']
 
 times = np.load(join(no_mesh, 'times.npy'))
 sites = np.load(join(no_mesh, 'sites.npy'))/conv
+i_soma = np.load(join(no_mesh, 'i_soma.npy'))
 
 
 # Define cell parameters
 cell_parameters = {
-    'morphology' : 'ball_and_stick_waxon.hoc', # from Mainen & Sejnowski, J Comput Neurosci, 1996
+    'morphology' : 'ball_and_stick_waxon_tapered.hoc', # from Mainen & Sejnowski, J Comput Neurosci, 1996
     'cm' : 1.0,         # membrane capacitance
     'Ra' : 150.,        # axial resistance
     'v_init' : -75.,    # initial crossmembrane potential
@@ -56,7 +57,7 @@ cell_parameters = {
     # 'nsegs_method': 'lambda100',  # spatial discretization method
     'nsegs_method' : 'fixed_length', # spatial discretization method
     'max_nsegs_length' : 1,
-    'lambda_f' : 100.,           # frequency where length constants are computed
+    'lambda_f' : 1000.,           # frequency where length constants are computed
     'dt' : 1E-2,      # simulation time step size
     'tstart' : 0.,      # start time of simulation, recorders start at t=0
     'tstop' : end_T,     # stop simulation at 100 ms.
@@ -68,6 +69,14 @@ for sec in neuron.h.soma:
     sec.insert('hh')
 for sec in neuron.h.axon:
     sec.insert('hh')
+#
+# for sec in neuron.h.allsec():
+#     sec.insert('extracellular')
+# #
+# for sec in neuron.h.allsec():
+#     for seg in sec:
+#         seg.xg[0] = 0
+#         seg.xraxial[0] = 0.00000000000001
 
 # Align cell
 # cell.set_rotation(x=4.99, y=-4.33, z=3.14)
@@ -90,7 +99,7 @@ synapse_parameters = {
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.043,           # synaptic weight
+    'weight' : 0.046,           # synaptic weight
     'record_current' : True,    # record synapse current
 }
 
@@ -159,7 +168,7 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 fig1 = plt.figure(figsize=figsize)
 ax1 = fig1.add_subplot(1,1,1)
 ax1 = mea.plot_mea_recording(v_p_noprobe, nn, ax=ax1, time=end_T, lw=2, colors=[colors[0], colors[3]],
-                         vscale=40, scalebar=True)
+                             vscale=40, scalebar=True)
 ax1.legend(labels=['EMI no probe', 'Cable Equation'], fontsize=fs_legend, loc='upper right')
 fig1.tight_layout()
 
