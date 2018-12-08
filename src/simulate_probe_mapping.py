@@ -72,7 +72,7 @@ if __name__ == '__main__':
                                 solver_parameters=solver_params)
 
         uh_distr = s_distr(None)
-        uh_point = s_point([1])
+        uh_point = s_point([1E-3])
         print(uh_distr(position - [30*conv,0,0]))
         print(uh_point(position - [30*conv,0,0]))
         print 'Electrode: ' , elec,' Elapsed time: ', time.time() - t_start

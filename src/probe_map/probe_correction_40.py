@@ -61,25 +61,30 @@ mesh_path = '/home/alessio/Documents/Codes/nEuronMI/src/probe_map/meshes/' \
 load_all_meshes = True
 
 # load neuron
-i_mem = np.loadtxt('bas_imem.txt')
-v_ext_bas = np.loadtxt('bas_vext.txt')
-v_ext_hybrid = np.loadtxt('v_ext_hybrid.txt')
-if os.path.isfile('v_ext_corr.txt'):
-    v_ext_corr = np.loadtxt('v_ext_corr.txt')
+i_mem = np.loadtxt('bas_imem_40.txt')
+v_ext_bas = np.loadtxt('bas_vext_40.txt')
+v_ext_hybrid = np.loadtxt('v_ext_hybrid_40.txt')
+if os.path.isfile('v_ext_corr_40.txt'):
+    v_ext_corr = np.loadtxt('v_ext_corr_40.txt')
 else:
     run_pc=True
-seg_pos = np.loadtxt('seg_pos.txt').T * conv
+seg_pos = np.loadtxt('seg_pos_40.txt').T * conv
 pos = np.loadtxt('fem_pos.txt')
+
 
 elec_dict = np.load(probe_map_elec).item()
 info_mea = {'electrode_name': 'nn_emi', 'pos': pos, 'center': False}
 nn = mea.return_mea(info=info_mea)
 
-no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
+no_mesh = '../results/mainen_fancy_40.0_40.0_-100.0_coarse_1_box_3_noprobe'
+w_mesh = '../results/mainen_fancy_40.0_40.0_-100.0_coarse_1_box_3_wprobe'
 
 emi_sites = (np.load(join(no_mesh, 'sites.npy')) - [40*conv, 0, 0]) / conv
-order = order_recording_sites(pos, emi_sites)
+# center emi_sites
+emi_sites_c = emi_sites - np.mean(emi_sites, axis=0)
+z_shift = np.max(emi_sites_c[:, 2]) - np.max(pos[:, 2])
+emi_sites_c = emi_sites_c - [0,0,z_shift]
+order = order_recording_sites(pos, emi_sites_c)
 v_ext_emi_noprobe = np.load(join(no_mesh, 'v_probe.npy'))[order]*1000
 v_ext_emi_wprobe = np.load(join(w_mesh, 'v_probe.npy'))[order]*1000
 info_mea = {'electrode_name': 'nn_emi', 'pos': emi_sites, 'center': False}
@@ -131,10 +136,10 @@ if run_pc:
     dist = np.array(dist)
     gain = np.array(gain)
 
-    np.savetxt('v_ext_corr.txt', v_ext_corr)
+    np.savetxt('v_ext_corr_40.txt', v_ext_corr)
 
 # scaling = np.max(np.abs(v_ext_bas))/np.max(np.abs(v_ext_corr))
-# v_ext = np.array([v_ext_corr, v_ext_bas, v_ext_bas*1.8])
+# v_ext = np.array([v_ext_corr, v_ext_bas, v_ext_bas*1.5])
 v_ext = np.array([v_ext_hybrid, v_ext_bas, v_ext_bas*2, v_ext_corr])
 v_emi_hybrid = np.array([v_ext_hybrid, v_ext_emi_wprobe])
 v_bas_emi_noprobe = np.array([v_ext_bas, v_ext_emi_noprobe])
@@ -152,21 +157,49 @@ ax2.legend(labels=['HS', 'EMI'], fontsize=18, loc='upper right', ncol=2)
 ax3 = mea.plot_mea_recording(v_bas_emi_noprobe, nn, lw=1.5, vscale=40)
 ax3.legend(labels=['BAS', 'EMI no probe'], fontsize=18, loc='upper right', ncol=2)
 
+
+# # decay with distance:
+# x = np.linspace(-0.03, -0.00075, 1000)
+# y = np.ones(1000) * elec[1]
+# z = np.ones(1000) * elec[2]
+#
+# dec_pos = np.array([x,y,z]).T
+# v_dec = np.array([f(d) for d in dec_pos])
+#
+# dist_line = [np.linalg.norm(d-elec) for d in dec_pos]
+#
+# v_mono4 = monopolar(1, elec, dec_pos)
+# v_mono2 = monopolar(1, elec, dec_pos, den=2)
+# v_mono3 = monopolar(1, elec, dec_pos, den=3)
+#
+# plt.figure()
+# plt.semilogy(dist_line, v_dec)
+# plt.semilogy(dist_line, v_mono4)
+# plt.semilogy(dist_line, v_mono2)
+
+# y_probe = np.linspace(-0.01, 0.02, 100)
+# z_probe = np.linspace(-0.01, 0.02, 100)
+# v_probe = np.zeros((1000,1000))
+# for i, yp in enumerate(y_probe):
+#     for j, zp in enumerate(z_probe):
+#         v_probe[i,j] = f([-7.5*conv, yp, zp])
+# plt.matshow(v_probe)
+
 # ratios
 ratio_bas_hyb = np.max(np.abs(v_ext_bas), axis=1) / np.max(np.abs(v_ext_hybrid), axis=1)
 ratio_moi_hyb = np.max(np.abs(2*v_ext_bas), axis=1) / np.max(np.abs(v_ext_hybrid), axis=1)
-ratio_moi18_hyb = np.max(np.abs(1.8*v_ext_bas), axis=1) / np.max(np.abs(v_ext_hybrid), axis=1)
+ratio_moi18_hyb = np.max(np.abs(1.5*v_ext_bas), axis=1) / np.max(np.abs(v_ext_hybrid), axis=1)
 ratio_corr_hyb = np.max(np.abs(v_ext_corr), axis=1) / np.max(np.abs(v_ext_hybrid), axis=1)
 ratio_corr_emi = np.max(np.abs(v_ext_corr), axis=1) / np.max(np.abs(v_ext_emi_wprobe), axis=1)
 ratio_bas_emi = np.max(np.abs(v_ext_bas), axis=1) / np.max(np.abs(v_ext_emi_wprobe), axis=1)
-ratio_moi18_emi = np.max(np.abs(1.8*v_ext_bas), axis=1) / np.max(np.abs(v_ext_emi_wprobe), axis=1)
+ratio_moi18_emi = np.max(np.abs(1.5*v_ext_bas), axis=1) / np.max(np.abs(v_ext_emi_wprobe), axis=1)
 ratio_moi_emi = np.max(np.abs(2*v_ext_bas), axis=1) / np.max(np.abs(v_ext_emi_wprobe), axis=1)
 fig = plt.figure()
 
 ax22 = fig.add_subplot(1,2,1)
 sns.distplot(ratio_bas_hyb, bins=20, hist=False, rug=True, label='BAS', ax=ax22)
 sns.distplot(ratio_moi_hyb, bins=20, hist=False, rug=True, label='MoI', ax=ax22)
-sns.distplot(ratio_moi18_hyb, bins=20, hist=False, rug=True, label='1.8MoI', ax=ax22)
+sns.distplot(ratio_moi18_hyb, bins=20, hist=False, rug=True, label='1.5MoI', ax=ax22)
 ax22.set_title('Peak ratio with  hybrid')
 ax22.legend(fontsize=18, loc='upper right')
 
@@ -174,7 +207,7 @@ ax11 = fig.add_subplot(1,2,2)
 sns.distplot(ratio_bas_emi, bins=20, hist=False, rug=True, label='BAS', ax=ax11)
 sns.distplot(ratio_corr_emi, bins=20, hist=False, rug=True, label='PC', ax=ax11)
 sns.distplot(ratio_moi_emi, bins=20, hist=False, rug=True, label='MoI', ax=ax11)
-sns.distplot(ratio_moi18_emi, bins=20, hist=False, rug=True, label='1.8MoI', ax=ax11)
+sns.distplot(ratio_moi18_emi, bins=20, hist=False, rug=True, label='1.5MoI', ax=ax11)
 ax11.set_title('Peak ratio with EMI')
 ax11.legend(fontsize=18, loc='upper right')
 

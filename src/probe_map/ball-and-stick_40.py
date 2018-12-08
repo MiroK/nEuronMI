@@ -99,7 +99,7 @@ ref_electrode_param = {
         'n': 1,
 }
 
-cell.set_pos(-40, 0, 0)
+cell.set_pos(-40, -40, 0)
 
 # Run simulation, electrode object argument in cell.simulate
 print("running simulation...")
@@ -122,7 +122,7 @@ mea.plot_mea_recording(v_ext, nn, time=end_T)
 
 print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
 
-np.savetxt('bas_imem.txt', cell.imem)
-np.savetxt('bas_vext.txt', v_ext)
-np.savetxt('elec_pos.txt', pos)
-np.savetxt('seg_pos.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))
+np.savetxt('bas_imem_40.txt', cell.imem)
+np.savetxt('bas_vext_40.txt', v_ext)
+np.savetxt('elec_pos_40.txt', pos)
+np.savetxt('seg_pos_40.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))
