@@ -57,11 +57,9 @@ fold_name = source_folder.split('/')[-2] if source_folder[-1] == '/' else source
 run_pc = False
 conv = 1E-4
 
-probe_map_folder = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
-                   'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
+probe_map_folder = 'results/noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
 
-probe_map_folder_original = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
-                            'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
+probe_map_folder_original = 'results/noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
 
 probe_map_mesh = join(probe_map_folder, 'u_ext.h5')
 probe_map_elec = join(probe_map_folder_original, 'elec_dict.npy')
@@ -95,7 +93,7 @@ nn = mea.return_mea(info=info_mea)
 # no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
 # w_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
 # mainen_fancy_40_0_-100_coarse_2_box_5_noprobe
-emi_sites = (np.load(join('/media/terror/code/source/nEuronMI/src/mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe', 'sites.npy')) - [40 * conv, 0, 0]) / conv
+emi_sites = (np.load(join('../mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe', 'sites.npy')) - [40 * conv, 0, 0]) / conv
 
 new_emis = []
 emi_sites[:, 1] = np.round(emi_sites[:, 1], decimals=5)
