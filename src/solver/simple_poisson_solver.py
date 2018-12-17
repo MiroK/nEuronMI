@@ -151,6 +151,7 @@ class PoissonSolver(object):
         self.b = b
         self.x = x
         self.point_sources = point_sources
+        self.system_size = A.size(0)
 
         
     def __call__(self, point_source_values=None):

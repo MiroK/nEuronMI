@@ -64,7 +64,7 @@ synapse_parameters = {
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.0465,           # synaptic weight
+    'weight' : 0.0455,           # synaptic weight
     'record_current' : True,    # record synapse current
 }
 
