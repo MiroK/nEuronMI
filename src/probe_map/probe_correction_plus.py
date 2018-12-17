@@ -57,18 +57,16 @@ fold_name = source_folder.split('/')[-2] if source_folder[-1] == '/' else source
 run_pc = False
 conv = 1E-4
 
-probe_map_folder = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
-                   'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
+probe_map_folder = 'results/noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
 
-probe_map_folder_original = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
-                            'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
+probe_map_folder_original = 'results/noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
 
 probe_map_mesh = join(probe_map_folder, 'u_ext.h5')
 probe_map_elec = join(probe_map_folder_original, 'elec_dict.npy')
 # mesh_path = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
 #             'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0/' \
 #             'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe.h5'
-mesh_path = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
+mesh_path = 'results/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe.h5'
 load_all_meshes = True
@@ -95,7 +93,7 @@ nn = mea.return_mea(info=info_mea)
 # no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
 # w_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
 # mainen_fancy_40_0_-100_coarse_2_box_5_noprobe
-emi_sites = (np.load(join('/media/terror/code/source/nEuronMI/src/mesh/simple_geometry/fancy/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe', 'sites.npy')) - [40 * conv, 0, 0]) / conv
+emi_sites = (np.load(join(source_folder, 'sites.npy')) - [40 * conv, 0, 0]) / conv
 
 new_emis = []
 emi_sites[:, 1] = np.round(emi_sites[:, 1], decimals=5)
@@ -117,10 +115,10 @@ w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
 
 order = order_recording_sites(pos, emi_sites)
 order_back = order_recording_sites(pos_back, emi_sites_back)
-# v_ext_emi_noprobe = np.load(join(source_folder, 'v_ext_emi_noprobe.npy'))[order_back] * 1000
-# v_ext_emi_wprobe = np.load(join(source_folder, 'v_ext_emi_wprobe.npy'))[order_back] * 1000
-v_ext_emi_noprobe = np.load(join(source_folder, 'v_ext_emi_noprobe.npy'))[order] * 1000
-v_ext_emi_wprobe = np.load(join(source_folder, 'v_ext_emi_wprobe.npy'))[order] * 1000
+v_ext_emi_noprobe = np.load(join(source_folder, 'v_ext_emi_noprobe.npy'))[order_back] * 1000
+v_ext_emi_wprobe = np.load(join(source_folder, 'v_ext_emi_wprobe.npy'))[order_back] * 1000
+# v_ext_emi_noprobe = np.load(join(source_folder, 'v_ext_emi_noprobe.npy'))[order] * 1000
+# v_ext_emi_wprobe = np.load(join(source_folder, 'v_ext_emi_wprobe.npy'))[order] * 1000
 
 info_mea = {'electrode_name': 'nn_emi', 'pos': emi_sites, 'center': False}
 emi_nn = mea.return_mea(info=info_mea)
@@ -183,12 +181,20 @@ v_bas_emi_noprobe = np.array([v_ext_bas, v_ext_emi_noprobe])
 # mea.plot_mea_recording(v_ext_corr, nn, scalebar=True)
 # mea.plot_mea_recording(v_ext_bas, nn)
 # mea.plot_mea_recording(v_ext_hybrid, nn)
-ax1 = mea.plot_mea_recording(v_ext, nn, lw=1.5, vscale=40)
-ax1.legend(labels=['HS', 'BAS', 'MoI', 'PC'], fontsize=18, loc='upper right', ncol=4)
+plt.figure()
+ax1 = plt.subplot(121)
+mea.plot_mea_recording(np.array([v_ext_bas, v_ext_emi_noprobe]), nn, lw=1.5, ax=ax1, vscale=40)
+ax1.legend(labels=['BAS', 'EMI no probe'], fontsize=18, loc='upper right', ncol=4)
 
-ax2 = mea.plot_mea_recording(v_emi_hybrid, nn, lw=1.5, vscale=40)
+ax2 = plt.subplot(122)
+mea.plot_mea_recording(np.array([v_ext_hybrid, v_ext_emi_wprobe]), nn, lw=1.5, ax=ax2, vscale=40)
 ax2.legend(labels=['HS', 'EMI'], fontsize=18, loc='upper right', ncol=2)
 
+simplify_axes([ax1, ax2])
+mark_subplots([ax1, ax2], xpos=-0.1, ypos=1.02, fs=35)
+
+
+# plt.figure()
 ax3 = mea.plot_mea_recording(v_bas_emi_noprobe, nn, lw=1.5, vscale=40)
 ax3.legend(labels=['BAS', 'EMI no probe'], fontsize=18, loc='upper right', ncol=2)
 
