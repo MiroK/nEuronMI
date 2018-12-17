@@ -66,7 +66,7 @@ probe_map_elec = join(probe_map_folder_original, 'elec_dict.npy')
 # mesh_path = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
 #             'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0/' \
 #             'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe.h5'
-mesh_path = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
+mesh_path = 'results/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe.h5'
 load_all_meshes = True
