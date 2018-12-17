@@ -83,8 +83,8 @@ if __name__ == '__main__':
     # hdf5_file_distr.close()
     hdf5_file_point.close()
     processing_time = time.time() - t_start
-    performance.update({'system size': s_point.system_size, 'time': processing_time})
-    
+    performance = {'system size': s_point.system_size, 'time': processing_time}
+
     np.save(join('results/probe_map', mesh_root, 'point', 'elec_dict'), elec_dict)
     with open(join('results/probe_map', mesh_root, 'point', 'params.yaml'), 'w') as f:
         info = {'solver': solver_params, 'mesh': mesh_params, 'performance': performance}

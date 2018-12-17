@@ -33,41 +33,24 @@ def order_recording_sites(sites1, sites2):
 
     return np.array(order)
 
-
-def monopolar(I, elec, pos, den=4):
-    '''
-
-    Parameters
-    ----------
-    I
-    elec
-    pos
-    den
-
-    Returns
-    -------
-
-    '''
-    return np.array([I / (den * np.pi * 0.3 * np.linalg.norm(elec - p) * 1e4) for p in pos]) * 1000
-
-
-source_folder = sys.argv[1]
+source_folder = os.path.abspath(sys.argv[1])
 fold_name = source_folder.split('/')[-2] if source_folder[-1] == '/' else source_folder.split('/')[1]
 
 extra_plot = False
 run_pc = False
 conv = 1E-4
+figsize = (18, 14)
 
-probe_map_folder = 'results/noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
+probe_map_folder = 'simulations/noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
 
-probe_map_folder_original = 'results/noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
+probe_map_folder_original = 'simulations/noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
 
 probe_map_mesh = join(probe_map_folder, 'u_ext.h5')
-probe_map_elec = join(probe_map_folder_original, 'elec_dict.npy')
+probe_map_elec = join(probe_map_folder, 'elec_dict.npy')
 # mesh_path = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
 #             'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0/' \
 #             'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe.h5'
-mesh_path = 'results/' \
+mesh_path = 'meshes/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe.h5'
 load_all_meshes = True
@@ -180,8 +163,8 @@ v_bas_emi_noprobe = np.array([v_ext_bas, v_ext_emi_noprobe])
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 color_bas = colors[3]
 color_hybrid = colors[2]
-color_moi = colors[4]
-color_18moi = colors[5]
+color_moi = colors[6]
+color_18moi = colors[7]
 color_emi = colors[1]
 color_emi_noprobe = colors[0]
 end_T = 5.
@@ -190,23 +173,28 @@ end_T = 5.
 # mea.plot_mea_recording(v_ext_hybrid, nn)
 
 
-plt.figure(figsize=[12, 10])
-ax1 = plt.subplot(121)
-mea.plot_mea_recording(np.array([v_ext_bas, v_ext_emi_noprobe]), nn, colors=[color_bas, color_emi_noprobe], lw=1.5, ax=ax1, scalebar=True, time=end_T, vscale=40)
-ax1.legend(labels=['CE', 'EMI no probe'], fontsize=18, loc='upper right', ncol=1)
+fig1 = plt.figure(figsize=figsize)
+ax1 = fig1.add_subplot(1,2,1)
+mea.plot_mea_recording(np.array([v_ext_bas, v_ext_emi_noprobe]), nn, colors=[color_bas, color_emi_noprobe],
+                       lw=1.5, ax=ax1, scalebar=True, time=end_T, vscale=40)
+ax1.legend(labels=['CE', 'EMI (no probe)'], fontsize=18, loc='upper right', ncol=1)
 
-ax2 = plt.subplot(122)
-mea.plot_mea_recording(np.array([v_ext_hybrid, v_ext_emi_wprobe]), nn, colors=[color_hybrid, color_emi], lw=1.5, ax=ax2, scalebar=True, time=end_T, vscale=40)
-ax2.legend(labels=['HS', 'EMI'], fontsize=18, loc='upper right', ncol=1)
+ax2 = fig1.add_subplot(1,2,2)
+mea.plot_mea_recording(np.array([v_ext_hybrid, v_ext_emi_wprobe]), nn,
+                       colors=[color_hybrid, color_emi], lw=1.5, ax=ax2, scalebar=True, time=end_T, vscale=40)
+ax2.legend(labels=['HS', 'EMI (with probe)'], fontsize=18, loc='upper right', ncol=1)
 
 simplify_axes([ax1, ax2])
-mark_subplots([ax1, ax2], xpos=-0.1, ypos=1.02, fs=35)
+mark_subplots([ax1, ax2], xpos=-0.1, ypos=1.02, fs=45)
 
 # plt.tight_layout()
 # plt.figure()
-plt.figure(figsize=[12, 10])
-ax3 = mea.plot_mea_recording(np.array([1.8 * v_ext_bas, 2 * v_ext_bas, v_ext_hybrid]), nn, colors=[color_moi, color_18moi, color_hybrid], lw=1.5, scalebar=True, time=end_T, vscale=40)
-ax3.legend(labels=['MoI', '1.8 MoI','HS'], fontsize=18, loc='upper right', ncol=1)
+fig2 = plt.figure(figsize=figsize)
+ax21 = fig2.add_subplot(1,2,1)
+ax21 = mea.plot_mea_recording(np.array([2 * v_ext_bas, 1.8 * v_ext_bas, v_ext_hybrid]), nn,
+                             colors=[color_moi, color_18moi, color_hybrid], ax=ax21,
+                             lw=1.5, scalebar=True, time=end_T, vscale=40)
+ax21.legend(labels=['MoI', '1.8 MoI','HS'], fontsize=18, loc='upper right', ncol=3)
 
 # ratios
 ratio_bas_hyb = np.max(np.abs(v_ext_bas[:,150:350]), axis=1) / np.max(np.abs(v_ext_hybrid[:,150:350]), axis=1)
@@ -219,15 +207,16 @@ ratio_moi18_emi = np.max(np.abs(1.8 * v_ext_bas[:,150:350]), axis=1) / np.max(np
 ratio_moi_emi = np.max(np.abs(2 * v_ext_bas[:,150:350]), axis=1) / np.max(np.abs(v_ext_emi_wprobe[:,150:350]), axis=1)
 
 ratio_hyb_hyb = np.ones(2)
-fig = plt.figure()
 
-ax22 = fig.add_subplot(1, 1, 1)
+ax22 = fig2.add_subplot(1,2,2)
 sns.distplot(ratio_bas_hyb, bins=20, hist=False, rug=True, color=color_bas , label='CE', ax=ax22)
 sns.distplot(ratio_moi_hyb, bins=20, hist=False, rug=True, color=color_moi, label='MoI', ax=ax22)
 sns.distplot(ratio_moi18_hyb, bins=20, hist=False, rug=True, color=color_18moi, label='1.8MoI', ax=ax22)
 # sns.distplot(ratio_hyb_hyb, bins=20, hist=False, rug=True, color=color_hybrid, label='HS', ax=ax22)
-ax22.vlines(1., ymin=0, ymax=10, colors=color_hybrid, label='HS', linewidth=2)
-ax22.set_title('Peak ratio with hybrid')
+ax22.vlines(1., ymin=0, ymax=10, colors=color_hybrid, label='PC', linewidth=2)
+ax22.set_title('Peak ratio with HS', fontsize=22)
+ax22.set_xlabel('Peak ratio', fontsize=15)
+ax22.set_ylabel('Frequency', fontsize=15)
 ax22.legend(fontsize=18, loc='upper right')
 
 # ax11 = fig.add_subplot(1, 2, 2)
@@ -239,7 +228,10 @@ ax22.legend(fontsize=18, loc='upper right')
 # ax11.legend(fontsize=18, loc='upper right')
 
 simplify_axes([ax22])
-# mark_subplots([ax22, ax11], xpos=-0.1, ypos=1.02, fs=35)
+mark_subplots([ax21, ax22], xpos=-0.1, ypos=1.02, fs=45)
+
+fig1.subplots_adjust(left=0.1, bottom=0.05, right=0.95, top=0.9, wspace=0.2)
+fig2.subplots_adjust(left=0.1, bottom=0.05, right=0.95, top=0.9, wspace=0.2)
 
 # sns.distplot(ratio_corr_hyb, bins=10)
 

@@ -20,7 +20,6 @@ def order_recording_sites(sites1, sites2):
     return np.array(order)
 
 t_start = time.time()
-# TODO add sort order
 
 conv=1E-4
 fs_legend = 20
@@ -47,7 +46,7 @@ i_soma = np.load(join(no_mesh, 'i_soma.npy'))
 
 # Define cell parameters
 cell_parameters = {
-    'morphology' : 'ball_and_stick_waxon_tapered.hoc', # from Mainen & Sejnowski, J Comput Neurosci, 1996
+    'morphology' : 'ball_and_stick_waxon.hoc', # from Mainen & Sejnowski, J Comput Neurosci, 1996
     'cm' : 1.0,         # membrane capacitance
     'Ra' : 150.,        # axial resistance
     'v_init' : -75.,    # initial crossmembrane potential
