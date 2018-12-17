@@ -74,7 +74,6 @@ mesh_path = '/media/terror/code/source/nEuronMI/src/probe_map/results/' \
 load_all_meshes = True
 
 # load neuron
-<<<<<<< HEAD
 i_mem = np.loadtxt(glob(join(source_folder, 'bas_imem*.txt'))[0])
 v_ext_bas = np.loadtxt(glob(join(source_folder, 'bas_vext*.txt'))[0])
 v_ext_hybrid = np.loadtxt(glob(join(source_folder, 'v_ext_hybrid*.txt'))[0])
@@ -88,23 +87,11 @@ for u in np.unique(pos[:, 1]):
     for o in pos[pos[:, 1] == u][pos[pos[:, 1] == u][:, 2].argsort()]:
         new_pos.append(o)
 pos = np.asarray(new_pos)
-=======
-i_mem = np.loadtxt('bas_imem.txt')
-v_ext_bas = np.loadtxt('bas_vext.txt')
-v_ext_hybrid = np.loadtxt('v_ext_hybrid.txt')
-if os.path.isfile('v_ext_corr.txt'):
-    v_ext_corr = np.loadtxt('v_ext_corr.txt')
-else:
-    run_pc=True
-seg_pos = np.loadtxt('seg_pos.txt').T * conv
-pos = np.loadtxt('fem_pos.txt')
->>>>>>> 1161c82da214fa7642bd711968b0c79d03c197b0
 
 elec_dict = np.load(probe_map_elec).item()
 info_mea = {'electrode_name': 'nn_emi', 'pos': pos_back, 'center': False}
 nn = mea.return_mea(info=info_mea)
 
-<<<<<<< HEAD
 # no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
 # w_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
 # mainen_fancy_40_0_-100_coarse_2_box_5_noprobe
@@ -125,10 +112,8 @@ for i, p in enumerate(pos):
             nat_to_back.append(j)
 nat_to_back = np.asarray(nat_to_back)
 
-=======
 no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
 w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
->>>>>>> 1161c82da214fa7642bd711968b0c79d03c197b0
 
 order = order_recording_sites(pos, emi_sites)
 order_back = order_recording_sites(pos_back, emi_sites_back)
