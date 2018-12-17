@@ -68,6 +68,9 @@ if __name__ == '__main__':
                      'linear_solver': 'direct'}
 
     mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
+    mesh_params = {'path': mesh_path, 'name': mesh_name, 'cells': mesh.num_cells(), 'facets': mesh.num_facets(),
+                   'vertices': mesh.num_vertices(), 'faces': mesh.num_faces(), 'edges': mesh.num_edges()}
+    performance = {}
     # Where are the probes?
     # ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
     s = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
@@ -81,6 +84,10 @@ if __name__ == '__main__':
         print 'Elapsed time: ', time.time() - t_start
         v_ext[:, i] = np.array([uh(p) for p in electrode_positions])
 
-    # v_ext *= 1000
+    processing_time = time.time() - t_start
+    performance.update({'system size': s.system_size, 'time': processing_time})
 
     np.savetxt(join(neuron_path, fname +'.txt'), v_ext)
+    with open(join(neuron_path, 'params.yaml'), 'w') as f:
+        info = {'solver': solver_params, 'mesh': mesh_params, 'performance': performance}
+        yaml.dump(info, f, default_flow_style=False)

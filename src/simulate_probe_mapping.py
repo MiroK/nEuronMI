@@ -35,6 +35,8 @@ if __name__ == '__main__':
     conv = 1E-4
     t_start = time.time()
     mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
+    mesh_params = {'path': mesh_path, 'name': mesh_name, 'cells': mesh.num_cells(), 'facets': mesh.num_facets(),
+                   'vertices': mesh.num_vertices(), 'faces': mesh.num_faces(), 'edges': mesh.num_edges()}
 
     elec_dict = probe_contact_map(mesh_path, aux_tags['contact_surfaces'])
 
@@ -80,5 +82,11 @@ if __name__ == '__main__':
         hdf5_file_point.write(uh_point, '/function_%d' % elec)
     # hdf5_file_distr.close()
     hdf5_file_point.close()
+    processing_time = time.time() - t_start
+    performance.update({'system size': s_point.system_size, 'time': processing_time})
+    
     np.save(join('results/probe_map', mesh_root, 'point', 'elec_dict'), elec_dict)
+    with open(join('results/probe_map', mesh_root, 'point', 'params.yaml'), 'w') as f:
+        info = {'solver': solver_params, 'mesh': mesh_params, 'performance': performance}
+        yaml.dump(info, f, default_flow_style=False)
 

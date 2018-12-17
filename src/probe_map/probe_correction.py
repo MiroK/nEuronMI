@@ -61,11 +61,11 @@ mesh_path = '/home/alessio/Documents/Codes/nEuronMI/src/probe_map/meshes/' \
 load_all_meshes = True
 
 # load neuron
-i_mem = np.loadtxt('bas_imem.txt')
-v_ext_bas = np.loadtxt('bas_vext.txt')
+i_mem = np.loadtxt('bas_imem_0.txt')
+v_ext_bas = np.loadtxt('bas_vext_0.txt')
 v_ext_hybrid = np.loadtxt('v_ext_hybrid_0.txt')
-if os.path.isfile('v_ext_corr.txt'):
-    v_ext_corr = np.loadtxt('v_ext_corr.txt')
+if os.path.isfile('v_ext_corr_0.txt'):
+    v_ext_corr = np.loadtxt('v_ext_corr_0.txt')
 else:
     run_pc=True
 seg_pos = np.loadtxt('seg_pos.txt').T * conv
@@ -132,7 +132,7 @@ if run_pc:
     gain = np.array(gain)
     v_ext_corr *= 1000
 
-    np.savetxt('v_ext_corr.txt', v_ext_corr)
+    np.savetxt('v_ext_corr_0.txt', v_ext_corr)
 
 # scaling = np.max(np.abs(v_ext_bas))/np.max(np.abs(v_ext_corr))
 # v_ext = np.array([v_ext_corr, v_ext_bas, v_ext_bas*1.8])
@@ -140,17 +140,19 @@ v_ext = np.array([v_ext_hybrid, v_ext_bas, v_ext_bas*2, v_ext_corr])
 v_emi_hybrid = np.array([v_ext_hybrid, v_ext_emi_wprobe])
 v_bas_emi_noprobe = np.array([v_ext_bas, v_ext_emi_noprobe])
 
+end_T = 5.
+
 
 # mea.plot_mea_recording(v_ext_corr, nn, scalebar=True)
 # mea.plot_mea_recording(v_ext_bas, nn)
 # mea.plot_mea_recording(v_ext_hybrid, nn)
-ax1 = mea.plot_mea_recording(v_ext, nn, lw=1.5, vscale=40)
+ax1 = mea.plot_mea_recording(v_ext, nn, lw=1.5, vscale=40, scalebar=True, time=end_T)
 ax1.legend(labels=['HS', 'BAS', 'MoI', 'PC'], fontsize=18, loc='upper right', ncol=4)
 
-ax2 = mea.plot_mea_recording(v_emi_hybrid, nn, lw=1.5, vscale=40)
+ax2 = mea.plot_mea_recording(v_emi_hybrid, nn, lw=1.5, vscale=40, scalebar=True, time=end_T)
 ax2.legend(labels=['HS', 'EMI'], fontsize=18, loc='upper right', ncol=2)
 
-ax3 = mea.plot_mea_recording(v_bas_emi_noprobe, nn, lw=1.5, vscale=40)
+ax3 = mea.plot_mea_recording(v_bas_emi_noprobe, nn, lw=1.5, vscale=40, scalebar=True, time=end_T)
 ax3.legend(labels=['BAS', 'EMI no probe'], fontsize=18, loc='upper right', ncol=2)
 
 # ratios
