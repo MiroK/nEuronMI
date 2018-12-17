@@ -54,6 +54,7 @@ def monopolar(I, elec, pos, den=4):
 source_folder = sys.argv[1]
 fold_name = source_folder.split('/')[-2] if source_folder[-1] == '/' else source_folder.split('/')[1]
 
+extra_plot = False
 run_pc = False
 conv = 1E-4
 
@@ -176,27 +177,36 @@ if run_pc:
 v_ext = np.array([v_ext_hybrid, v_ext_bas, v_ext_bas * 2, v_ext_corr])
 v_emi_hybrid = np.array([v_ext_hybrid, v_ext_emi_wprobe])
 v_bas_emi_noprobe = np.array([v_ext_bas, v_ext_emi_noprobe])
-
-
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+color_bas = colors[3]
+color_hybrid = colors[2]
+color_moi = colors[4]
+color_18moi = colors[5]
+color_emi = colors[1]
+color_emi_noprobe = colors[0]
+end_T = 5.
 # mea.plot_mea_recording(v_ext_corr, nn, scalebar=True)
 # mea.plot_mea_recording(v_ext_bas, nn)
 # mea.plot_mea_recording(v_ext_hybrid, nn)
-plt.figure()
+
+
+plt.figure(figsize=[12, 10])
 ax1 = plt.subplot(121)
-mea.plot_mea_recording(np.array([v_ext_bas, v_ext_emi_noprobe]), nn, lw=1.5, ax=ax1, vscale=40)
-ax1.legend(labels=['BAS', 'EMI no probe'], fontsize=18, loc='upper right', ncol=4)
+mea.plot_mea_recording(np.array([v_ext_bas, v_ext_emi_noprobe]), nn, colors=[color_bas, color_emi_noprobe], lw=1.5, ax=ax1, scalebar=True, time=end_T, vscale=40)
+ax1.legend(labels=['CE', 'EMI no probe'], fontsize=18, loc='upper right', ncol=1)
 
 ax2 = plt.subplot(122)
-mea.plot_mea_recording(np.array([v_ext_hybrid, v_ext_emi_wprobe]), nn, lw=1.5, ax=ax2, vscale=40)
-ax2.legend(labels=['HS', 'EMI'], fontsize=18, loc='upper right', ncol=2)
+mea.plot_mea_recording(np.array([v_ext_hybrid, v_ext_emi_wprobe]), nn, colors=[color_hybrid, color_emi], lw=1.5, ax=ax2, scalebar=True, time=end_T, vscale=40)
+ax2.legend(labels=['HS', 'EMI'], fontsize=18, loc='upper right', ncol=1)
 
 simplify_axes([ax1, ax2])
 mark_subplots([ax1, ax2], xpos=-0.1, ypos=1.02, fs=35)
 
-
+# plt.tight_layout()
 # plt.figure()
-ax3 = mea.plot_mea_recording(v_bas_emi_noprobe, nn, lw=1.5, vscale=40)
-ax3.legend(labels=['BAS', 'EMI no probe'], fontsize=18, loc='upper right', ncol=2)
+plt.figure(figsize=[12, 10])
+ax3 = mea.plot_mea_recording(np.array([1.8 * v_ext_bas, 2 * v_ext_bas, v_ext_hybrid]), nn, colors=[color_moi, color_18moi, color_hybrid], lw=1.5, scalebar=True, time=end_T, vscale=40)
+ax3.legend(labels=['MoI', '1.8 MoI','HS'], fontsize=18, loc='upper right', ncol=1)
 
 # ratios
 ratio_bas_hyb = np.max(np.abs(v_ext_bas[:,150:350]), axis=1) / np.max(np.abs(v_ext_hybrid[:,150:350]), axis=1)
@@ -207,25 +217,29 @@ ratio_corr_emi = np.max(np.abs(v_ext_corr[:,150:350]), axis=1) / np.max(np.abs(v
 ratio_bas_emi = np.max(np.abs(v_ext_bas[:,150:350]), axis=1) / np.max(np.abs(v_ext_emi_wprobe[:,150:350]), axis=1)
 ratio_moi18_emi = np.max(np.abs(1.8 * v_ext_bas[:,150:350]), axis=1) / np.max(np.abs(v_ext_emi_wprobe[:,150:350]), axis=1)
 ratio_moi_emi = np.max(np.abs(2 * v_ext_bas[:,150:350]), axis=1) / np.max(np.abs(v_ext_emi_wprobe[:,150:350]), axis=1)
+
+ratio_hyb_hyb = np.ones(2)
 fig = plt.figure()
 
-ax22 = fig.add_subplot(1, 2, 1)
-sns.distplot(ratio_bas_hyb, bins=20, hist=False, rug=True, label='BAS', ax=ax22)
-sns.distplot(ratio_moi_hyb, bins=20, hist=False, rug=True, label='MoI', ax=ax22)
-sns.distplot(ratio_moi18_hyb, bins=20, hist=False, rug=True, label='1.8MoI', ax=ax22)
-ax22.set_title('Peak ratio with  hybrid')
+ax22 = fig.add_subplot(1, 1, 1)
+sns.distplot(ratio_bas_hyb, bins=20, hist=False, rug=True, color=color_bas , label='CE', ax=ax22)
+sns.distplot(ratio_moi_hyb, bins=20, hist=False, rug=True, color=color_moi, label='MoI', ax=ax22)
+sns.distplot(ratio_moi18_hyb, bins=20, hist=False, rug=True, color=color_18moi, label='1.8MoI', ax=ax22)
+# sns.distplot(ratio_hyb_hyb, bins=20, hist=False, rug=True, color=color_hybrid, label='HS', ax=ax22)
+ax22.vlines(1., ymin=0, ymax=10, colors=color_hybrid, label='HS', linewidth=2)
+ax22.set_title('Peak ratio with hybrid')
 ax22.legend(fontsize=18, loc='upper right')
 
-ax11 = fig.add_subplot(1, 2, 2)
-sns.distplot(ratio_bas_emi, bins=20, hist=False, rug=True, label='BAS', ax=ax11)
-sns.distplot(ratio_corr_emi, bins=20, hist=False, rug=True, label='PC', ax=ax11)
-sns.distplot(ratio_moi_emi, bins=20, hist=False, rug=True, label='MoI', ax=ax11)
-sns.distplot(ratio_moi18_emi, bins=20, hist=False, rug=True, label='1.8MoI', ax=ax11)
-ax11.set_title('Peak ratio with EMI')
-ax11.legend(fontsize=18, loc='upper right')
+# ax11 = fig.add_subplot(1, 2, 2)
+# sns.distplot(ratio_bas_emi, bins=20, hist=False, rug=True, label='BAS', ax=ax11)
+# sns.distplot(ratio_corr_emi, bins=20, hist=False, rug=True, label='PC', ax=ax11)
+# sns.distplot(ratio_moi_emi, bins=20, hist=False, rug=True, label='MoI', ax=ax11)
+# sns.distplot(ratio_moi18_emi, bins=20, hist=False, rug=True, label='1.8MoI', ax=ax11)
+# ax11.set_title('Peak ratio with EMI')
+# ax11.legend(fontsize=18, loc='upper right')
 
-simplify_axes([ax11, ax22])
-mark_subplots([ax22, ax11], xpos=-0.1, ypos=1.02, fs=35)
+simplify_axes([ax22])
+# mark_subplots([ax22, ax11], xpos=-0.1, ypos=1.02, fs=35)
 
 # sns.distplot(ratio_corr_hyb, bins=10)
 
@@ -239,124 +253,121 @@ print 'peak EMI wprobe: ', np.min(v_ext_emi_wprobe)
 print 'difference wprobe: ', np.min(v_ext_emi_wprobe) - np.min(v_ext_bas)
 print 'peak HYBRID: ', np.min(v_ext_hybrid)
 print 'difference wprobe: ', np.min(v_ext_emi_wprobe) - np.min(v_ext_hybrid)
-print 'peak MoI: ', np.min(2*v_ext_bas)
-print 'difference wprobe: ', np.min(v_ext_emi_wprobe) - np.min(2*v_ext_bas)
+print 'peak MoI: ', np.min(2 * v_ext_bas)
+print 'difference wprobe: ', np.min(v_ext_emi_wprobe) - np.min(2 * v_ext_bas)
+
+if extra_plot:
+    plt.figure(figsize=[15, 10])
+    plt.suptitle('Paired comparison left Vs right electrodes, intra modality [{}]'.format(fold_name))
+    ax_1 = plt.subplot(121)
+
+    # plt.title('BAS and Hybrid')
+    norm = mpl.colors.Normalize(0, 9)
+    # col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
+    # col = {'soma': 'k', 'axon': 'b', 'dendrite': 'r', }
+    # norm = mpl.colors.Normalize(0, n_sec)
+    set2 = plt.get_cmap('tab10')
+    colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
+    for i in range(10):
+        ax_1.plot(v_ext_bas[nat_to_back[i]], color=colr.to_rgba(i), linestyle='-', label='electrode {}'.format(i))
+        ax_1.plot(v_ext_bas[nat_to_back[i + 22]], color=colr.to_rgba(i), linestyle='--', label='electrode {}'.format(i + 22))
+    ax_1.legend()
+    ax_1.set_title('BAS')
+
+    ax_2 = plt.subplot(122)
+    # plt.title('Hybrid')
+    norm = mpl.colors.Normalize(0, 9)
+    # col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
+    # col = {'soma': 'k', 'axon': 'b', 'dendrite': 'r', }
+    # norm = mpl.colors.Normalize(0, n_sec)
+    set2 = plt.get_cmap('tab10')
+    colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
+    for i in range(10):
+        ax_2.plot(v_ext_hybrid[nat_to_back[i]], color=colr.to_rgba(i), linestyle='-', label='electrode {}'.format(i))
+        ax_2.plot(v_ext_hybrid[nat_to_back[i + 22]], color=colr.to_rgba(i), linestyle='--', label='electrode {}'.format(i + 22))
+    # ax_2.legend()
+    ax_2.set_title('Hybrid')
+
+
+    ymin = np.min([np.min(v_ext_bas), np.min(v_ext_emi_wprobe)])
+    ymax = np.max([np.max(v_ext_bas), np.max(v_ext_emi_wprobe)])
+    plt.figure(figsize=[20, 20])
+    plt.suptitle('Paired comparison of largest inter modality differences per electrode [{}]'.format(fold_name))
+    ax_a = plt.subplot(221)
+    n_elec = 4
+    norm = mpl.colors.Normalize(0, n_elec)
+    set2 = plt.get_cmap('tab10')
+    colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
+    ax_a.set_title('BAS - EMI')
+    temp = ratio_moi_emi.argsort()
+    for ix, i in enumerate(temp[-n_elec:]):
+        natural_electrode = np.where(nat_to_back == i)[0][0]
+        ax_a.plot(v_ext_bas[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
+        ax_a.plot(v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
+        ax_a.plot(v_ext_bas[i] - v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
+    # ratio_moi18_emi
+    ax_a.legend()
+
+
+    ax_b = plt.subplot(222)
+    n_elec = 4
+    norm = mpl.colors.Normalize(0, n_elec)
+    set2 = plt.get_cmap('tab10')
+    colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
+    ax_b.set_title('MOI - EMI')
+    temp = ratio_bas_emi.argsort()
+    for ix, i in enumerate(temp[-n_elec:]):
+        natural_electrode = np.where(nat_to_back == i)[0][0]
+        ax_b.plot(2 * v_ext_bas[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
+        ax_b.plot(v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
+        ax_b.plot(2 * v_ext_bas[i] - v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
+    # ratio_moi18_emi
+    ax_b.legend()
+    ymin_t = np.min([np.min(2 * v_ext_bas), np.min(v_ext_emi_wprobe)])
+    ymax_t = np.max([np.max(2 * v_ext_bas), np.max(v_ext_emi_wprobe)])
+    if ymin_t < ymin:
+        ymin = ymin_t
+    if ymax_t > ymax:
+        ymax = ymax_t
 
 
 
+    ax_c = plt.subplot(223)
+    n_elec = 4
+    norm = mpl.colors.Normalize(0, n_elec)
+    set2 = plt.get_cmap('tab10')
+    colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
+    ax_c.set_title('Corr - Hybrid')
+    temp = ratio_corr_hyb.argsort()
+    for ix, i in enumerate(temp[-n_elec:]):
+        natural_electrode = np.where(nat_to_back == i)[0][0]
+        ax_c.plot(v_ext_corr[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
+        ax_c.plot(v_ext_hybrid[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
+        ax_c.plot(v_ext_corr[i] - v_ext_hybrid[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
+    # ratio_moi18_emi
+    ax_c.legend()
+    ymin_t = np.min([np.min(v_ext_corr), np.min(v_ext_hybrid)])
+    ymax_t = np.max([np.max(v_ext_corr), np.max(v_ext_hybrid)])
+    if ymin_t < ymin:
+        ymin = ymin_t
+    if ymax_t > ymax:
+        ymax = ymax_t
 
-
-plt.figure(figsize=[15, 10])
-plt.suptitle('Paired comparison left Vs right electrodes, intra modality [{}]'.format(fold_name))
-ax_1 = plt.subplot(121)
-
-# plt.title('BAS and Hybrid')
-norm = mpl.colors.Normalize(0, 9)
-# col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
-# col = {'soma': 'k', 'axon': 'b', 'dendrite': 'r', }
-# norm = mpl.colors.Normalize(0, n_sec)
-set2 = plt.get_cmap('tab10')
-colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
-for i in range(10):
-    ax_1.plot(v_ext_bas[nat_to_back[i]], color=colr.to_rgba(i), linestyle='-', label='electrode {}'.format(i))
-    ax_1.plot(v_ext_bas[nat_to_back[i + 22]], color=colr.to_rgba(i), linestyle='--', label='electrode {}'.format(i + 22))
-ax_1.legend()
-ax_1.set_title('BAS')
-
-ax_2 = plt.subplot(122)
-# plt.title('Hybrid')
-norm = mpl.colors.Normalize(0, 9)
-# col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
-# col = {'soma': 'k', 'axon': 'b', 'dendrite': 'r', }
-# norm = mpl.colors.Normalize(0, n_sec)
-set2 = plt.get_cmap('tab10')
-colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
-for i in range(10):
-    ax_2.plot(v_ext_hybrid[nat_to_back[i]], color=colr.to_rgba(i), linestyle='-', label='electrode {}'.format(i))
-    ax_2.plot(v_ext_hybrid[nat_to_back[i + 22]], color=colr.to_rgba(i), linestyle='--', label='electrode {}'.format(i + 22))
-# ax_2.legend()
-ax_2.set_title('Hybrid')
-
-
-ymin = np.min([np.min(v_ext_bas), np.min(v_ext_emi_wprobe)])
-ymax = np.max([np.max(v_ext_bas), np.max(v_ext_emi_wprobe)])
-plt.figure(figsize=[20, 20])
-plt.suptitle('Paired comparison of largest inter modality differences per electrode [{}]'.format(fold_name))
-ax_a = plt.subplot(221)
-n_elec = 4
-norm = mpl.colors.Normalize(0, n_elec)
-set2 = plt.get_cmap('tab10')
-colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
-ax_a.set_title('BAS - EMI')
-temp = ratio_moi_emi.argsort()
-for ix, i in enumerate(temp[-n_elec:]):
-    natural_electrode = np.where(nat_to_back == i)[0][0]
-    ax_a.plot(v_ext_bas[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
-    ax_a.plot(v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
-    ax_a.plot(v_ext_bas[i] - v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
-# ratio_moi18_emi
-ax_a.legend()
-
-
-ax_b = plt.subplot(222)
-n_elec = 4
-norm = mpl.colors.Normalize(0, n_elec)
-set2 = plt.get_cmap('tab10')
-colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
-ax_b.set_title('MOI - EMI')
-temp = ratio_bas_emi.argsort()
-for ix, i in enumerate(temp[-n_elec:]):
-    natural_electrode = np.where(nat_to_back == i)[0][0]
-    ax_b.plot(2 * v_ext_bas[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
-    ax_b.plot(v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
-    ax_b.plot(2 * v_ext_bas[i] - v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
-# ratio_moi18_emi
-ax_b.legend()
-ymin_t = np.min([np.min(2 * v_ext_bas), np.min(v_ext_emi_wprobe)])
-ymax_t = np.max([np.max(2 * v_ext_bas), np.max(v_ext_emi_wprobe)])
-if ymin_t < ymin:
-    ymin = ymin_t
-if ymax_t > ymax:
-    ymax = ymax_t
-
-
-
-ax_c = plt.subplot(223)
-n_elec = 4
-norm = mpl.colors.Normalize(0, n_elec)
-set2 = plt.get_cmap('tab10')
-colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
-ax_c.set_title('Corr - Hybrid')
-temp = ratio_corr_hyb.argsort()
-for ix, i in enumerate(temp[-n_elec:]):
-    natural_electrode = np.where(nat_to_back == i)[0][0]
-    ax_c.plot(v_ext_corr[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
-    ax_c.plot(v_ext_hybrid[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
-    ax_c.plot(v_ext_corr[i] - v_ext_hybrid[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
-# ratio_moi18_emi
-ax_c.legend()
-ymin_t = np.min([np.min(v_ext_corr), np.min(v_ext_hybrid)])
-ymax_t = np.max([np.max(v_ext_corr), np.max(v_ext_hybrid)])
-if ymin_t < ymin:
-    ymin = ymin_t
-if ymax_t > ymax:
-    ymax = ymax_t
-
-ax_d = plt.subplot(224)
-n_elec = 4
-norm = mpl.colors.Normalize(0, n_elec)
-set2 = plt.get_cmap('tab10')
-colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
-ax_d.set_title('PC - EMI')
-temp = ratio_corr_emi.argsort()
-for ix, i in enumerate(temp[-n_elec:]):
-    natural_electrode = np.where(nat_to_back == i)[0][0]
-    ax_d.plot(v_ext_corr[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
-    ax_d.plot(v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
-    ax_d.plot(v_ext_corr[i] - v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
-# ratio_moi18_emi
-ax_d.legend()
-ax_d.set_ylim([ymin, ymax])
-ax_c.set_ylim([ymin, ymax])
-ax_b.set_ylim([ymin, ymax])
-ax_a.set_ylim([ymin, ymax])
+    ax_d = plt.subplot(224)
+    n_elec = 4
+    norm = mpl.colors.Normalize(0, n_elec)
+    set2 = plt.get_cmap('tab10')
+    colr = plt.cm.ScalarMappable(norm=norm, cmap=set2)
+    ax_d.set_title('PC - EMI')
+    temp = ratio_corr_emi.argsort()
+    for ix, i in enumerate(temp[-n_elec:]):
+        natural_electrode = np.where(nat_to_back == i)[0][0]
+        ax_d.plot(v_ext_corr[i], color=colr.to_rgba(ix), linestyle='-', label='electrode {}'.format(natural_electrode))
+        ax_d.plot(v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle='--', label='electrode {}'.format(natural_electrode))  # emi same electrode data
+        ax_d.plot(v_ext_corr[i] - v_ext_emi_wprobe[i], color=colr.to_rgba(ix), linestyle=':', label='difference')
+    # ratio_moi18_emi
+    ax_d.legend()
+    ax_d.set_ylim([ymin, ymax])
+    ax_c.set_ylim([ymin, ymax])
+    ax_b.set_ylim([ymin, ymax])
+    ax_a.set_ylim([ymin, ymax])
