@@ -51,19 +51,19 @@ run_pc = False
 conv = 1E-4
 
 probe_map_folder = '/home/alessio/Documents/Codes/nEuronMI/src/probe_map/simulations/' \
-                   'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe/point'
+                   'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe/point'
 probe_map_mesh = join(probe_map_folder, 'u_ext.h5')
 probe_map_elec = join(probe_map_folder, 'elec_dict.npy')
 mesh_path = '/home/alessio/Documents/Codes/nEuronMI/src/probe_map/meshes/' \
-            'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0/' \
-            'noneuron_fancy_0_0_-100_coarse_2_box_6_rot_0_rad_0_wprobe.h5'
+            'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0/' \
+            'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe.h5'
 
 load_all_meshes = True
 
 # load neuron
 i_mem = np.loadtxt('bas_imem.txt')
 v_ext_bas = np.loadtxt('bas_vext.txt')
-v_ext_hybrid = np.loadtxt('v_ext_hybrid.txt')
+v_ext_hybrid = np.loadtxt('v_ext_hybrid_0.txt')
 if os.path.isfile('v_ext_corr.txt'):
     v_ext_corr = np.loadtxt('v_ext_corr.txt')
 else:
@@ -75,8 +75,8 @@ elec_dict = np.load(probe_map_elec).item()
 info_mea = {'electrode_name': 'nn_emi', 'pos': pos, 'center': False}
 nn = mea.return_mea(info=info_mea)
 
-no_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_noprobe'
-w_mesh = '../results/mainen_fancy_40_0_-100_coarse_0_box_3_wprobe'
+no_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_noprobe'
+w_mesh = '../results/mainen_fancy_40_0_-100_coarse_2_box_5_wprobe'
 
 emi_sites = (np.load(join(no_mesh, 'sites.npy')) - [40*conv, 0, 0]) / conv
 order = order_recording_sites(pos, emi_sites)
@@ -130,6 +130,7 @@ if run_pc:
 
     dist = np.array(dist)
     gain = np.array(gain)
+    v_ext_corr *= 1000
 
     np.savetxt('v_ext_corr.txt', v_ext_corr)
 

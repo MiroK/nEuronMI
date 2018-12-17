@@ -16,7 +16,6 @@ plt.show()
 conv=1E-4
 sites = np.loadtxt('fem_pos.txt')
 t_start = time.time()
-lateral_shift = 0
 
 fs_legend = 20
 save_fig = False
@@ -64,7 +63,7 @@ synapse_parameters = {
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.0465,           # synaptic weight
+    'weight' : 0.0455,           # synaptic weight
     'record_current' : True,    # record synapse current
 }
 
@@ -100,7 +99,7 @@ ref_electrode_param = {
         'n': 1,
 }
 
-cell.set_pos(-40, -lateral_shift, 0)
+cell.set_pos(-40, -20, 0)
 
 # Run simulation, electrode object argument in cell.simulate
 print("running simulation...")
@@ -123,7 +122,7 @@ mea.plot_mea_recording(v_ext, nn, time=end_T)
 
 print('NEURON min at: ', np.unravel_index(v_ext.argmin(), v_ext.shape))
 
-np.savetxt('bas_imem_' + str(lateral_shift) + '.txt', cell.imem)
-np.savetxt('bas_vext_' + str(lateral_shift) + '.txt', v_ext)
-np.savetxt('elec_pos_' + str(lateral_shift) + '.txt', pos)
-np.savetxt('seg_pos_' + str(lateral_shift) + '.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))
+np.savetxt('bas_imem_20.txt', cell.imem)
+np.savetxt('bas_vext_20.txt', v_ext)
+np.savetxt('elec_pos_20.txt', pos)
+np.savetxt('seg_pos_20.txt', np.array([cell.xmid, cell.ymid, cell.zmid]))

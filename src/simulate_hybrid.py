@@ -81,4 +81,6 @@ if __name__ == '__main__':
         print 'Elapsed time: ', time.time() - t_start
         v_ext[:, i] = np.array([uh(p) for p in electrode_positions])
 
+    # v_ext *= 1000
+
     np.savetxt(join(neuron_path, fname +'.txt'), v_ext)

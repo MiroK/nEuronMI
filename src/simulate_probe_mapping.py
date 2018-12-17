@@ -80,4 +80,5 @@ if __name__ == '__main__':
         hdf5_file_point.write(uh_point, '/function_%d' % elec)
     # hdf5_file_distr.close()
     hdf5_file_point.close()
+    np.save(join('results/probe_map', mesh_root, 'point', 'elec_dict'), elec_dict)
 
