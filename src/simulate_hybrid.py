@@ -34,6 +34,11 @@ if __name__ == '__main__':
         pos_path = sys.argv[pos + 1]
     else:
         raise Exception()
+    if '-fname' in sys.argv:
+        fname = sys.argv.index('-fname')
+        fname = sys.argv[fname + 1]
+    else:
+        raise Exception()
 
     conv = 1E-4
     i_mem = np.loadtxt(cur_path)
@@ -76,4 +81,4 @@ if __name__ == '__main__':
         print 'Elapsed time: ', time.time() - t_start
         v_ext[:, i] = np.array([uh(p) for p in electrode_positions])
 
-    np.savetxt(join(neuron_path, 'v_ext_hybrid.txt'), v_ext)
+    np.savetxt(join(neuron_path, fname +'.txt'), v_ext)

@@ -39,8 +39,8 @@ if __name__ == '__main__':
     elec_dict = probe_contact_map(mesh_path, aux_tags['contact_surfaces'])
 
     fem_sol_point = join('results/probe_map', mesh_root, 'point', 'u_ext.h5')
-    fem_sol_distr = join('results/probe_map', mesh_root, 'distr', 'u_ext.h5')
-    hdf5_file_distr = HDF5File(mesh.mpi_comm(), fem_sol_distr, "w")
+    # fem_sol_distr = join('results/probe_map', mesh_root, 'distr', 'u_ext.h5')
+    # hdf5_file_distr = HDF5File(mesh.mpi_comm(), fem_sol_distr, "w")
     hdf5_file_point = HDF5File(mesh.mpi_comm(), fem_sol_point, "w")
 
     for elec, position in elec_dict.items():
@@ -50,11 +50,10 @@ if __name__ == '__main__':
         elif 'pixel' in mesh_name:
             area = (12*conv)**2
 
-        problem_params_distr = {'cond_ext': 3.0,
-                          'stimulated_site': elec,  # or higher by convention
-                          'site_current': Expression(('A', '0', '0'), degree=0, A=1./area, t=0),
-                          }
-        problem_params_point = {'point_sources': [position]}
+        problem_params_point = {'cond_ext': 3.0,
+                                'stimulated_site': elec,  # or higher by convention
+                                'site_current': Expression(('A', '0', '0'), degree=0, A=0,t=0),
+                                'point_sources': [position]}
 
         solver_params = {'dt_fem': 1E-3,  # 1E-3,              # ms
                          'dt_ode': 1E-2,  # 1E-3,               # ms
@@ -64,21 +63,21 @@ if __name__ == '__main__':
         # Where are the probes?
         # ax = plot_contacts(surfaces, aux_tags['contact_surfaces'])
 
-        s_distr = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
-                                problem_parameters=problem_params_distr,  # ms
-                                solver_parameters=solver_params)
+        # s_distr = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
+        #                         problem_parameters=problem_params_distr,  # ms
+        #                         solver_parameters=solver_params)
         s_point = PoissonSolver(mesh_path=mesh_path,  # Units assuming mesh lengths specified in cm:
                                 problem_parameters=problem_params_point,  # ms
                                 solver_parameters=solver_params)
 
-        uh_distr = s_distr(None)
-        uh_point = s_point([1])
-        print(uh_distr(position - [30*conv,0,0]))
+        # uh_distr = s_distr(None)
+        uh_point = s_point([1E-3])
+        # print(uh_distr(position - [30*conv,0,0]))
         print(uh_point(position - [30*conv,0,0]))
         print 'Electrode: ' , elec,' Elapsed time: ', time.time() - t_start
 
-        hdf5_file_distr.write(uh_distr, '/function_%d' % elec)
+        # hdf5_file_distr.write(uh_distr, '/function_%d' % elec)
         hdf5_file_point.write(uh_point, '/function_%d' % elec)
-    hdf5_file_distr.close()
+    # hdf5_file_distr.close()
     hdf5_file_point.close()
 
