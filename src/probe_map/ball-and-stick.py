@@ -60,11 +60,11 @@ I_max = 50 # (from EMI)
 
 # Define synapse parameters
 synapse_parameters = {
-    'idx' : cell.get_closest_idx(x=0., y=0., z=350.),
+    'idx' : cell.get_closest_idx(x=0., y=0., z=360.),
     'e' : 0.,                   # reversal potential
     'syntype' : 'ExpSyn',       # synapse type
     'tau' : 2.,                 # synaptic time constant
-    'weight' : 0.0455,           # synaptic weight
+    'weight' : 0.048,           # synaptic weight
     'record_current' : True,    # record synapse current
 }
 

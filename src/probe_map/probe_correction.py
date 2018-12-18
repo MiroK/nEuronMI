@@ -57,7 +57,7 @@ probe_map_elec = join(probe_map_folder, 'elec_dict.npy')
 mesh_path = '/home/alessio/Documents/Codes/nEuronMI/src/probe_map/meshes/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0/' \
             'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe.h5'
-
+mesh_name = 'noneuron_fancy_0_0_-100_coarse_2_box_5_rot_0_rad_0_wprobe'
 load_all_meshes = True
 
 # load neuron
