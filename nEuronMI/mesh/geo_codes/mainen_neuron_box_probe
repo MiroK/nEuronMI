@@ -1,0 +1,63 @@
+// Spherical soma with holix transitions to cylindrilcal axon/dend
+
+//     |-|   
+//     |D|  
+//     | |
+//     / \   HD
+//    /---\ 
+//   / S   \
+//   \     /
+//    \---/
+//     \ /   HA
+//     | |
+//     |A|
+//     |-|
+// z
+// ^
+// |
+// |___>x
+//
+// Neuron
+// Soma is a sphere at (0, 0, 0) with a radius rad_soma (surface marked as 1)
+// Dendrite is a cylinder with length_dend, rad_dend (surface marked as 3)
+// Axon is a cylinder with length_axon, rad_axon (surface marked as 2)
+// Hilox to dendrite is wedge joining soma at rad_hilox_d. Its length
+// is length_hilox_d (surfaces maked as 31)
+// Hilox to axon is wedge joining soma at rad_hilox_a. Its length
+// is length_hilox_a (surfaces maked as 21)
+//
+// Bbox
+// Based on the geometry of neuron a bounding box is defined which is
+// [-rad_soma-dxn, rad_soma+dxp] x [-rad_soma-dy, rad_soma+dy] x 
+// [bottom of axon - dz, top of dend + dz]
+//
+// Probe:
+// The probe extends from the (z)top of the bbox to z = probe_z. Its
+// crossecion has sizes [probe_dx, probe_dy] with a centerline at x = (probe_x, probe_y)
+// is marked as surface 41 while the side are marked as 40.
+//
+// Domain boundaries:
+// Boundaries not intersecting probe are 5. The top surface (intersecting
+// the probe) is 6.
+
+probe = newv;
+Box(probe) = {probe_x-probe_dx/2, probe_y-probe_dy/2, probe_z,
+              probe_dx, probe_dy, Abs(probe_z)+z1+1};
+
+// Make the hole
+bbox_probe() = BooleanDifference { Volume{bbox}; Delete; }{ Volume{probe}; Delete;};
+outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+
+outside_surface() = Boundary{ Volume{outside()}; };
+  
+// Probe surfaces
+Physical Surface(4) = {14, 15, 16, 17};
+Physical Surface(41) = {18};
+probe_surface[] = {14, 15, 16, 17, 18};
+
+// Physical
+Physical Volume(2) = {outside[]};
+
+// Boundaries is of the 2 volume
+Physical Surface(5) = {8, 9, 11, 12, 13};
+Physical Surface(6) = {10};

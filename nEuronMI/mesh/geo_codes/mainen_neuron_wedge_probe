@@ -1,0 +1,89 @@
+probe_dz = Abs(probe_width/2/Tan(alpha/2));
+
+// FIXME: based onbbox
+// 1   5
+// 2   4
+//   3
+//
+p = newp;
+points[] = {-1, p, p+1, p+2, p+3, p+4, p+5};
+Point(points[1]) = {probe_x-probe_thick/2, probe_y-probe_width/2, probe_top};
+Point(points[2]) = {probe_x-probe_thick/2, probe_y-probe_width/2, probe_z + probe_dz};
+Point(points[3]) = {probe_x-probe_thick/2, probe_y, probe_z};
+Point(points[4]) = {probe_x-probe_thick/2, probe_y+probe_width/2, probe_z + probe_dz};
+Point(points[5]) = {probe_x-probe_thick/2, probe_y+probe_width/2, probe_top};
+
+l = newl;
+lines[] = {-1, l, l+1, l+2, l+3, l+4, l+5, l+6};
+Line(lines[1]) = {points[1], points[2]};
+Line(lines[2]) = {points[2], points[3]};
+Line(lines[3]) = {points[3], points[4]};
+Line(lines[4]) = {points[4], points[5]};
+Line(lines[5]) = {points[5], points[1]};
+
+loop = newll;
+
+Line Loop(loop) = {lines[4], lines[5], lines[1], lines[2], lines[3]};
+Plane Surface(loop) = {loop};
+
+extr_loop[] = Extrude {probe_thick, 0, 0} {Surface{loop};};
+probe_free = extr_loop[1];
+
+// Fancy
+ncontacts = #contact_loc_z[];
+
+//foo[] = {};
+If(ncontacts > 0)
+  For i In {0:(ncontacts-1)}
+    v = newv;
+    Cylinder(v) = {probe_x-probe_thick/2, contact_loc_y[i], contact_loc_z[i],
+                   probe_thick, 0, 0, contact_rad};
+    //aux() = Boundary{ Volume{v}; };
+    //foo[] += aux[];
+
+    probe_contacts[i] = v;
+  EndFor
+
+  bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free, probe_contacts[]}; Delete;};
+  outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  Physical Volume(2) = {outside[]};  
+
+  outside_surface() = Boundary{ Volume{outside()}; };
+  //nsurfs = #outside_surface[];
+
+  //max_s = 0;
+  //For i In {0:nsurfs-1}
+  //  If(outside_surface[i] > max_s)
+  //    max_s = outside_surface[i];
+  //  EndIf
+  //EndFor
+
+  Physical Surface(5) = {8, 9, 11, 12, 13};
+  Physical Surface(6) = {10};
+
+  probe_surface_[] = outside_surface[];
+  probe_surface[] -= {8, 9, 10, 11, 12, 13};  // outer
+  probe_surface[] -= {1, 2, 3, 4, 5, 6, 7};       // neuron surfaces
+
+  probe_insul_surface[] = {14:21};
+  Physical Surface(4) = {probe_insul_surface[]};
+  
+  probe_contact_surface[] = probe_surface[];
+  probe_contact_surface[] -= {probe_insul_surface[]};
+  Physical Surface(41) = {probe_contact_surface[]};
+Else
+  bbox_probe() = BooleanDifference {Volume{bbox}; Delete;}{Volume{probe_free}; Delete;};
+
+  outside() = BooleanDifference { Volume{bbox_probe}; Delete; }{ Volume{neuron};};
+  // Physical
+  Physical Volume(2) = {outside[]};  
+
+  // Probe surfaces, no contact surface so no 41
+  probe_surface[] = {14:21};
+  Physical Surface(4) = {probe_surface[]};
+
+  // Boundaries is of the 2 volume
+  Physical Surface(5) = {8, 9, 11, 12, 13};
+  Physical Surface(6) = {10};
+EndIf
+
