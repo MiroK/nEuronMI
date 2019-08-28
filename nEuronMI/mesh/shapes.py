@@ -1,6 +1,10 @@
 from math import sqrt, tan, atan
 import numpy as np
 
+# TODO  make more modular: create extra folders - neurons/ probes/ and have one file per probe. Easier to extend
+#  Then import from neurons import *, from probes import *
+#  Same for geo_codes. We should be able to modularly construct a mesh
+
 
 class BBox(object):
     '''Box specified by lower left coord and extents'''
@@ -86,7 +90,7 @@ class Probe(object):
 # NEURONS
 ##########
 
-
+#TODO rename BASNeuron
 class SphereNeuron(Neuron):
     '''
     Neuron made of a spherical soma at 0, 0, 0 with 2 cylinders in z
@@ -148,6 +152,7 @@ class SphereNeuron(Neuron):
         else:
             return False
 
+#TODO add mechanism to use many neurons ad different positions
 class SphereNeurons2(SphereNeuron):
     '''Two sphere neurons which are dist in x direction apart'''    
     def sane_inputs(self, params):
@@ -190,7 +195,7 @@ class SphereNeurons2(SphereNeuron):
         '''Is x conained in the neuron'''
         return SphereNeuron.is_inside(self, x, tol) or SphereNeuron.is_inside(self, x-np.array([self.dist, 0, 0]), tol)
 
-        
+#TODO rename TaperedNeuron
 class MainenNeuron(Neuron):
     '''
     Neuron made of a spherical soma at 0, 0, 0 with 2 cylinders in z
@@ -320,7 +325,7 @@ class MainenNeurons2(MainenNeuron):
 # PROBES
 ######### 
 
-
+#TODO rename MicrowireProbe
 class CylinderProbe(Probe):
     '''Probe shaped like a cylinder.'''
     
@@ -368,7 +373,7 @@ class BoxProbe(Probe):
 
     def __str__(self): return 'box_probe'
 
-    
+#TODO remove
 class WedgeProbe(Probe):
     '''
     In the plane normal to x-axis the probe's crossection is 
@@ -478,7 +483,7 @@ class WedgeProbe(Probe):
     
     def __str__(self): return 'wedge_probe'
 
-    
+#TODO rename Neuronexus32Probe
 class FancyProbe(Probe):
     '''The realistic probe. Everything is hardcoded...'''
     def sane_inputs(self, params):
@@ -529,7 +534,7 @@ class FancyProbe(Probe):
     
     def __str__(self): return 'fancy_probe'
 
-
+#TODO rename Neuropixels24Probe
 class PixelProbe(Probe):
     '''The realistic probe. Everything is hardcoded...'''
 
