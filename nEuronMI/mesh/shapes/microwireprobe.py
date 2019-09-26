@@ -46,7 +46,6 @@ class MicrowireProbe(Probe):
         '''Add shape to model in terms of factory(gmsh) primitives'''
         probe = self.cylinder.as_gmsh(model, tag)
         
-        # FIXME: physical regions, else?, what should this return
         return probe
 
 # --------------------------------------------------------------------

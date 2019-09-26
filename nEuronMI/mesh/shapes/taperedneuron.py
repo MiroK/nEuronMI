@@ -88,12 +88,14 @@ class TaperedNeuron(Neuron):
         dendh = self.pieces['dendh'].as_gmsh(model)
         dend = self.pieces['dend'].as_gmsh(model)
         
-        neuron_tags, _ = factory.fuse([(3, soma)], [(3, axon), (3, axonh), (3, dend), (3, dendh)])
+        neuron_tags, _ = model.occ.fuse([(3, soma)], [(3, axon), (3, axonh), (3, dend), (3, dendh)])
 
-        factory.synchronize()
+        model.occ.synchronize()
 
-        print model.getBoundary(neuron_tags)
-        # FIXME: physical regions, else?, what should this return
+        surfs = model.getBoundary(neuron_tags)
+        print surfs, neuron_tags
+        # Volume tag, surfaces tag
+        return neuron_tags[0][1], [s[1] for s in surfs]
         
 # --------------------------------------------------------------------
 
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     factory = model.occ
 
     gmsh.initialize(sys.argv)
-
+    gmsh.fltk.initialize()
     gmsh.option.setNumber("General.Terminal", 1)
 
     
@@ -121,5 +123,5 @@ if __name__ == '__main__':
     #model.mesh.partition(4)
     
     gmsh.write("neuron.msh")
-    
+    gmsh.fltk.run()
     gmsh.finalize()

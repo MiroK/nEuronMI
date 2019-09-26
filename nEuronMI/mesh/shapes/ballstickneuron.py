@@ -51,7 +51,6 @@ class BallStickNeuron(Neuron):
         max_ = np.max(self._control_points, axis=0)
         self._bbox = Box(min_, max_ - min_)
 
-
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(BallStickNeuron._defaults.keys())
         # Ignore center
@@ -71,12 +70,14 @@ class BallStickNeuron(Neuron):
         axon = self.pieces['axon'].as_gmsh(model)
         dend = self.pieces['dend'].as_gmsh(model)
         
-        neuron_tags, _ = factory.fuse([(3, soma)], [(3, axon), (3, dend)])
+        neuron_tags, _ = model.occ.fuse([(3, soma)], [(3, axon), (3, dend)])
 
-        factory.synchronize()
+        model.occ.synchronize()
 
-        print model.getBoundary(neuron_tags)
-        # FIXME: physical regions, else?, what should this return
+        surfs = model.getBoundary(neuron_tags)
+
+        # Volume tag, surfaces tag
+        return neuron_tag[0][1], [s[1] for s in surfs]
         
 # --------------------------------------------------------------------
 

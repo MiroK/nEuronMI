@@ -89,7 +89,7 @@ class Cylinder(BaseShape):
     
     def as_gmsh(self, model, tag=-1):
         '''Return volume tag under which shape has been added'''
-        args = np.r_[self.A, self.B, self.r]
+        args = np.r_[self.A, self.B-self.A, self.r]
         return model.occ.addCylinder(*args, tag=tag)
 
 
@@ -130,7 +130,7 @@ class Cone(BaseShape):
     
     def as_gmsh(self, model, tag=-1):
         '''Return volume tag under which shape has been added'''
-        args = np.r_[self.A, self.B, self.rA, self.rB]
+        args = np.r_[self.A, self.B-self.A, self.rA, self.rB]
         return model.occ.addCone(*args, tag=tag)
 
 # FIXME: 
