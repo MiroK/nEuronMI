@@ -1,5 +1,6 @@
 from utils import as_namedtuple, has_positive_values
-from baseshape import BaseShape
+from gmsh_primitives import Sphere, Cylinder, Cone, Box
+from collections import OrderedDict
 from baseneuron import Neuron
 from math import sqrt
 import numpy as np
@@ -33,8 +34,38 @@ class TaperedNeuron(Neuron):
     def __init__(self, params=None):
         Neuron.__init__(self, params)
 
-        # TODO: Setup bounding box
-        # TODO: Setup control points
+        # Define as Cylinder-Cone-Sphere-Cone-Cylinder
+        # axon-axon hill-some-dend hill-dendrite
+        params = as_namedtuple(self._params)
+        C = np.array([params.soma_x, params.soma_y, params.soma_z])
+        # Move up
+        shift = sqrt(params.soma_rad**2 - params.axonh_rad**2)
+        
+        A0 = C + np.array([0, 0, shift])
+        A1 = A0 + np.array([0, 0, params.axonh_len])
+        A2 = A1 + np.array([0, 0, params.axon_len])
+
+        # Move down
+        shift = sqrt(params.soma_rad**2 - params.dendh_rad**2)
+        
+        D0 = C - np.array([0, 0, shift])
+        D1 = D0 - np.array([0, 0, params.dendh_len])
+        D2 = D1 - np.array([0, 0, params.dend_len])
+
+        self.pieces = OrderedDict(axon=Cylinder(A1, A2, params.axon_rad),
+                                  axonh=Cone(A0, A1, params.axonh_rad, params.axon_rad),
+                                  soma=Sphere(C, params.soma_rad),
+                                  dendh=Cone(D0, D1, params.dendh_rad, params.dend_rad),
+                                  dend=Cylinder(D1, D2, params.dend_rad))
+
+        # Now draw circle around them
+        self._control_points = np.row_stack([p.control_points for p in self.pieces.values()])
+                               
+        # Setup bounding box
+        min_ = np.min(self._control_points, axis=0)
+        max_ = np.max(self._control_points, axis=0)
+        self._bbox = Box(min_, max_ - min_)
+
 
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(TaperedNeuron._defaults.keys())
@@ -42,61 +73,33 @@ class TaperedNeuron(Neuron):
         assert has_positive_values(params,
                                    set(params.keys())-set(('soma_x', 'soma_y', 'soma_z')))
 
-        assert params['soma_rad'] > params['dendh_rad']
-        assert params['soma_rad'] > params['axonh_rad']
+        assert params['soma_rad'] > params['dendh_rad'] > params['dend_rad']
+        assert params['soma_rad'] > params['axonh_rad'] > params['axon_rad']
         
-        # TODO: rest
-
     def contains(self, point, tol):
         '''Is point inside shape?'''
-        pass
-        # FIXME
+        return any(piece.contains(point, tol) for piece in self.pieces.values())
 
-    def as_gmsh(self, factory, tag=-1):
+    def as_gmsh(self, model, tag=-1):
         '''Add shape to model in terms of factory(gmsh) primitives'''
-        print '>>', self._params
-        params = as_namedtuple(self._params)
+        soma = self.pieces['soma'].as_gmsh(model)
+        axonh = self.pieces['axonh'].as_gmsh(model)
+        axon = self.pieces['axon'].as_gmsh(model)
+        dendh = self.pieces['dendh'].as_gmsh(model)
+        dend = self.pieces['dend'].as_gmsh(model)
         
-        #^ z-axis          z-Point
-        #|                 A2
-        #| Axon            A1
-        #| Axon hil        A0
-        #| Som             Center
-        #| Dend hil        D0
-        #| Dend            D1
-        #|                 D2
+        neuron_tags, _ = factory.fuse([(3, soma)], [(3, axon), (3, axonh), (3, dend), (3, dendh)])
 
-        center = np.array([params.soma_x, params.soma_y, params.soma_z])
-        # Move up
-        shift = sqrt(params.soma_rad**2 - params.axonh_rad**2)
-        
-        A0 = center + np.array([0, 0, shift])
-        A1 = A0 + np.array([0, 0, params.axonh_len])
-        A2 = A1 + np.array([0, 0, params.axon_len])
+        factory.synchronize()
 
-        # Move down
-        shift = sqrt(params.soma_rad**2 - params.dendh_rad**2)
-        
-        D0 = center - np.array([0, 0, shift])
-        D1 = D0 - np.array([0, 0, params.dendh_len])
-        D2 = D1 - np.array([0, 0, params.dend_len])
-
-        soma = factory.addSphere(params.soma_x, params.soma_y, params.soma_z, params.soma_rad)
-        print soma
-        
-        args = np.r_[A0, A1, params.axonh_rad, params.axon_rad]
-        axonh = factory.addCone(*args)
-        print axonh
-        
-        args = np.r_[A1, A2, params.axon_rad]
-        axon = factory.addCylinder(*args)
-        print axon
-        
-        print factory.fuse([(3, soma)], [(3, axon), (3, axonh)])
+        print model.getBoundary(neuron_tags)
+        # FIXME: physical regions, else?, what should this return
         
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
+
+    neuron = TaperedNeuron()
 
     import gmsh
     import sys
@@ -108,9 +111,8 @@ if __name__ == '__main__':
 
     gmsh.option.setNumber("General.Terminal", 1)
 
-    neuron = TaperedNeuron()
     
-    neuron.as_gmsh(factory)
+    neuron.as_gmsh(model)
     factory.synchronize();
 
     model.mesh.generate(3)

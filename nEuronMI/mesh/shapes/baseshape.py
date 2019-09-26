@@ -4,8 +4,8 @@ class BaseShape(object):
         '''Is point inside shape?'''
         return NotImplementedError
 
-    def as_gmsh(self, factory, tag=-1):
-        '''Add shape to model in terms of factory(gmsh) primitives'''
+    def as_gmsh(self, model, tag=-1):
+        '''Add shape to model (in terms of model.factory primitives)'''
         return NotImplementedError
     
     # Generics ---------------------------------------------------------

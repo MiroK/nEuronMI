@@ -3,6 +3,7 @@ from baseshape import BaseShape
 
 class Neuron(BaseShape):
     '''Every neuron'''
+    # NOTE: we assume that its axis is aligned with Z axis
     def __init__(self, params):
         if params is None:
             params = self.default_params
