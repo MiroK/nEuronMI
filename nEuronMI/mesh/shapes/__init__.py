@@ -1,9 +1,9 @@
-from .basneuron import BASNeuron
-from .taperedneuron import TaperedNeuron
+from taperedneuron import TaperedNeuron
+from ballstickneuron import BallStickNeuron
 
-from .microwireprobe import MicrowireProbe
-from .neuronexusprobe import NeuronexusProbe
-from .neuropixels24probe import Neuropixels24Probe
+from microwireprobe import MicrowireProbe
 
-neuron_list = {'bas': BASNeuron, 'tapered': TaperedNeuron}
-probe_list = {'microwire': MicrowireProbe, 'neuronexus': NeuronexusProbe, 'neuropixels': Neuropixels24Probe}
+from gmsh_primitives import Box, Sphere, Cylinder, Cone
+
+neuron_list = {'bas': BallStickNeuron, 'tapered': TaperedNeuron}
+probe_list = {'microwire': MicrowireProbe}

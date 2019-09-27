@@ -1,4 +1,4 @@
-from utils import first, second
+from shapes.utils import first, second
 
 
 def EMI_model(model, box, neuron, probe=None, tol=1E-10):
@@ -95,9 +95,7 @@ def EMI_model(model, box, neuron, probe=None, tol=1E-10):
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from taperedneuron import TaperedNeuron
-    from microwireprobe import MicrowireProbe
-    from gmsh_primitives import Box
+    from shapes import *
     import numpy as np
     import sys
 
