@@ -2,6 +2,7 @@ from utils import as_namedtuple, has_positive_values
 from gmsh_primitives import Cylinder
 from baseprobe import Probe
 import numpy as np
+import utils
 
 
 class MicrowireProbe(Probe):
@@ -23,7 +24,7 @@ class MicrowireProbe(Probe):
 
         params = as_namedtuple(self._params)
         A = np.array([params.tip_x, params.tip_y, params.tip_z])
-        B = A - np.array([0, 0, params.length])
+        B = A + np.array([0, 0, params.length])
         self.cylinder = Cylinder(A, B, params.radius)
         
         # Now draw circle around them
@@ -31,6 +32,10 @@ class MicrowireProbe(Probe):
                                
         # Setup bounding box
         self._bbox = self.cylinder.bbox
+
+        # NOTE: missing center of gravity
+        self._surfaces = {'wall': self.cylinder.center_of_mass,
+                          'tip': A}
 
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(MicrowireProbe._defaults.keys()) 
@@ -47,6 +52,16 @@ class MicrowireProbe(Probe):
         probe = self.cylinder.as_gmsh(model, tag)
         
         return probe
+
+    def link_surfaces(self, model, tags, links, box, tol=1E-10):
+        '''Account for possible cut and shift of center of mass of face'''
+        # Should be fine for tip
+        links = utils.link_surfaces(model, tags, self, links=links, tol=tol)
+        # NOTE: as we chop the by box, the wall won't be found with the
+        # above metric; But we should match x, y and z should account for chop
+        Z0 = 0.5*(box.max_[2] + self._params['tip_z'])
+        metric = lambda x, y: np.sqrt(np.abs((y - x)[:, 0])**2 + np.abs((y - x)[:, 1])**2 + np.abs((x[:, 2]-Z0)**2))
+        return utils.link_surfaces(model, tags, self, links=links, metric=metric, tol=tol)
 
 # --------------------------------------------------------------------
 

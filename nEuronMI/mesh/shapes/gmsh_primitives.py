@@ -2,6 +2,7 @@ from utils import circle_points, unit_vector
 from baseshape import BaseShape
 from math import sqrt
 import numpy as np
+import utils
 
 
 class Box(BaseShape):
@@ -16,15 +17,27 @@ class Box(BaseShape):
 
         self._bbox = self
 
-        c = p + 0.5*dx
+        #
+        #  D-----C
+        #  |\A   |B
+        #  d-|---c|
+        #   \|    \
+        #    a----b
+        a = p
+        b = p + np.r_[dx[0], 0, 0]
+        c = p + np.r_[dx[0], dx[1], 0]
+        d = p + np.r_[0, dx[1], 0]
+        A, B, C, D = (x + np.array([0, 0, dx[2]]) for x in (a, b, c, d))
+
         self._center_of_mass = c
         # Centers of 6 faces
-        self._surfaces = {'min_x': c - np.r_[0.5*dx[0], 0, 0],
-                          'max_x': c + np.r_[0.5*dx[0], 0, 0],
-                          'min_z': c - np.r_[0, 0, 0.5*dx[2]],
-                          'max_z': c + np.r_[0, 0, 0.5*dx[2]],
-                          'min_y': c - np.r_[0, 0.5*dx[1], dx[2]],
-                          'max_y': c + np.r_[0, 0.5*dx[1], dx[2]]}
+        self._surfaces = {'min_x': np.mean((a, A, d, D), axis=0),
+                          'max_x': np.mean((c, C, b, B), axis=0),
+                          'min_y': np.mean((a, A, b, B), axis=0),
+                          'max_y': np.mean((d, D, c, C), axis=0),
+                          'min_z': np.mean((a, b, c, d), axis=0),
+                          'max_z': np.mean((A, B, C, D), axis=0)}
+
 
     def contains(self, point, tol):
         return np.all(np.logical_and(self.min_ - tol < point,
@@ -33,6 +46,16 @@ class Box(BaseShape):
     def as_gmsh(self, model, tag=-1):
         args = np.r_[self.min_, self.max_ - self.min_]
         return model.occ.addBox(*args, tag=tag)
+
+    def link_surfaces(self, model, tags, links, box=None, tol=1E-10):
+        '''Account for possible cut and shift of center of mass of face'''
+        # This pass is blind
+        links = utils.link_surfaces(model, tags, self, links, tol=tol)
+        # NOTE: everything is assumed to be z aligned. We might have
+        # a cut z plane
+        metric = lambda x, y: np.abs((y - x)[:,2])  # But z coord should match
+        
+        return utils.link_surfaces(model, tags, self, tol=tol, links=links, metric=metric)
 
     
 class Sphere(BaseShape):
@@ -51,6 +74,9 @@ class Sphere(BaseShape):
 
         self.c = c
         self.r = r
+
+        self._center_of_mass = c
+        self._surfaces = {'all': c}
 
     def contains(self, point, tol):
         if not self.bbox_contains(point, tol):
@@ -80,6 +106,11 @@ class Cylinder(BaseShape):
 
         self.A, self.B = A, B
         self.r = r
+
+        self._center_of_mass = A + 0.5*(B-A)
+        self._surfaces = {'baseA': A,
+                          'baseB': B, 
+                          'wall': self._center_of_mass}
 
     def contains(self, point, tol):
         if not self.bbox_contains(point, tol):
@@ -120,6 +151,12 @@ class Cone(BaseShape):
 
         self.A, self.B = A, B
         self.rA, self.rB = rA, rB
+
+        self._center_of_mass = Missing
+        self._surfaces = {'baseA': A,
+                          'baseB': B, 
+                          'wall': self._center_of_mass}
+
 
     def contains(self, point, tol):
         if not self.bbox_contains(point, tol):

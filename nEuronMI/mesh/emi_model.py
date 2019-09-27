@@ -1,8 +1,12 @@
 from shapes.utils import first, second
+from itertools import count, chain
 
 
-def EMI_model(model, box, neuron, probe=None, tol=1E-10):
-    '''Define geometry for EMI simulations (fill the model)'''
+def EMI_geometry(model, box, neuron, probe=None, tol=1E-10):
+    '''
+    Define geometry for EMI simulations (fill the model). Return model 
+    and mapping of external surfaces (to be used for bcs etc)
+    '''
     # Neuron is contained
     assert all(box.contains(p, tol) for p in neuron.control_points)
 
@@ -21,7 +25,6 @@ def EMI_model(model, box, neuron, probe=None, tol=1E-10):
     if probe is not None:
         probe_tag = probe.as_gmsh(model)
         # Box - probe
-        print box_tag, probe_tag
         box_tag, _ = model.occ.cut([(3, box_tag)], [(3, probe_tag)])
         box_tag = second(box_tag[0])  # Pair (3, tag)
 
@@ -40,58 +43,57 @@ def EMI_model(model, box, neuron, probe=None, tol=1E-10):
 
     neuron_surfs = set(neuron_surfs)
     if surfs0 == neuron_surfs:
-        neuron, external = map(second, (vols[0], vols[1]))
+        neuron_tag, external_tag = map(second, (vols[0], vols[1]))
         # NOTE: bdry of external is neuron + box bdry
         box_bdry = surfs1 - neuron_surfs  # This can include probe
     else:
         assert surfs1 == neuron_surfs
             
-        neuron, external = map(second, (vols[1], vols[0]))
+        neuron_tag, external_tag = map(second, (vols[1], vols[0]))
         box_bdry = surfs0 - neuron_surfs
 
-    # Now we can label each volume as Physical Volume
-    model.addPhysicalGroup(3, [neuron], 1)     # Neuron is 1
-    model.addPhysicalGroup(3, [external], 2)   # External is 2
+    # Let neuron, probe and box claim the external surfaces
+    neuron_surfaces = {}
+    neuron.link_surfaces(model, neuron_surfs, links=neuron_surfaces, tol=tol)
+    # Success, what neuron wanted was found
+    assert not neuron_surfs
+    assert set(neuron_surfaces.keys()) == set(neuron.surfaces.keys())
 
-        # stag = 1
-        # # Start marking; each neuron bit gets a different tag
+    probe_surfaces = {}
+    if probe is not None:
+        probe.link_surfaces(model, box_bdry, box=box, tol=tol, links=probe_surfaces)
+        assert set(probe_surfaces.keys()) == set(probe.surfaces.keys())
+    
+    # And the box
+    external_surfaces = {}
+    box.link_surfaces(model, box_bdry, links=external_surfaces)
+    # Success, what box wanted was found
+    assert set(external_surfaces.keys()) == set(box.surfaces.keys())
 
-        # keys, box_surfaces = zip(*box.surfaces.items())
-        # box_surfaces = np.array(box_surfaces)
-        # # Each external bit gets a part
-        # for surf in box_bdry:
-        #     p = np.array(model.occ.getCenterOfMass(2, surf))
-        #     dist = np.linalg.norm(box_surfaces - p, axis=1)
-        #     imin = np.argmin(dist)
-        #     # A successfull pairing
-        #     #if dist[imin] < 1E-13:
-                
-            
-        # surfaces = [(surf, ) for surf in box_bdry]
+    # Finally we assign physical groups
+    # Volumes
+    tagged_entities = {3: {'neuron': {'all': (neuron_tag, 1)},
+                           'external': {'all': (external_tag, 2)}}}
+    # Now sequentially surfaces
+    shapes = {'neuron': neuron_surfaces, 'box': external_surfaces, 'probe': probe_surfaces}
+    
+    tags = count(1)
+    tagged_surfaces = {shape: {k: (shape_surfs[k], tag) for k, tag in zip(shape_surfs, tags)}
+                       for shape, shape_surfs in shapes.items()}
 
-        # from scipy.spatial import distance_matrix
+    tagged_entities[2] = tagged_surfaces
+
+    # Update the model
+    for dim, entities in tagged_entities.items():
+        # Don't care about grouping here
+        for (etag, ptag) in chain(*[d.values() for d in entities.values()]):
+            model.addPhysicalGroup(dim, [etag], ptag)
+    
+    return model, tagged_entities
 
 
-        #print surfaces
-        #M = distance_matrix(map(second, surfaces), box_surfaces)
-        #print M
-        # match_surfaces(surfaces, box)
-        
-        # The surfaces as Physical Surface based on whether neuron or
-        # the rest claims them
-        
-        ##print neuron_surfs
-        #print model.occ.getCenterOfMass(2, x)
-        
-        #print model.getBoundary(vols[0])
+#def EMI_mesh(
 
-        #print model.getBoundary(vols[1])
-
-        # TODO: Tagging
-
-    # TODO: With probe, tagging
-
-    # TODO: fields
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -99,9 +101,8 @@ if __name__ == '__main__':
     import numpy as np
     import sys
 
-
     box = Box(np.array([-3.5, -3, -5]), np.array([6, 6, 10]))
-    neuron = TaperedNeuron()
+    neuron = BallStickNeuron()
     probe = MicrowireProbe({'tip_x': 1.5, 'radius': 0.2, 'length': 10})
     import gmsh
 
@@ -113,7 +114,7 @@ if __name__ == '__main__':
 
     gmsh.option.setNumber("General.Terminal", 1)
 
-    EMI_model(model, box, neuron, probe)    
+    EMI_geometry(model, box, neuron, probe)    
     factory.synchronize();
 
     # model.mesh.generate(3)

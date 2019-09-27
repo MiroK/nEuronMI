@@ -46,6 +46,41 @@ def second(iterable):
     next(it)
     return first(it)
 
+
+def link_surfaces(model, tags, shape, links, tol=1E-10, metric=None):
+    '''
+    Let tags be surfaces of the model. For every surface of the shape 
+    we try to pair it with one of the tagged surfaces based on metric(x, y)
+    which has x as centers of all tagged surfaces and y as the surface of
+    the shape
+
+    Return a map named_surface of shape -> tag. 
+
+    NOTE: tags is altered in the process. 
+    '''
+    if metric is None:
+        metric = lambda x, y: np.linalg.norm(y-x, axis=1)
+
+    tags_ = list(tags)
+    # Precompute
+    x = np.array([model.occ.getCenterOfMass(2, tag) for tag in tags_])
+        
+    for name in shape.surfaces:
+        if name in links: continue
+        y = shape.surfaces[name]
+
+        # Correspondence
+        dist = metric(x, y)
+        i = np.argmin(dist)
+
+        # Accept
+        if dist[i] < tol:
+            link = tags_[i]
+            links[name] = link
+            tags.remove(link)
+
+    return links
+
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':

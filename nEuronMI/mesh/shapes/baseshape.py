@@ -1,7 +1,6 @@
 class BaseShape(object):
     '''Common API of Neuron, Box, Shape'''
     def __init__(self, params):
-        print '>>>>', params
         if params is None:
             params = self.default_params
             
@@ -25,6 +24,19 @@ class BaseShape(object):
     def as_gmsh(self, model, tag=-1):
         '''Add shape to model (in terms of model.factory primitives)'''
         return NotImplementedError
+
+    def link_surfaces(self, model, tags, links, box=None, tol=1E-10):
+        '''
+        Let tags be surfaces of the model. For every surface of the shape 
+        we try to pair it with one of the tagged surfaces. 
+
+        Return a map named_surface of shape -> tag. (updated links)
+        
+        NOTE: tags is altered in the process. 
+        '''
+        # Typically the linking depends just on the shape itself but
+        # due to intersection in might be altered by the box.
+        raise NotImplementedError
 
     # Generics ---------------------------------------------------------
 

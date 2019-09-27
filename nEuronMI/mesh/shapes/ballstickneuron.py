@@ -51,6 +51,15 @@ class BallStickNeuron(Neuron):
         max_ = np.max(self._control_points, axis=0)
         self._bbox = Box(min_, max_ - min_)
 
+        # NOTE: missing center of gravity
+        # Surfaces are associated with centers of the pieces; this way
+        # we find walls
+        self._surfaces = {k: self.pieces[k].center_of_mass for k in self.pieces}
+        # Still missing end tips
+        self._surfaces['axon_base'] = A1
+        self._surfaces['dend_base'] = D1
+        
+
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(BallStickNeuron._defaults.keys())
         # Ignore center
@@ -77,7 +86,7 @@ class BallStickNeuron(Neuron):
         surfs = model.getBoundary(neuron_tags)
 
         # Volume tag, surfaces tag
-        return neuron_tag[0][1], [s[1] for s in surfs]
+        return neuron_tags[0][1], [s[1] for s in surfs]
         
 # --------------------------------------------------------------------
 
