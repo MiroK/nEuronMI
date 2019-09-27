@@ -16,6 +16,16 @@ class Box(BaseShape):
 
         self._bbox = self
 
+        c = p + 0.5*dx
+        self._center_of_mass = c
+        # Centers of 6 faces
+        self._surfaces = {'min_x': c - np.r_[0.5*dx[0], 0, 0],
+                          'max_x': c + np.r_[0.5*dx[0], 0, 0],
+                          'min_z': c - np.r_[0, 0, 0.5*dx[2]],
+                          'max_z': c + np.r_[0, 0, 0.5*dx[2]],
+                          'min_y': c - np.r_[0, 0.5*dx[1], dx[2]],
+                          'max_y': c + np.r_[0, 0.5*dx[1], dx[2]]}
+
     def contains(self, point, tol):
         return np.all(np.logical_and(self.min_ - tol < point,
                                      point < self.max_ + tol))
@@ -132,11 +142,6 @@ class Cone(BaseShape):
         '''Return volume tag under which shape has been added'''
         args = np.r_[self.A, self.B-self.A, self.rA, self.rB]
         return model.occ.addCone(*args, tag=tag)
-
-# FIXME: 
-#        put the neuron together in terms of
-#        cylinder for free
-#        putting all together
 
 # --------------------------------------------------------------------
 

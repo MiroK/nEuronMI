@@ -1,18 +1,10 @@
 from baseshape import BaseShape
 
 
-class Probe(object):
+class Probe(BaseShape):
     '''Every probe'''
     def __init__(self, params=None):
-        if params is None:
-            params = self.default_params
-            
-        try:
-            self.check_geometry_parameters(params)
-        except NotImplementedError:
-            print('No sanity checks ran on geometry inputs')
-
-        self._params = params
+        BaseShape.__init__(self, params)
         
     @property
     def default_params(self):

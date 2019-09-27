@@ -19,7 +19,7 @@ class MicrowireProbe(Probe):
         }
     
     def __init__(self, params=None):
-        Probe.__init__(self)
+        Probe.__init__(self, params)
 
         params = as_namedtuple(self._params)
         A = np.array([params.tip_x, params.tip_y, params.tip_z])
@@ -33,7 +33,7 @@ class MicrowireProbe(Probe):
         self._bbox = self.cylinder.bbox
 
     def check_geometry_parameters(self, params):
-        assert set(params.keys()) == set(MicrowireProbe._defaults.keys())
+        assert set(params.keys()) == set(MicrowireProbe._defaults.keys()) 
         # Ignore center
         assert has_positive_values(params,
                                    set(params.keys())-set(('tip_x', 'tip_y', 'tip_z')))

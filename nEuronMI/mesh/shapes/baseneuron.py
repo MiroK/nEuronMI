@@ -5,15 +5,7 @@ class Neuron(BaseShape):
     '''Every neuron'''
     # NOTE: we assume that its axis is aligned with Z axis
     def __init__(self, params):
-        if params is None:
-            params = self.default_params
-            
-        try:
-            self.check_geometry_parameters(params)
-        except NotImplementedError:
-            print('No sanity checks ran on geometry inputs')
-
-        self._params = params
+        BaseShape.__init__(self, params)
         
     @property
     def default_params(self):

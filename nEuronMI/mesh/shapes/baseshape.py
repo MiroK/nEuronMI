@@ -1,5 +1,23 @@
 class BaseShape(object):
     '''Common API of Neuron, Box, Shape'''
+    def __init__(self, params):
+        print '>>>>', params
+        if params is None:
+            params = self.default_params
+            
+        try:
+            # Let's add the missing keys
+            missing = set(self.default_params.keys()) - set(params.keys())
+            # Extended
+            params = params.copy()
+            params.update(dict((key, self.default_params[key]) for key in missing))
+
+            self.check_geometry_parameters(params)
+        except NotImplementedError:
+            print('No sanity checks ran on geometry inputs')
+
+        self._params = params
+        
     def contains(self, point, tol):
         '''Is point inside shape?'''
         return NotImplementedError
@@ -7,7 +25,7 @@ class BaseShape(object):
     def as_gmsh(self, model, tag=-1):
         '''Add shape to model (in terms of model.factory primitives)'''
         return NotImplementedError
-    
+
     # Generics ---------------------------------------------------------
 
     def bbox_contains(self, point, tol):
@@ -24,4 +42,13 @@ class BaseShape(object):
         '''Points characterizing the shape'''
         return self._control_points
 
-    
+    @property
+    def center_of_mass(self):
+        '''Center of mass is used to find the entity/its surfaces in the model'''
+        return self._center_of_mass
+
+    @property
+    def surfaces(self):
+        '''{str(name of the surface) -> R^3 that is its center of mass}'''
+        return self._surfaces
+

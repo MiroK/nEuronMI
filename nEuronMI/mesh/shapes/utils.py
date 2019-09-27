@@ -35,6 +35,17 @@ def circle_points(c, r, a=np.array([0, 0, 1])):
 
     return np.array([c+r*u, c-r*u, c+r*v, c-r*v])
 
+
+def first(iterable):
+    '''A better [0]'''
+    return next(iter(iterable))
+
+def second(iterable):
+    '''A better [1]'''
+    it = iter(iterable)
+    next(it)
+    return first(it)
+
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -51,3 +62,6 @@ if __name__ == '__main__':
     for p in pts:
         print np.dot(p-c, n)
         print '  ', np.linalg.norm(p-c)
+
+    print first((0, 1, 2))
+    print second((1, 2))

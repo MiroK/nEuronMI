@@ -93,7 +93,7 @@ class TaperedNeuron(Neuron):
         model.occ.synchronize()
 
         surfs = model.getBoundary(neuron_tags)
-        print surfs, neuron_tags
+
         # Volume tag, surfaces tag
         return neuron_tags[0][1], [s[1] for s in surfs]
         
