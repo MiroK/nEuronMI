@@ -1,4 +1,5 @@
 from collections import namedtuple
+from itertools import dropwhile
 import numpy as np
 
 
@@ -81,9 +82,19 @@ def link_surfaces(model, tags, shape, links, tol=1E-10, metric=None):
 
     return links
 
+
+def find_first(item, iterable):
+    '''If iterable were indexable where would we find item'''
+    pair = next(dropwhile(lambda ip: item != second(ip), enumerate(iter(iterable))))
+    return first(pair)
+
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
+
+    print find_first(4, range(19))
+    print list(range(19)).index(4), list(range(19))
+    
     d = {'a': 1, 'b': 2}
     print(as_namedtuple(d))
 

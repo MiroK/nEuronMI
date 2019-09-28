@@ -82,16 +82,14 @@ if __name__ == '__main__':
         factory = model.occ
         # You can pass -clscale 0.25 (to do global refinement)
         # or -format msh2            (to control output format of gmsh)
-        gmsh.initialize(sys.argv)
+        args = sys.argv + ['-format', 'msh2']  # Dolfin convert handles only this
+        gmsh.initialize(args)
 
         gmsh.option.setNumber("General.Terminal", 1)
 
         # Add components to model
         model, mapping = build_EMI_geometry(model, box, neuron, probe)
         # Dump the mapping as json
-        with open('%s.json' % root, 'w') as out:
-            json.dump(mapping, out)
-        # Add fields controlling mesh size
         mesh_config_EMI_model(model, mapping, mesh_sizes)
     
         factory.synchronize();
@@ -124,4 +122,5 @@ if __name__ == '__main__':
 
     hmin = mesh.hmin()/2
     # No duplicates
-    print all(np.min(row[i+1:]) > hmin for i, row in zip(range(len(x)-2), M))
+    print all(np.min(row[i+1:]) > 1E-5 for i, row in zip(range(len(x)-2), M))
+
