@@ -65,7 +65,7 @@ def link_surfaces(model, tags, shape, links, tol=1E-10, metric=None):
     tags_ = list(tags)
     # Precompute
     x = np.array([model.occ.getCenterOfMass(2, tag) for tag in tags_])
-        
+
     for name in shape.surfaces:
         if name in links: continue
         y = shape.surfaces[name]
@@ -73,7 +73,6 @@ def link_surfaces(model, tags, shape, links, tol=1E-10, metric=None):
         # Correspondence
         dist = metric(x, y)
         i = np.argmin(dist)
-
         # Accept
         if dist[i] < tol:
             link = tags_[i]

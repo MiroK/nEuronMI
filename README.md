@@ -1,4 +1,11 @@
-# FEM simulator for relaistic neuron models and probes
+# FEM simulator for realistic neuron models and probes
+
+### Testing
+
+Run from current directory
+```python
+python -m unittest discover test
+```
 
 ### Dependencies
 - mesh generation relies on [Gmsh](https://gmsh.info/#Download)

@@ -66,6 +66,15 @@ class TaperedNeuron(Neuron):
         max_ = np.max(self._control_points, axis=0)
         self._bbox = Box(min_, max_ - min_)
 
+        # NOTE: missing center of gravity
+        # The flat ones by center of mass
+        self._surfaces = {k: self.pieces[k].center_of_mass for k in ('axon', 'soma', 'dend')}
+        # Cone is special
+        self._surfaces['axonh'] = self.pieces['axonh'].wall_center_of_mass
+        self._surfaces['dendh'] = self.pieces['dendh'].wall_center_of_mass
+        # Still missing end tips
+        self._surfaces['axon_base'] = A2
+        self._surfaces['dend_base'] = D2
 
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(TaperedNeuron._defaults.keys())
@@ -101,7 +110,7 @@ class TaperedNeuron(Neuron):
 
 if __name__ == '__main__':
 
-    neuron = TaperedNeuron()
+    neuron = TaperedNeuron({'dend_rad': 0.2, 'axon_rad': 0.3})
 
     import gmsh
     import sys
@@ -113,8 +122,18 @@ if __name__ == '__main__':
     gmsh.fltk.initialize()
     gmsh.option.setNumber("General.Terminal", 1)
 
+
+    cone = neuron.pieces['dendh']
+    v = cone.as_gmsh(model)
+    print cone.center_of_mass
+    print cone.wall_center_of_mass
+    print
+    print model.occ.getCenterOfMass(3, v)
+    print model.occ.getCenterOfMass(2, 1)
+    print model.occ.getCenterOfMass(2, 2)
+    print model.occ.getCenterOfMass(2, 3)
     
-    neuron.as_gmsh(model)
+    # neuron.as_gmsh(model)
     factory.synchronize();
 
     model.mesh.generate(3)

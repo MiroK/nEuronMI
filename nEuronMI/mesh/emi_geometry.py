@@ -76,7 +76,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
             # Try geom check
             match = neuron.link_surfaces(model, vol_surfs, links=neuron_surfaces, tol=tol)
             # If some found then all found
-            assert not match or set(neuron_surfaces.keys()) == set(neuron.surfaces.keys())
+            assert not match or set(neuron_surfaces.keys()) == set(neuron.surfaces.keys()), (neuron, neuron_surfaces)
             # If success we can pair say that i-th neuron is that volume
             if match:
                 neuron_mapping.append((vol_tags, neuron_surfaces))
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     root = 'test_neuron'
     # Components
     box = Box(np.array([-3.5, -3, -5]), np.array([8, 8, 13]))
-    neurons = [BallStickNeuron(),
+    neurons = [TaperedNeuron({'dend_rad': 0.2, 'axon_rad': 0.3}),
                BallStickNeuron({'soma_x': -2, 'soma_y': -2, 'soma_z': 2}),
                BallStickNeuron({'soma_x': 2, 'soma_y': 2, 'soma_z': 2})]
 

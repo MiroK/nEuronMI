@@ -152,11 +152,18 @@ class Cone(BaseShape):
         self.A, self.B = A, B
         self.rA, self.rB = rA, rB
 
-        self._center_of_mass = Missing
+        dr = rB - rA
+        s = 0.5*(rA**2 + 4*rA*dr/3. + dr**2/2.)/(rA**2 + rA*dr + dr**2/3.)
+        assert 0 < s < 1
+
+        self._center_of_mass = A + s*(B-A)
         self._surfaces = {'baseA': A,
                           'baseB': B, 
                           'wall': self._center_of_mass}
 
+        # A useful property of wall is its center of mass
+        s = (rA/2. + dr/3.)/(rA + dr/2.)
+        self.wall_center_of_mass = A + s*(B-A)
 
     def contains(self, point, tol):
         if not self.bbox_contains(point, tol):
@@ -201,27 +208,24 @@ if __name__ == '__main__':
 
     # print box.bbox_contains(np.array([0.5, 0.5, 0.5]), 1E-13)
 
-    # import gmsh
-    # import sys
+    import gmsh
+    import sys
 
-    # model = gmsh.model
-    # factory = model.occ
+    model = gmsh.model
+    factory = model.occ
 
-    # gmsh.initialize(sys.argv)
+    gmsh.initialize(sys.argv)
+    gmsh.option.setNumber("General.Terminal", 1)
 
-    # gmsh.option.setNumber("General.Terminal", 1)
+    c = Cone(np.array([0, 0, 0]),
+             np.array([1, 1, 2]),
+             0.2,
+             0.5)
+    tag = c.as_gmsh(model)
+    factory.synchronize();
 
-    # model.add("boolean")
-
-    # # from http://en.wikipedia.org/wiki/Constructive_solid_geometry
-
-    # gmsh.option.setNumber("Mesh.Algorithm", 6);
-    # gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.4);
-    # gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 0.4);
-
-    # box.as_gmsh(model)
-    # factory.synchronize();
-
+    print model.occ.getCenterOfMass(3, tag)
+    print c.center_of_mass
     # model.mesh.generate(3)
     # #model.mesh.refine()
     # #model.mesh.setOrder(2)
@@ -229,4 +233,4 @@ if __name__ == '__main__':
     
     # gmsh.write("boolean.msh")
     
-    # gmsh.finalize()
+    gmsh.finalize()
