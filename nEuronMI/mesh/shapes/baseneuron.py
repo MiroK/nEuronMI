@@ -1,5 +1,5 @@
-from baseshape import BaseShape
-import utils
+from nEuronMI.mesh.shapes.baseshape import BaseShape
+import nEuronMI.mesh.shapes.utils
 
 
 class Neuron(BaseShape):

@@ -1,5 +1,5 @@
-from shapes.utils import first, second
-from shapes.baseneuron import Neuron
+from nEuronMI.mesh.shapes.utils import first, second
+from nEuronMI.mesh.shapes.baseneuron import Neuron
 from itertools import count, chain
 from collections import deque
 from dolfin import info

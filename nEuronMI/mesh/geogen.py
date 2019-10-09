@@ -2,7 +2,7 @@ import hashlib, time, os
 from os.path import join
 import subprocess, os
 import numpy as np
-from .shapes import BASNeuron, TaperedNeuron
+from .shapes import BallStickNeuron, TaperedNeuron
 from .shapes import MicrowireProbe, NeuronexusProbe, Neuropixels24Probe
 from .shapes import neuron_list, probe_list
 
@@ -52,10 +52,10 @@ def generate_mesh(neuron_type='tapered', probe_type='neuronexus', mesh_resolutio
     elif isinstance(mesh_resolution, dict):
         assert 'neuron' in mesh_resolution.keys()
         assert 'probe' in mesh_resolution.keys()
-        assert 'rest' in mesh_resolution.keys()
+        assert 'ext' in mesh_resolution.keys()
     else:
         # set default here
-        mesh_resolution = {'neuron': 3, 'probe': 6, 'rest': 9}
+        mesh_resolution = {'neuron': 3, 'probe': 6, 'ext': 9}
 
         # if neuron_params is None:
     #     geometrical_params = {'rad_soma': 10 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,

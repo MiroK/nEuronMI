@@ -38,7 +38,6 @@
 
 import getopt
 import sys
-from instant import get_status_output
 import re
 import warnings
 import os.path
@@ -46,6 +45,7 @@ import os.path
 from dolfin_utils.meshconvert import abaqus
 from dolfin_utils.meshconvert import xml_writer
 import numpy
+
 
 def format_from_suffix(suffix):
     "Return format for given suffix"
@@ -67,9 +67,9 @@ def format_from_suffix(suffix):
         return "abaqus"
     elif suffix == "ncdf":
         return "NetCDF"
-    elif suffix =="exo":
+    elif suffix == "exo":
         return "ExodusII"
-    elif suffix =="e":
+    elif suffix == "e":
         return "ExodusII"
     elif suffix == "vrt" or suffix == "cel":
         return "StarCD"
@@ -77,6 +77,7 @@ def format_from_suffix(suffix):
         return "Triangle"
     else:
         _error("Sorry, unknown suffix %s." % suffix)
+
 
 def mesh2xml(ifilename, ofilename):
     """Convert between .mesh and .xml, parser implemented as a
@@ -94,7 +95,7 @@ def mesh2xml(ifilename, ofilename):
 
     """
 
-    print "Converting from Medit format (.mesh) to DOLFIN XML format"
+    print("Converting from Medit format (.mesh) to DOLFIN XML format")
 
     # Open files
     ifile = open(ifilename, "r")
@@ -114,7 +115,7 @@ def mesh2xml(ifilename, ofilename):
             line = line[:-1]
 
         # Read dimension
-        if  line == "Dimension" or line == " Dimension":
+        if line == "Dimension" or line == " Dimension":
             line = ifile.readline()
             num_dims = int(line)
             if num_dims == 2:
@@ -161,14 +162,14 @@ def mesh2xml(ifilename, ofilename):
                 state += 1
         elif state == 1:
             num_dims = int(line)
-            state +=1
+            state += 1
         elif state == 2:
             if line == "Vertices" or line == " Vertices":
                 state += 1
         elif state == 3:
             num_vertices = int(line)
             xml_writer.write_header_vertices(ofile, num_vertices)
-            state +=1
+            state += 1
         elif state == 4:
             if num_dims == 2:
                 (x, y, tmp) = line.split()
@@ -181,19 +182,19 @@ def mesh2xml(ifilename, ofilename):
                 y = float(y)
                 z = float(z)
             xml_writer.write_vertex(ofile, num_vertices_read, x, y, z)
-            num_vertices_read +=1
+            num_vertices_read += 1
             if num_vertices == num_vertices_read:
                 xml_writer.write_footer_vertices(ofile)
                 state += 1
         elif state == 5:
-            if (line == "Triangles"  or line == " Triangles") and num_dims == 2:
+            if (line == "Triangles" or line == " Triangles") and num_dims == 2:
                 state += 1
             if line == "Tetrahedra" and num_dims == 3:
                 state += 1
         elif state == 6:
             num_cells = int(line)
             xml_writer.write_header_cells(ofile, num_cells)
-            state +=1
+            state += 1
         elif state == 7:
             if num_dims == 2:
                 (n0, n1, n2, tmp) = line.split()
@@ -208,7 +209,7 @@ def mesh2xml(ifilename, ofilename):
                 n2 = int(n2) - 1
                 n3 = int(n3) - 1
                 xml_writer.write_cell_tetrahedron(ofile, num_cells_read, n0, n1, n2, n3)
-            num_cells_read +=1
+            num_cells_read += 1
             if num_cells == num_cells_read:
                 xml_writer.write_footer_cells(ofile)
                 state += 1
@@ -217,7 +218,7 @@ def mesh2xml(ifilename, ofilename):
 
     # Check that we got all data
     if state == 8:
-        print "Conversion done"
+        print("Conversion done")
     else:
         _error("Missing data, unable to convert")
 
@@ -227,6 +228,7 @@ def mesh2xml(ifilename, ofilename):
     # Close files
     ifile.close()
     ofile.close()
+
 
 def gmsh2xml(ifilename, handler):
     """Convert between .gmsh v2.0 format (http://www.geuz.org/gmsh/) and .xml,
@@ -249,11 +251,11 @@ def gmsh2xml(ifilename, handler):
 
     """
 
-    print "Converting from Gmsh format (.msh, .gmsh) to DOLFIN XML format"
+    print("Converting from Gmsh format (.msh, .gmsh) to DOLFIN XML format")
 
     # The dimension of the gmsh element types supported here as well as the dolfin cell types for each dimension
     gmsh_dim = {15: 0, 1: 1, 2: 2, 4: 3}
-    cell_type_for_dim = {1: "interval", 2: "triangle", 3: "tetrahedron" }
+    cell_type_for_dim = {1: "interval", 2: "triangle", 3: "tetrahedron"}
     # the gmsh element types supported for conversion
     supported_gmsh_element_types = [1, 2, 4, 15]
 
@@ -299,10 +301,10 @@ def gmsh2xml(ifilename, handler):
                     node_num_list = [int(node) for node in element[3 + num_tags:]]
                     vertices_used_for_dim[dim].extend(node_num_list)
                     if num_tags > 0:
-                        tags_for_dim[dim].append(tuple(int(tag) for tag in element[3:3+num_tags]))
+                        tags_for_dim[dim].append(tuple(int(tag) for tag in element[3:3 + num_tags]))
                     dim_count[dim] += 1
                 else:
-                    #TODO: output a warning here. "gmsh element type %d not supported" % elem_type
+                    # TODO: output a warning here. "gmsh element type %d not supported" % elem_type
                     pass
                 line = ifile.readline()
         else:
@@ -318,7 +320,7 @@ def gmsh2xml(ifilename, handler):
     vertices_used_for_dim[highest_dim] = None
 
     vertex_dict = {}
-    for n,v in enumerate(vertex_set):
+    for n, v in enumerate(vertex_set):
         vertex_dict[v] = n
 
     # Step to beginning of file
@@ -339,7 +341,7 @@ def gmsh2xml(ifilename, handler):
 
     # Only import the dolfin objects if facet markings exist
     process_facets = False
-    if any(len(tags_for_dim[dim]) > 0 for dim in (highest_dim-1, 1)):
+    if any(len(tags_for_dim[dim]) > 0 for dim in (highest_dim - 1, 1)):
         # first construct the mesh
         try:
             from dolfin import MeshEditor, Mesh
@@ -389,7 +391,7 @@ def gmsh2xml(ifilename, handler):
         elif state == 5:
             (node_no, x, y, z) = line.split()
             node_no = int(node_no)
-            x,y,z = [float(xx) for xx in (x,y,z)]
+            x, y, z = [float(xx) for xx in (x, y, z)]
             if vertex_dict.has_key(node_no):
                 node_no = vertex_dict[node_no]
             else:
@@ -405,7 +407,7 @@ def gmsh2xml(ifilename, handler):
                     coords = numpy.array([x, y, z])
                 mesh_editor.add_vertex(num_vertices_read, coords)
 
-            num_vertices_read +=1
+            num_vertices_read += 1
 
             if num_vertices == num_vertices_read:
                 handler.end_vertices()
@@ -425,7 +427,7 @@ def gmsh2xml(ifilename, handler):
         elif state == 9:
             element = line.split()
             elem_type = int(element[1])
-            num_tags  = int(element[2])
+            num_tags = int(element[2])
             if elem_type in supported_gmsh_element_types:
                 dim = gmsh_dim[elem_type]
             else:
@@ -435,7 +437,7 @@ def gmsh2xml(ifilename, handler):
                 for node in node_num_list:
                     if not node in nodelist:
                         _error("Vertex %d of %s %d not previously defined." %
-                              (node, cell_type_for_dim[dim], num_cells_read))
+                               (node, cell_type_for_dim[dim], num_cells_read))
                 cell_nodes = [nodelist[n] for n in node_num_list]
                 handler.add_cell(num_cells_read, cell_nodes)
 
@@ -443,7 +445,7 @@ def gmsh2xml(ifilename, handler):
                     cell_nodes = numpy.array([nodelist[n] for n in node_num_list], dtype=numpy.uintp)
                     mesh_editor.add_cell(num_cells_read, cell_nodes)
 
-                num_cells_read +=1
+                num_cells_read += 1
 
             if num_cells_counted == num_cells_read:
                 handler.end_cells()
@@ -456,7 +458,7 @@ def gmsh2xml(ifilename, handler):
     # Write mesh function based on the Physical Regions defined by
     # gmsh, but only if they are not all zero. All zero physical
     # regions indicate that no physical regions were defined.
-    if highest_dim not in [1,2,3]:
+    if highest_dim not in [1, 2, 3]:
         _error("Gmsh tags not supported for dimension %i. Probably a bug" % dim)
 
     tags = tags_for_dim[highest_dim]
@@ -468,28 +470,29 @@ def gmsh2xml(ifilename, handler):
         handler.end_meshfunction()
 
     # Now process the facet markers
-    tags = tags_for_dim[highest_dim-1]
+    tags = tags_for_dim[highest_dim - 1]
     if (len(tags) > 0) and (mesh is not None):
         physical_regions = tuple(tag[0] for tag in tags)
         if not all(tag == 0 for tag in physical_regions):
-            mesh.init(highest_dim-1,0)
+            mesh.init(highest_dim - 1, 0)
 
             # Get the facet-node connectivity information (reshape as a row of node indices per facet)
-            if highest_dim==1:
-              # for 1d meshes the mesh topology returns the vertex to vertex map, which isn't what we want
-              # as facets are vertices
-              facets_as_nodes = numpy.array([[i] for i in range(mesh.num_facets())])
+            if highest_dim == 1:
+                # for 1d meshes the mesh topology returns the vertex to vertex map, which isn't what we want
+                # as facets are vertices
+                facets_as_nodes = numpy.array([[i] for i in range(mesh.num_facets())])
             else:
-              facets_as_nodes = mesh.topology()(highest_dim-1,0)().reshape ( mesh.num_facets(), highest_dim )
+                facets_as_nodes = mesh.topology()(highest_dim - 1, 0)().reshape(mesh.num_facets(), highest_dim)
 
             # Build the reverse map
             nodes_as_facets = {}
             for facet in range(mesh.num_facets()):
-              nodes_as_facets[tuple(facets_as_nodes[facet,:])] = facet
+                nodes_as_facets[tuple(facets_as_nodes[facet, :])] = facet
 
-            data = [int(0*k) for k in range(mesh.num_facets()) ]
+            data = [int(0 * k) for k in range(mesh.num_facets())]
             for i, physical_region in enumerate(physical_regions):
-                nodes = [n-1 for n in vertices_used_for_dim[highest_dim-1][highest_dim*i:(highest_dim*i+highest_dim)]]
+                nodes = [n - 1 for n in
+                         vertices_used_for_dim[highest_dim - 1][highest_dim * i:(highest_dim * i + highest_dim)]]
                 nodes.sort()
 
                 if physical_region != 0:
@@ -497,11 +500,11 @@ def gmsh2xml(ifilename, handler):
                         index = nodes_as_facets[tuple(nodes)]
                         data[index] = physical_region
                     except IndexError:
-                        raise Exception ( "The facet (%d) was not found to mark: %s" % (i, nodes) )
+                        raise Exception("The facet (%d) was not found to mark: %s" % (i, nodes))
 
             # Create and initialise the mesh function
-            handler.start_meshfunction("facet_region", highest_dim-1, mesh.num_facets() )
-            for index, physical_region in enumerate ( data ):
+            handler.start_meshfunction("facet_region", highest_dim - 1, mesh.num_facets())
+            for index, physical_region in enumerate(data):
                 handler.add_entity_meshfunction(index, physical_region)
             handler.end_meshfunction()
 
@@ -521,11 +524,11 @@ def gmsh2xml(ifilename, handler):
                 # Build the reverse map
                 nodes_as_edges = {}
                 for edge in range(mesh.num_edges()):
-                  nodes_as_edges[tuple(edges_as_nodes[edge])] = edge
+                    nodes_as_edges[tuple(edges_as_nodes[edge])] = edge
 
                 data = numpy.zeros(mesh.num_edges())
                 for i, physical_region in enumerate(physical_regions):
-                    nodes = [n-1 for n in vertices_used_for_dim[1][2*i:(2*i + 2)]]
+                    nodes = [n - 1 for n in vertices_used_for_dim[1][2 * i:(2 * i + 2)]]
                     nodes.sort()
 
                     if physical_region != 0:
@@ -533,7 +536,7 @@ def gmsh2xml(ifilename, handler):
                             index = nodes_as_edges[tuple(nodes)]
                             data[index] = physical_region
                         except IndexError:
-                            raise Exception ( "The edge (%d) was not found to mark: %s" % (i, nodes) )
+                            raise Exception("The edge (%d) was not found to mark: %s" % (i, nodes))
 
                 # Create and initialise the mesh function
                 handler.start_meshfunction("curve_region", 1, mesh.num_edges())
@@ -543,12 +546,13 @@ def gmsh2xml(ifilename, handler):
 
     # Check that we got all data
     if state == 10:
-        print "Conversion done"
+        print("Conversion done")
     else:
-       _error("Missing data, unable to convert \n\ Did you use version 2.0 of the gmsh file format?")
+        _error("Missing data, unable to convert \n\ Did you use version 2.0 of the gmsh file format?")
 
     # Close files
     ifile.close()
+
 
 def triangle2xml(ifilename, ofilename):
     """Convert between triangle format
@@ -557,7 +561,7 @@ def triangle2xml(ifilename, ofilename):
     .node, and .ele files.
     """
 
-    def get_next_line (fp):
+    def get_next_line(fp):
         """Helper function for skipping comments and blank lines"""
         line = fp.readline()
         if line == '':
@@ -567,19 +571,18 @@ def triangle2xml(ifilename, ofilename):
             return line
         return get_next_line(fp)
 
-
-    print "Converting from Triangle format {.node, .ele} to DOLFIN XML format"
+    print("Converting from Triangle format {.node, .ele} to DOLFIN XML format")
 
     # Open files
     for suffix in [".node", ".ele"]:
         if suffix in ifilename and ifilename[-len(suffix):] == suffix:
             ifilename = ifilename.replace(suffix, "")
-    node_file = open(ifilename+".node", "r")
-    ele_file =  open(ifilename+".ele", "r")
+    node_file = open(ifilename + ".node", "r")
+    ele_file = open(ifilename + ".ele", "r")
     ofile = open(ofilename, "w")
     try:
-        edge_file = open(ifilename+".edge", "r")
-        print "Found .edge file"
+        edge_file = open(ifilename + ".edge", "r")
+        print("Found .edge file")
     except IOError:
         edge_file = None
 
@@ -600,7 +603,7 @@ def triangle2xml(ifilename, ofilename):
         # vertices are ordered according to current UFC ordering scheme -
         # - may change in future!
         tris[tri] = tuple(sorted((n1, n2, n3)))
-        tri_attrs[tri] = tuple(map(float, line[4:4+attrs]))
+        tri_attrs[tri] = tuple(map(float, line[4:4 + attrs]))
 
     # Read all the boundary markers from edges
     edge_markers_global = {}
@@ -614,61 +617,61 @@ def triangle2xml(ifilename, ofilename):
                 if marker < 0: got_negative_edge_markers = True
                 edge_markers_global[tuple(sorted((v1, v2)))] = marker
             if got_negative_edge_markers:
-                print   "Some edge markers are negative! dolfin will increase "\
-                        "them by probably 2**32 when loading xml. "\
-                        "Consider using non-negative edge markers only."
+                print("Some edge markers are negative! dolfin will increase " \
+                      "them by probably 2**32 when loading xml. " \
+                      "Consider using non-negative edge markers only.")
             for tri, vertices in tris.iteritems():
                 v0, v1, v2 = sorted((vertices[0:3]))
                 try:
                     edge_markers_local.append((tri, 0, \
-                              edge_markers_global[(v1, v2)]))
+                                               edge_markers_global[(v1, v2)]))
                     edge_markers_local.append((tri, 1, \
-                              edge_markers_global[(v0, v2)]))
+                                               edge_markers_global[(v0, v2)]))
                     edge_markers_local.append((tri, 2, \
-                              edge_markers_global[(v0, v1)]))
+                                               edge_markers_global[(v0, v1)]))
                 except IndexError:
                     raise Exception("meshconvert.py: The facet was not found.")
         elif num_edge_markers == 0:
-            print "...but no markers in it. Ignoring it"
+            print("...but no markers in it. Ignoring it")
         else:
-            print "...but %d markers specified in it. It won't be processed."\
-                          %num_edge_markers
+            print("...but %d markers specified in it. It won't be processed." \
+                  % num_edge_markers)
 
     # Write everything out
     xml_writer.write_header_mesh(ofile, "triangle", 2)
     xml_writer.write_header_vertices(ofile, num_nodes)
     node_off = 0 if nodes.has_key(0) else -1
     for node, node_t in nodes.iteritems():
-        xml_writer.write_vertex(ofile, node+node_off, node_t[0], node_t[1], 0.0)
+        xml_writer.write_vertex(ofile, node + node_off, node_t[0], node_t[1], 0.0)
     xml_writer.write_footer_vertices(ofile)
     xml_writer.write_header_cells(ofile, num_tris)
     tri_off = 0 if tris.has_key(0) else -1
     for tri, tri_t in tris.iteritems():
-        xml_writer.write_cell_triangle(ofile, tri+tri_off, tri_t[0] + node_off,
+        xml_writer.write_cell_triangle(ofile, tri + tri_off, tri_t[0] + node_off,
                                        tri_t[1] + node_off, tri_t[2] + node_off)
     xml_writer.write_footer_cells(ofile)
     if len(edge_markers_local) > 0:
         xml_writer.write_header_domains(ofile)
         xml_writer.write_header_meshvaluecollection(ofile, \
-                            "edge markers", 1, len(edge_markers_local), "uint")
+                                                    "edge markers", 1, len(edge_markers_local), "uint")
         for tri, local_edge, marker in edge_markers_local:
-             xml_writer.write_entity_meshvaluecollection(ofile, \
-                                            1, tri+tri_off, marker, local_edge)
+            xml_writer.write_entity_meshvaluecollection(ofile, \
+                                                        1, tri + tri_off, marker, local_edge)
         xml_writer.write_footer_meshvaluecollection(ofile)
         xml_writer.write_footer_domains(ofile)
     xml_writer.write_footer_mesh(ofile)
     for i in range(attrs):
-        afilename = ofilename.replace(".xml", ".attr"+str(i)+".xml")
+        afilename = ofilename.replace(".xml", ".attr" + str(i) + ".xml")
         afile = open(afilename, "w")
         xml_writer.write_header_meshfunction2(afile)
         xml_writer.write_header_meshvaluecollection(afile, \
-                             "triangle attribs "+str(i), 2, num_tris, "double")
+                                                    "triangle attribs " + str(i), 2, num_tris, "double")
         for tri, tri_a in tri_attrs.iteritems():
-             xml_writer.write_entity_meshvaluecollection(afile, \
-                                            2, tri+tri_off, tri_a[i], 0)
+            xml_writer.write_entity_meshvaluecollection(afile, \
+                                                        2, tri + tri_off, tri_a[i], 0)
         xml_writer.write_footer_meshvaluecollection(afile)
         xml_writer.write_footer_meshfunction(afile)
-        print "triangle attributes from .ele file written to "+afilename
+        print("triangle attributes from .ele file written to " + afilename)
         afile.close()
 
     # Close files
@@ -682,7 +685,7 @@ def triangle2xml(ifilename, ofilename):
 def xml_old2xml(ifilename, ofilename):
     "Convert from old DOLFIN XML format to new."
 
-    print "Converting from old (pre DOLFIN 0.6.2) to new DOLFIN XML format..."
+    print("Converting from old (pre DOLFIN 0.6.2) to new DOLFIN XML format...")
 
     # Open files
     ifile = open(ifilename, "r")
@@ -743,12 +746,13 @@ def xml_old2xml(ifilename, ofilename):
     # Close files
     ifile.close();
     ofile.close();
-    print "Conversion done"
+    print("Conversion done")
+
 
 def metis_graph2graph_xml(ifilename, ofilename):
     "Convert from Metis graph format to DOLFIN Graph XML."
 
-    print "Converting from Metis graph format to DOLFIN Graph XML."
+    print("Converting from Metis graph format to DOLFIN Graph XML.")
 
     # Open files
     ifile = open(ifilename, "r")
@@ -757,7 +761,7 @@ def metis_graph2graph_xml(ifilename, ofilename):
     # Read number of vertices and edges
     line = ifile.readline()
     if not line:
-       _error("Empty file")
+        _error("Empty file")
 
     (num_vertices, num_edges) = line.split()
 
@@ -770,13 +774,13 @@ def metis_graph2graph_xml(ifilename, ofilename):
         xml_writer.write_graph_vertex(ofile, i, len(edges))
 
     xml_writer.write_footer_vertices(ofile)
-    xml_writer.write_header_edges(ofile, 2*int(num_edges))
+    xml_writer.write_header_edges(ofile, 2 * int(num_edges))
 
     # Step to beginning of file and skip header info
     ifile.seek(0)
     ifile.readline()
     for i in range(int(num_vertices)):
-        print "vertex %g", i
+        print("vertex %g", i)
         line = ifile.readline()
         edges = line.split()
         for e in edges:
@@ -789,10 +793,11 @@ def metis_graph2graph_xml(ifilename, ofilename):
     ifile.close();
     ofile.close();
 
+
 def scotch_graph2graph_xml(ifilename, ofilename):
     "Convert from Scotch graph format to DOLFIN Graph XML."
 
-    print "Converting from Scotch graph format to DOLFIN Graph XML."
+    print("Converting from Scotch graph format to DOLFIN Graph XML.")
 
     # Open files
     ifile = open(ifilename, "r")
@@ -804,7 +809,7 @@ def scotch_graph2graph_xml(ifilename, ofilename):
     # Read number of vertices and edges
     line = ifile.readline()
     if not line:
-       _error("Empty file")
+        _error("Empty file")
 
     (num_vertices, num_edges) = line.split()
 
@@ -818,7 +823,7 @@ def scotch_graph2graph_xml(ifilename, ofilename):
 
     # Handling not implented
     if not numeric_flag == "000":
-       _error("Handling of scotch vertex labels, edge- and vertex weights not implemented")
+        _error("Handling of scotch vertex labels, edge- and vertex weights not implemented")
 
     xml_writer.write_header_graph(ofile, "undirected")
     xml_writer.write_header_vertices(ofile, int(num_vertices))
@@ -827,11 +832,10 @@ def scotch_graph2graph_xml(ifilename, ofilename):
     for i in range(int(num_vertices)):
         line = ifile.readline()
         edges = line.split()
-        xml_writer.write_graph_vertex(ofile, i, len(edges)-1)
+        xml_writer.write_graph_vertex(ofile, i, len(edges) - 1)
 
     xml_writer.write_footer_vertices(ofile)
     xml_writer.write_header_edges(ofile, int(num_edges))
-
 
     # Step to beginning of file and skip header info
     ifile.seek(0)
@@ -856,7 +860,7 @@ def scotch_graph2graph_xml(ifilename, ofilename):
 def diffpack2xml(ifilename, ofilename):
     "Convert from Diffpack tetrahedral/triangle grid format to DOLFIN XML."
 
-    print diffpack2xml.__doc__
+    print(diffpack2xml.__doc__)
 
     # Format strings for MeshFunction XML files
     meshfunction_header = """\
@@ -874,13 +878,13 @@ def diffpack2xml(ifilename, ofilename):
     while 1:
         line = ifile.readline()
         if not line:
-           _error("Empty file")
+            _error("Empty file")
         if line[0] == "#":
             break
         if re.search(r"Number of elements", line):
-	    num_cells = int(re.match(r".*\s(\d+).*", line).group(1))
+            num_cells = int(re.match(r".*\s(\d+).*", line).group(1))
         if re.search(r"Number of nodes", line):
-	    num_vertices = int(re.match(r".*\s(\d+).*", line).group(1))
+            num_vertices = int(re.match(r".*\s(\d+).*", line).group(1))
         if re.search(r"Number of space dim.", line):
             num_dims = int(re.match(r".*\s(\d+).*", line).group(1))
 
@@ -914,7 +918,7 @@ def diffpack2xml(ifilename, ofilename):
     unique_vertex_markers.difference_update([0])
     for unique_marker in unique_vertex_markers:
         ofile_marker = open(ofilename.replace(".xml", "") + \
-                            "_marker_" + str(unique_marker)+".xml", "w")
+                            "_marker_" + str(unique_marker) + ".xml", "w")
         xml_writer.write_header_meshfunction(ofile_marker, 0, num_vertices)
         for ind, markers in enumerate(vertex_markers):
             if unique_marker in markers:
@@ -927,15 +931,15 @@ def diffpack2xml(ifilename, ofilename):
     while 1:
         line = ifile.readline()
         if not line:
-           _error("Empty file")
+            _error("Empty file")
         if line[0] == "#":
             break
 
     # Read & write cells and collect cell and face markers
     cell_markers = []
     facet_markers = []
-    facet_to_vert = [[1,2,3], [0,2,3], [0,1,3], [0,1,2]]
-    vert_to_facet = facet_to_vert # The same!
+    facet_to_vert = [[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]]
+    vert_to_facet = facet_to_vert  # The same!
 
     cell_ind = 0
     while cell_ind < num_cells:
@@ -945,13 +949,13 @@ def diffpack2xml(ifilename, ofilename):
             continue
 
         if v[1] != elem_type:
-           _error("Only tetrahedral (ElmT4n3D) and triangular (ElmT3n2D) elements are implemented.")
+            _error("Only tetrahedral (ElmT4n3D) and triangular (ElmT3n2D) elements are implemented.")
 
         # Store Cell markers
         cell_markers.append(int(v[2]))
 
         # Sort vertex indices
-        cell_indices = sorted(map(lambda x: int(x)-1, v[3:]))
+        cell_indices = sorted(map(lambda x: int(x) - 1, v[3:]))
         write_cell_func(ofile, cell_ind, *cell_indices)
 
         if num_dims == 2:
@@ -975,7 +979,7 @@ def diffpack2xml(ifilename, ofilename):
 
             # Process the other vertices
             for local_vert in facet_to_vert[local_facet][1:]:
-                marker_intersection.intersection_update(\
+                marker_intersection.intersection_update( \
                     vertex_markers[cell_indices[local_vert]])
 
                 if not marker_intersection:
@@ -983,7 +987,7 @@ def diffpack2xml(ifilename, ofilename):
 
             # If not break we have a marker on local_facet
             else:
-                assert(len(marker_intersection)==1)
+                assert (len(marker_intersection) == 1)
                 facet_markers.append((cell_ind, local_facet, \
                                       marker_intersection.pop()))
         # Bump cell_ind
@@ -1014,9 +1018,11 @@ def diffpack2xml(ifilename, ofilename):
     ifile.close()
     ofile.close()
 
+
 class ParseError(Exception):
     """ Error encountered in source file.
     """
+
 
 class DataHandler(object):
     """ Baseclass for handlers of mesh data.
@@ -1029,7 +1035,7 @@ class DataHandler(object):
     @ivar _dim: mesh dimensions.
     """
     State_Invalid, State_Init, State_Vertices, State_Cells, \
-          State_MeshFunction, State_MeshValueCollection = range(6)
+    State_MeshFunction, State_MeshValueCollection = range(6)
     CellType_Tetrahedron, CellType_Triangle, CellType_Interval = range(3)
 
     def __init__(self):
@@ -1111,9 +1117,11 @@ class DataHandler(object):
     def close(self):
         self._state = self.State_Invalid
 
+
 class XmlHandler(DataHandler):
     """ Data handler class which writes to Dolfin XML.
     """
+
     def __init__(self, ofilename):
         DataHandler.__init__(self)
         self._ofilename = ofilename
@@ -1175,11 +1183,11 @@ class XmlHandler(DataHandler):
         self.__ofile_meshfunc = None
 
     def start_domains(self):
-        #DataHandler.start_domains(self)
+        # DataHandler.start_domains(self)
         xml_writer.write_header_domains(self.__ofile)
 
     def end_domains(self):
-        #DataHandler.end_domains(self)
+        # DataHandler.end_domains(self)
         xml_writer.write_footer_domains(self.__ofile)
 
     def start_mesh_value_collection(self, name, dim, size, etype):
@@ -1204,15 +1212,14 @@ class XmlHandler(DataHandler):
             self.__ofile_meshfunc.close()
 
 
-def netcdf2xml(ifilename,ofilename):
+def netcdf2xml(ifilename, ofilename):
     "Convert from NetCDF format to DOLFIN XML."
 
-    print "Converting from NetCDF format (.ncdf) to DOLFIN XML format"
+    print("Converting from NetCDF format (.ncdf) to DOLFIN XML format")
 
     # Open files
     ifile = open(ifilename, "r")
     ofile = open(ofilename, "w")
-
 
     cell_type = None
     dim = 0
@@ -1223,21 +1230,21 @@ def netcdf2xml(ifilename,ofilename):
         if not line:
             _error("Empty file")
         if re.search(r"num_dim.*=", line):
-            dim = int(re.match(".*\s=\s(\d+)\s;",line).group(1))
+            dim = int(re.match(".*\s=\s(\d+)\s;", line).group(1))
         if re.search(r"num_nodes.*=", line):
-            num_vertices = int(re.match(".*\s=\s(\d+)\s;",line).group(1))
+            num_vertices = int(re.match(".*\s=\s(\d+)\s;", line).group(1))
         if re.search(r"num_elem.*=", line):
-            num_cells = int(re.match(".*\s=\s(\d+)\s;",line).group(1))
-        if re.search(r"connect1 =",line):
+            num_cells = int(re.match(".*\s=\s(\d+)\s;", line).group(1))
+        if re.search(r"connect1 =", line):
             break
 
-    num_dims=dim
+    num_dims = dim
 
     # Set cell type
     if dim == 2:
-        cell_type ="triangle"
+        cell_type = "triangle"
     if dim == 3:
-        cell_type ="tetrahedron"
+        cell_type = "tetrahedron"
 
     # Check that we got the cell type
     if cell_type == None:
@@ -1254,33 +1261,33 @@ def netcdf2xml(ifilename,ofilename):
         line = ifile.readline()
         if not line:
             break
-        connect=re.split("[,;]",line)
+        connect = re.split("[,;]", line)
         if num_dims == 2:
-            n0 = int(connect[0])-1
-            n1 = int(connect[1])-1
-            n2 = int(connect[2])-1
+            n0 = int(connect[0]) - 1
+            n1 = int(connect[1]) - 1
+            n2 = int(connect[2]) - 1
             xml_writer.write_cell_triangle(ofile, num_cells_read, n0, n1, n2)
         elif num_dims == 3:
-            n0 = int(connect[0])-1
-            n1 = int(connect[1])-1
-            n2 = int(connect[2])-1
-            n3 = int(connect[3])-1
+            n0 = int(connect[0]) - 1
+            n1 = int(connect[1]) - 1
+            n2 = int(connect[2]) - 1
+            n3 = int(connect[3]) - 1
             xml_writer.write_cell_tetrahedron(ofile, num_cells_read, n0, n1, n2, n3)
-        num_cells_read +=1
+        num_cells_read += 1
         if num_cells == num_cells_read:
-           xml_writer.write_footer_cells(ofile)
-           xml_writer.write_header_vertices(ofile, num_vertices)
-           break
+            xml_writer.write_footer_cells(ofile)
+            xml_writer.write_header_vertices(ofile, num_vertices)
+            break
 
     num_vertices_read = 0
-    coords = [[],[],[]]
+    coords = [[], [], []]
     coord = -1
 
     while 1:
         line = ifile.readline()
         if not line:
             _error("Missing data")
-        if re.search(r"coord =",line):
+        if re.search(r"coord =", line):
             break
 
     # Read vertices
@@ -1288,25 +1295,24 @@ def netcdf2xml(ifilename,ofilename):
         line = ifile.readline()
         if not line:
             break
-        if re.search(r"\A\s\s\S+,",line):
-            coord+=1
-            print "Found x_"+str(coord)+" coordinates"
+        if re.search(r"\A\s\s\S+,", line):
+            coord += 1
+            print("Found x_" + str(coord) + " coordinates")
         coords[coord] += line.split()
-        if re.search(r";",line):
+        if re.search(r";", line):
             break
 
     # Write vertices
     for i in range(num_vertices):
         if num_dims == 2:
-            x = float(re.split(",",coords[0].pop(0))[0])
-            y = float(re.split(",",coords[1].pop(0))[0])
+            x = float(re.split(",", coords[0].pop(0))[0])
+            y = float(re.split(",", coords[1].pop(0))[0])
             z = 0
         if num_dims == 3:
-            x = float(re.split(",",coords[0].pop(0))[0])
-            y = float(re.split(",",coords[1].pop(0))[0])
-            z = float(re.split(",",coords[2].pop(0))[0])
+            x = float(re.split(",", coords[0].pop(0))[0])
+            y = float(re.split(",", coords[1].pop(0))[0])
+            z = float(re.split(",", coords[2].pop(0))[0])
         xml_writer.write_vertex(ofile, i, x, y, z)
-
 
     # Write footer
     xml_writer.write_footer_vertices(ofile)
@@ -1316,30 +1322,19 @@ def netcdf2xml(ifilename,ofilename):
     ifile.close()
     ofile.close()
 
-def exodus2xml(ifilename,ofilename):
-    "Convert from Exodus II format to DOLFIN XML."
-
-    print "Converting from Exodus II format to NetCDF format"
-
-    name = ifilename.split(".")[0]
-    netcdffilename = name +".ncdf"
-    status, output = get_status_output('ncdump '+ifilename + ' > '+netcdffilename)
-    if status != 0:
-        raise IOError, "Something wrong while executing ncdump. Is ncdump "\
-              "installed on the system?"
-    netcdf2xml(netcdffilename, ofilename)
-
 
 def _error(message):
     "Write an error message"
     for line in message.split("\n"):
-        print "*** %s" % line
+        print("*** %s" % line)
     sys.exit(2)
+
 
 def convert2xml(ifilename, ofilename, iformat=None):
     """ Convert a file to the DOLFIN XML format.
     """
     convert(ifilename, XmlHandler(ofilename), iformat=iformat)
+
 
 def convert(ifilename, handler, iformat=None):
     """ Convert a file using a provided data handler.
@@ -1382,7 +1377,7 @@ def convert(ifilename, handler, iformat=None):
     elif iformat == "NetCDF":
         # Convert from NetCDF generated from ExodusII format to xml format
         netcdf2xml(ifilename, ofilename)
-    elif iformat =="ExodusII":
+    elif iformat == "ExodusII":
         # Convert from ExodusII format to xml format via NetCDF
         exodus2xml(ifilename, ofilename)
     elif iformat == "StarCD":
@@ -1395,15 +1390,15 @@ def convert(ifilename, handler, iformat=None):
     if iformat in ("abaqus", "gmsh"):
         handler.close()
 
+
 def starcd2xml(ifilename, ofilename):
     "Convert from Star-CD tetrahedral grid format to DOLFIN XML."
 
-    print starcd2xml.__doc__
+    print(starcd2xml.__doc__)
 
     if not os.path.isfile(ifilename[:-3] + "vrt") or not os.path.isfile(ifilename[:-3] + "cel"):
-        print "StarCD format requires one .vrt file and one .cel file"
+        print("StarCD format requires one .vrt file and one .cel file")
         sys.exit(2)
-
 
     # open output file
     ofile = open(ofilename, "w")
@@ -1452,16 +1447,17 @@ def starcd2xml(ifilename, ofilename):
     counter = 0
     for line in lines:
         l = [int(a) for a in line.split()]
-        cellnr, node0, node1, node2, node3, node4, node5, node6, node7, tmp1, tmp2  = l
-	if node4 > 0:
-        	if node2 == node3 and node4 == node5 and node5 == node6 and node6 == node7: # these nodes should be equal
-                	counter += 1
-		else:
-			print "The file does contain cells that are not tetraheders. The cell number is ", cellnr, " the line read was ", line
+        cellnr, node0, node1, node2, node3, node4, node5, node6, node7, tmp1, tmp2 = l
+        if node4 > 0:
+            if node2 == node3 and node4 == node5 and node5 == node6 and node6 == node7:  # these nodes should be equal
+                counter += 1
+            else:
+                print("The file does contain cells that are not tetraheders. The cell number is ", cellnr,
+                      " the line read was ", line)
         else:
             # triangles on the surface
-#            print "The file does contain cells that are not tetraheders node4==0. The cell number is ", cellnr, " the line read was ", line
-            #sys.exit(2)
+            #            print("The file does contain cells that are not tetraheders node4==0. The cell number is ", cellnr, " the line read was ", line
+            # sys.exit(2)
             pass
 
     num_cells = counter
@@ -1471,12 +1467,13 @@ def starcd2xml(ifilename, ofilename):
     counter = 0
     for line in lines:
         l = [int(a) for a in line.split()]
-        cellnr, node0, node1, node2, node3, node4, node5, node6, node7, tmp1, tmp2  = l
+        cellnr, node0, node1, node2, node3, node4, node5, node6, node7, tmp1, tmp2 = l
         if (node4 > 0):
-	        if node2 == node3 and node4 == node5 and node5 == node6 and node6 == node7: # these nodes should be equal
+            if node2 == node3 and node4 == node5 and node5 == node6 and node6 == node7:  # these nodes should be equal
 
-			xml_writer.write_cell_tetrahedron(ofile, counter, nodenr_map[node0], nodenr_map[node1], nodenr_map[node2], nodenr_map[node4])
-          		counter += 1
+                xml_writer.write_cell_tetrahedron(ofile, counter, nodenr_map[node0], nodenr_map[node1],
+                                                  nodenr_map[node2], nodenr_map[node4])
+                counter += 1
 
     xml_writer.write_footer_cells(ofile)
     xml_writer.write_footer_mesh(ofile)

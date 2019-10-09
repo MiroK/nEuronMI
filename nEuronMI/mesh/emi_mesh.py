@@ -1,4 +1,4 @@
-from dolfin import Mesh, MeshFunction, HDF5File, mpi_comm_world
+from dolfin import Mesh, MeshFunction #, HDF5File, mpi_comm_world
 import meshconvert
 import numpy as np
 import os
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     if not os.path.exists(msh_file):
         
         from emi_geometry import build_EMI_geometry, mesh_config_EMI_model
-        from shapes import Box, BallStickNeuron, MicrowireProbe
+        from nEuronMI.mesh.shapes import Box, BallStickNeuron, MicrowireProbe
         import gmsh, sys, json, os
         import numpy as np
 
@@ -102,25 +102,25 @@ if __name__ == '__main__':
         gmsh.write(msh_file)
         gmsh.finalize()
 
-    # Convert
-    h5_file = msh_to_h5(msh_file)
-
-    mesh, volumes, surfaces = load_h5_mesh(h5_file)
-
-    assert set(volumes.array()) == set((1, 2))
-    assert set(surfaces.array()) == set(range(14))
-
-    # Eye check
-    # File('surfaces.pvd') << surfaces
-    # File('volumes.pvd') << surfaces
-
-    # Dupliecate vertices?
-    from scipy.spatial import distance_matrix
-    
-    x = mesh.coordinates()
-    M = distance_matrix(x, x)
-
-    hmin = mesh.hmin()/2
-    # No duplicates
-    print all(np.min(row[i+1:]) > 1E-5 for i, row in zip(range(len(x)-2), M))
+    # # Convert
+    # h5_file = msh_to_h5(msh_file)
+    #
+    # mesh, volumes, surfaces = load_h5_mesh(h5_file)
+    #
+    # assert set(volumes.array()) == set((1, 2))
+    # assert set(surfaces.array()) == set(range(14))
+    #
+    # # Eye check
+    # # File('surfaces.pvd') << surfaces
+    # # File('volumes.pvd') << surfaces
+    #
+    # # Dupliecate vertices?
+    # from scipy.spatial import distance_matrix
+    #
+    # x = mesh.coordinates()
+    # M = distance_matrix(x, x)
+    #
+    # hmin = mesh.hmin()/2
+    # # No duplicates
+    # print all(np.min(row[i+1:]) > 1E-5 for i, row in zip(range(len(x)-2), M))
 

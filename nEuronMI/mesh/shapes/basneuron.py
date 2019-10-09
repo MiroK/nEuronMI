@@ -1,5 +1,5 @@
 
-from .baseneuron import Neuron
+from nEuronMI.mesh.shapes.baseneuron import Neuron
 
 class BASNeuron(Neuron):
 

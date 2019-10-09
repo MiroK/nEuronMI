@@ -1,7 +1,7 @@
 from utils import as_namedtuple, has_positive_values
 from gmsh_primitives import Sphere, Cylinder, Cone, Box
 from collections import OrderedDict
-from baseneuron import Neuron
+from nEuronMI.mesh.shapes.baseneuron import Neuron
 from math import sqrt
 import numpy as np
 
@@ -10,14 +10,14 @@ class BallStickNeuron(Neuron):
     '''Soma(sphere) with cylinders as axon/dendrite.'''
     
     _defaults = {
-        'soma_rad': 1,
+        'soma_rad': 10,
         'soma_x': 0,
         'soma_y': 0,
         'soma_z': 0,  # Center
-        'dend_rad': 0.4,
-        'dend_len': 1,
-        'axon_rad': 0.4,
-        'axon_len': 1
+        'dend_rad': 4,
+        'dend_len': 50,
+        'axon_rad': 2,
+        'axon_len': 50
         }
     
     def __init__(self, params=None):
@@ -105,10 +105,13 @@ if __name__ == '__main__':
     gmsh.option.setNumber("General.Terminal", 1)
 
     neuron.as_gmsh(model)
-    factory.synchronize();
+    factory.synchronize()
 
+    model.mesh.refine()
+    model.mesh.refine()
+    model.mesh.refine()
+    model.mesh.refine()
     model.mesh.generate(3)
-    #model.mesh.refine()
     #model.mesh.setOrder(2)
     #model.mesh.partition(4)
     

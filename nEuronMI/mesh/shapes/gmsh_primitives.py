@@ -192,21 +192,21 @@ class Cone(BaseShape):
 if __name__ == '__main__':
 
     box = Box(np.array([0, 0, 0]), np.array([1, 1, 1]))
-    print box.contains(np.array([0.5, 0.5, 0.5]), 1E-13)
+    print(box.contains(np.array([0.5, 0.5, 0.5]), 1E-13))
 
     sphere = Sphere(np.array([0, 0, 0]), 1)
-    print sphere.contains(np.array([0.5, 0.5, 0.5]), 1E-10)
-    print sphere.contains(np.array([1.5, 0.5, 0.5]), 1E-10)
+    print(sphere.contains(np.array([0.5, 0.5, 0.5]), 1E-10))
+    print(sphere.contains(np.array([1.5, 0.5, 0.5]), 1E-10))
 
     cyl = Cylinder(np.array([0, 0, 0]), np.array([1, 1, 1]), 1)
-    print cyl.contains(np.array([1.5, 1.5, 1.5]), 1E-10)
-    print cyl.contains(np.array([0.5, 0.5, 0.5]), 1E-10)
+    print(cyl.contains(np.array([1.5, 1.5, 1.5]), 1E-10))
+    print(cyl.contains(np.array([0.5, 0.5, 0.5]), 1E-10))
 
     cyl = Cone(np.array([0, 0, 0]), np.array([1, 1, 1]), 1, 2)
-    print cyl.contains(np.array([1.5, 1.5, 1.5]), 1E-10)
-    print cyl.contains(np.array([0.5, 0.5, 0.5]), 1E-10)
+    print(cyl.contains(np.array([1.5, 1.5, 1.5]), 1E-10))
+    print(cyl.contains(np.array([0.5, 0.5, 0.5]), 1E-10))
 
-    # print box.bbox_contains(np.array([0.5, 0.5, 0.5]), 1E-13)
+    # print(box.bbox_contains(np.array([0.5, 0.5, 0.5]), 1E-13)
 
     import gmsh
     import sys
@@ -224,8 +224,8 @@ if __name__ == '__main__':
     tag = c.as_gmsh(model)
     factory.synchronize();
 
-    print model.occ.getCenterOfMass(3, tag)
-    print c.center_of_mass
+    print(model.occ.getCenterOfMass(3, tag))
+    print(c.center_of_mass)
     # model.mesh.generate(3)
     # #model.mesh.refine()
     # #model.mesh.setOrder(2)

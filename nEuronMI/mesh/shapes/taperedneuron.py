@@ -125,13 +125,6 @@ if __name__ == '__main__':
 
     cone = neuron.pieces['dendh']
     v = cone.as_gmsh(model)
-    print cone.center_of_mass
-    print cone.wall_center_of_mass
-    print
-    print model.occ.getCenterOfMass(3, v)
-    print model.occ.getCenterOfMass(2, 1)
-    print model.occ.getCenterOfMass(2, 2)
-    print model.occ.getCenterOfMass(2, 3)
     
     # neuron.as_gmsh(model)
     factory.synchronize();

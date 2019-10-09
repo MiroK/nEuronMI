@@ -91,8 +91,8 @@ def find_first(item, iterable):
 
 if __name__ == '__main__':
 
-    print find_first(4, range(19))
-    print list(range(19)).index(4), list(range(19))
+    print(find_first(4, range(19)))
+    print(list(range(19)).index(4), list(range(19)))
     
     d = {'a': 1, 'b': 2}
     print(as_namedtuple(d))
@@ -105,8 +105,8 @@ if __name__ == '__main__':
     pts = circle_points(c, r, a=n)
     # point - center is perp to axis; distance is correct
     for p in pts:
-        print np.dot(p-c, n)
-        print '  ', np.linalg.norm(p-c)
+        print(np.dot(p-c, n))
+        print('  ', np.linalg.norm(p-c))
 
-    print first((0, 1, 2))
-    print second((1, 2))
+    print(first((0, 1, 2)))
+    print(second((1, 2)))
