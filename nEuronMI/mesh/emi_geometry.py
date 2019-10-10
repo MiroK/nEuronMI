@@ -130,7 +130,7 @@ def mesh_config_EMI_model(model, mapping, mesh_sizes):
     # We want to specify size for neuron surfaces and surfaces of the
     # probe separately; let's collect them
     neuron_surfaces = mapping.surface_entity_tags('all_neurons').values()
-
+    print mapping.surface_entity_tags('probe')
     field.add('MathEval', 1)
     field.setString(1, 'F', str(mesh_sizes['neuron']))
     field.add('Restrict', 2)

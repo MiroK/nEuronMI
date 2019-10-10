@@ -64,7 +64,7 @@ if __name__ == '__main__':
     
     root = 'test_neuron'
     msh_file = '%s.msh' % root
-    if not os.path.exists(msh_file):
+    if True: #not os.path.exists(msh_file):
         
         from emi_geometry import build_EMI_geometry, mesh_config_EMI_model
         from shapes import Box, BallStickNeuron, MicrowireProbe
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         neuron = BallStickNeuron()
         probe = MicrowireProbe({'tip_x': 1.5, 'radius': 0.2, 'length': 10})
 
-        mesh_sizes = {'neuron': 0.3, 'probe': 0.1, 'box': 1}
+        mesh_sizes = {'neuron': 0.3, 'probe': 0.05, 'box': 0.2}
     
         model = gmsh.model
         factory = model.occ
@@ -91,7 +91,11 @@ if __name__ == '__main__':
         model, mapping = build_EMI_geometry(model, box, neuron, probe)
         # Dump the mapping as json
         mesh_config_EMI_model(model, mapping, mesh_sizes)
-    
+
+
+        gmsh.fltk.initialize()
+        gmsh.fltk.run()
+        
         factory.synchronize();
         # This is a way to store the geometry as geo file
         gmsh.write('%s.geo_unrolled' % root)
@@ -111,8 +115,8 @@ if __name__ == '__main__':
     assert set(surfaces.array()) == set(range(14))
 
     # Eye check
-    # File('surfaces.pvd') << surfaces
-    # File('volumes.pvd') << surfaces
+    File('surfaces.pvd') << surfaces
+    File('volumes.pvd') << surfaces
 
     # Dupliecate vertices?
     from scipy.spatial import distance_matrix

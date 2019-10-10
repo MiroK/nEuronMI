@@ -92,7 +92,11 @@ class BallStickNeuron(Neuron):
 
 if __name__ == '__main__':
 
-    neuron = BallStickNeuron()
+    neuron = BallStickNeuron({'soma_rad': 10,
+                              'dend_rad': 6,
+                              'dend_len': 100,
+                              'axon_rad': 6,
+                              'axon_len': 100})
 
     import gmsh
     import sys
@@ -107,11 +111,12 @@ if __name__ == '__main__':
     neuron.as_gmsh(model)
     factory.synchronize();
 
+    #gmsh.fltk.initialize()
+    #gmsh.fltk.run()
+
     model.mesh.generate(3)
-    #model.mesh.refine()
-    #model.mesh.setOrder(2)
-    #model.mesh.partition(4)
+    model.mesh.optimize("")
     
-    gmsh.write("neuron.msh")
+    gmsh.write("neuron.geo_unrolled")
     
     gmsh.finalize()
