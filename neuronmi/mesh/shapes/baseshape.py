@@ -9,7 +9,7 @@ class BaseShape(object):
         if params is None:
             params = self.default_params
 
-        self.conversion_factor = 1e4
+        self.conversion_factor = 1
             
         try:
             # Let's add the missing keys

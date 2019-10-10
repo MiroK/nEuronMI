@@ -1,22 +1,22 @@
-# This example demonstrates the entire pipeline from geometry creation,
-# to mesh generation and finally solution. In a realistic workflow
-# the 3 steps are done separately.
-
-from mesh.simple_geometry.shapes import SphereNeuron, CylinderProbe
-from mesh.simple_geometry.geogen import geofile
-from mesh.msh_convert import convert
-from solver.neuron_solver import neuron_solver
-from solver.aux import snap_to_nearest
-from solver.aux import load_mesh
-from solver.probing import probing_locations
-from dolfin import *
-import matplotlib.pylab as plt
+from .solver.neuron_solver import neuron_solver
+from .solver.aux import snap_to_nearest
+from .solver.aux import load_mesh
+from .solver.probing import probing_locations
+import dolfin
+from pathlib import Path
 import numpy as np
 import yaml
 
 import subprocess, os, time, sys
 from os.path import join
 
+def simulate_emi(mesh_folder):
+    mesh_folder = Path(mesh_folder)
+
+    mesh_name = [f for f in mesh_folder.iterdir() if f.suffix == '.h5']
+    if len(mesh_name) == 0:
+        mesh_name
+    mesh_root = mesh_name.stem
 
 if __name__ == '__main__':
     if '-mesh' in sys.argv:
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     mesh_root = mesh_name[:-3]
     
-    parameters['allow_extrapolation'] = True
+    dolfin.parameters['allow_extrapolation'] = True
     conv = 1E-4
     t_start = time.time()
 

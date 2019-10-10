@@ -116,10 +116,6 @@ def build_geometry(model, box, neurons, probe=None, tol=1E-10):
     external_pair = max(volume_pairs, key=lambda vs: len(second(vs)))
     external_volume, external_surfs = external_pair
 
-    print(volumes, external_volume)
-    print(volumes_surfs, external_surfs)
-
-
     neuron_mapping = []  # i-th neuron is neuron_mapping[i] volume and has surfaces ...
     # Ther rest are neurons
     volume_neuron = [x for x in volumes if x != external_volume]
@@ -194,7 +190,7 @@ def mesh_config_model(model, mapping, mesh_sizes):
     field = model.mesh.field
     # We want to specify size for neuron surfaces and surfaces of the
     # probe separately; let's collect them
-    neuron_surfaces = mapping.surface_entity_tags('all_neurons').values()
+    neuron_surfaces = list(mapping.surface_entity_tags('all_neurons').values())
 
     field.add('MathEval', 1)
     field.setString(1, 'F', str(mesh_sizes['neuron']))
@@ -203,7 +199,7 @@ def mesh_config_model(model, mapping, mesh_sizes):
     field.setNumbers(2, 'FacesList', neuron_surfaces)
 
     next_field = 2
-    probe_surfaces = mapping.surface_entity_tags('probe').values()
+    probe_surfaces = list(mapping.surface_entity_tags('probe').values())
     if probe_surfaces:
         next_field += 1
         field.add('MathEval', next_field)
@@ -214,10 +210,10 @@ def mesh_config_model(model, mapping, mesh_sizes):
         field.setNumber(next_field, 'IField', next_field - 1)
         field.setNumbers(next_field, 'FacesList', probe_surfaces)
 
-    box_surfaces = mapping.surface_entity_tags('box').values()
+    box_surfaces = list(mapping.surface_entity_tags('box').values())
     next_field += 1
     field.add('MathEval', next_field)
-    field.setString(next_field, 'F', str(mesh_sizes['box']))
+    field.setString(next_field, 'F', str(mesh_sizes['ext']))
 
     next_field += 1
     field.add('Restrict', next_field)

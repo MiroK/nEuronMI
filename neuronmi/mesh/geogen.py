@@ -84,9 +84,9 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         probe = None
         probe_str = 'noprobe'
 
-    mesh_sizes = {'neuron': mesh_resolution['neuron'] * conv,
-                  'probe': mesh_resolution['probe'] * conv,
-                  'rest_mesh_size': mesh_resolution['rest'] * conv}
+    mesh_sizes = {'neuron': mesh_resolution['neuron'] ,
+                  'probe': mesh_resolution['probe'],
+                  'ext': mesh_resolution['ext']}
 
     if save_mesh_folder is None:
         mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
@@ -95,33 +95,38 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         mesh_name = str(save_mesh_folder)
         save_mesh_folder = Path(save_mesh_folder)
 
+    if not save_mesh_folder.is_dir():
+        os.makedirs(str(save_mesh_folder), exist_ok=True)
+
     # Components
     model = gmsh.model
     factory = model.occ
     # You can pass -clscale 0.25 (to do global refinement)
     # or -format msh2            (to control output format of gmsh)
-    args = sys.argv + ['-format', 'msh2']  # Dolfin convert handles only this
+    args = sys.argv + ['-format', 'msh2', '-clscale', '0.5']  # Dolfin convert handles only this
     gmsh.initialize(args)
 
     gmsh.option.setNumber("General.Terminal", 1)
 
-    # Add components to model
-    model, mapping = build_geometry(model, box, neuron, probe)
-    # Config fields and dump the mapping as json
+    # # Add components to model
+    model, mapping = build_geometry(model, box, neuron, probe) #, mapping
+    # # Config fields and dump the mapping as json
     mesh_config_model(model, mapping, mesh_sizes)
-    json_file = save_mesh_folder / '%s.json' % mesh_name
+    json_file = save_mesh_folder / ('%s.json' % mesh_name)
     with json_file.open('w') as out:
         mapping.dump(out)
 
     factory.synchronize()
     # This is a way to store the geometry as geo file
-    geo_unrolled_file = save_mesh_folder / '%s.geo_unrolled' % mesh_name
+    geo_unrolled_file = save_mesh_folder / ('%s.geo_unrolled' % mesh_name)
     gmsh.write(str(geo_unrolled_file))
+    # gmsh.fltk.initialize()
+    # gmsh.fltk.run()
     # 3d model
     model.mesh.generate(3)
     # Native optimization
     model.mesh.optimize('')
-    msh_file = save_mesh_folder / '%s.h5' % mesh_name
+    msh_file = save_mesh_folder / ('%s.msh' % mesh_name)
     gmsh.write(str(msh_file))
     gmsh.finalize()
 
@@ -133,10 +138,9 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     # mesh = generate_mesh(neuron, probe, box, mesh_size)
 
     # TODO create folder and save files + params
-    os.makedirs(save_mesh_folder)
+    # os.makedirs(save_mesh_folder)
 
     # return mesh.h5
-
 
 def return_coarseness(coarse):
     if coarse == 00:
@@ -164,7 +168,7 @@ def return_coarseness(coarse):
 
     resolution = {'neuron': nmesh,
                   'probe': pmesh,
-                  'rest': rmesh}
+                  'ext': rmesh}
     return resolution
 
 

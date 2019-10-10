@@ -14,7 +14,7 @@ class BallStickNeuron(Neuron):
         'soma_x': 0,
         'soma_y': 0,
         'soma_z': 0,  # Center
-        'dend_rad': 4,
+        'dend_rad': 2,
         'dend_len': 50,
         'axon_rad': 2,
         'axon_len': 50
@@ -29,6 +29,7 @@ class BallStickNeuron(Neuron):
         C = np.array([params.soma_x, params.soma_y, params.soma_z])
         # Move up
         shift = sqrt(params.soma_rad**2 - params.axon_rad**2)
+        # shift = params.soma_rad / 2
         
         A0 = C + np.array([0, 0, shift])
         A1 = A0 + np.array([0, 0, params.axon_len])
@@ -45,7 +46,7 @@ class BallStickNeuron(Neuron):
 
         # Now draw circle around them
         self._control_points = np.row_stack([p.control_points for p in self.pieces.values()])
-                               
+
         # Setup bounding box
         min_ = np.min(self._control_points, axis=0)
         max_ = np.max(self._control_points, axis=0)
@@ -58,6 +59,7 @@ class BallStickNeuron(Neuron):
         # Still missing end tips
         self._surfaces['axon_base'] = A1
         self._surfaces['dend_base'] = D1
+
         
 
     def check_geometry_parameters(self, params):
