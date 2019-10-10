@@ -1,7 +1,7 @@
-from utils import as_namedtuple, has_positive_values
-from gmsh_primitives import Sphere, Cylinder, Cone, Box
+from .utils import as_namedtuple, has_positive_values
+from .gmsh_primitives import Sphere, Cylinder, Cone, Box
+from .baseneuron import Neuron
 from collections import OrderedDict
-from nEuronMI.mesh.shapes.baseneuron import Neuron
 from math import sqrt
 import numpy as np
 

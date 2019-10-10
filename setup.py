@@ -1,9 +1,9 @@
 import setuptools
 
 d = {}
-exec(open("nEuronMI/version.py").read(), None, d)
+exec(open("neuronmi/version.py").read(), None, d)
 version = d['version']
-pkg_name = "nEuronMI"
+pkg_name = "neuronmi"
 long_description = open("README.md").read()
 
 setuptools.setup(

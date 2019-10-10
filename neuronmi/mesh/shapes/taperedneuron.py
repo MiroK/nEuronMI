@@ -1,7 +1,7 @@
-from utils import as_namedtuple, has_positive_values
-from gmsh_primitives import Sphere, Cylinder, Cone, Box
+from .utils import as_namedtuple, has_positive_values
+from .gmsh_primitives import Sphere, Cylinder, Cone, Box
+from .baseneuron import Neuron
 from collections import OrderedDict
-from baseneuron import Neuron
 from math import sqrt
 import numpy as np
 
@@ -36,7 +36,7 @@ class TaperedNeuron(Neuron):
 
         # Define as Cylinder-Cone-Sphere-Cone-Cylinder
         # axon-axon hill-some-dend hill-dendrite
-        params = as_namedtuple(self._params)
+        params = as_namedtuple(self.params_cm)
         C = np.array([params.soma_x, params.soma_y, params.soma_z])
         # Move up
         shift = sqrt(params.soma_rad**2 - params.axonh_rad**2)
