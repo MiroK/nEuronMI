@@ -88,7 +88,21 @@ class Sphere(BaseShape):
         args = np.r_[self.c, self.r]
         return model.occ.addSphere(*args, tag=tag)
 
+    def center_of_mass(self, r0=None, r1=None):
+        '''
+        Center of mass of the balls surface(shell) if it we chopped  
+        at z corrsponging to radii.
+        '''
+        if r0 is None: r0 = self.r  # Z+
 
+        if r1 is None: r1 = self.r  # Z-
+
+        R = self.r
+        
+        zshift= 0.5*(r1-r0)/(sqrt(1-(r1/R)**2) + sqrt(1-(r0/R)**2))
+        return self.c + np.array([0, 0, zshift])
+
+    
 class Cylinder(BaseShape):
     '''Two endpoints on the centerline and radius'''
     def __init__(self, A, B, r):

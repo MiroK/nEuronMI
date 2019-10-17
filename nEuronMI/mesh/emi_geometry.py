@@ -179,14 +179,16 @@ if __name__ == '__main__':
 
     root = 'test_neuron'
     # Components
-    box = Box(np.array([-3.5, -3, -5]), np.array([8, 8, 13]))
-    neurons = [TaperedNeuron({'dend_rad': 0.2, 'axon_rad': 0.3}),
-               BallStickNeuron({'soma_x': -2, 'soma_y': -2, 'soma_z': 2}),
-               BallStickNeuron({'soma_x': 2, 'soma_y': 2, 'soma_z': 2})]
+    box = Box(np.array([-100, -100, -100]), np.array([200, 200, 200]))
+    neurons = [#TaperedNeuron({'dend_rad': 0.2, 'axon_rad': 0.3}),
+               #BallStickNeuron({'soma_x': -2, 'soma_y': -2, 'soma_z': 2}),
+               BallStickNeuron({'soma_x': 0, 'soma_y': 0, 'soma_z': 0,
+                                'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
+                                'dend_rad': 10, 'axon_rad': 10})]
 
     probe = MicrowireProbe({'tip_x': 1.5, 'radius': 0.2, 'length': 10})
 
-    mesh_sizes = {'neuron': 0.3, 'probe': 0.1, 'box': 1}
+    mesh_sizes = {'neuron': 2, 'probe': 5, 'box': 7.5}
     
     model = gmsh.model
     factory = model.occ
@@ -197,7 +199,7 @@ if __name__ == '__main__':
     gmsh.option.setNumber("General.Terminal", 1)
 
     # Add components to model
-    model, mapping = build_EMI_geometry(model, box, neurons, probe)
+    model, mapping = build_EMI_geometry(model, box, neurons, probe=None)
     # Dump the mapping as json
     with open('%s.json' % root, 'w') as out:
         mapping.dump(out)
