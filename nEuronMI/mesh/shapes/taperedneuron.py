@@ -31,8 +31,8 @@ class TaperedNeuron(Neuron):
         'axon_len': 1
         }
     
-    def __init__(self, params=None):
-        Neuron.__init__(self, params)
+    def __init__(self, params=None, tol=1E-7):
+        Neuron.__init__(self, params, tol)
 
         # Define as Cylinder-Cone-Sphere-Cone-Cylinder
         # axon-axon hill-some-dend hill-dendrite
@@ -77,7 +77,8 @@ class TaperedNeuron(Neuron):
         self._surfaces['dend_base'] = D2
 
     def check_geometry_parameters(self, params):
-        assert set(params.keys()) == set(TaperedNeuron._defaults.keys())
+        assert set(params.keys()) == set(TaperedNeuron._defaults.keys()), \
+            (set(TaperedNeuron._defaults.keys())-set(params.keys()), set(params.keys())-set(TaperedNeuron._defaults.keys()))
         # Ignore center
         assert has_positive_values(params,
                                    set(params.keys())-set(('soma_x', 'soma_y', 'soma_z')))

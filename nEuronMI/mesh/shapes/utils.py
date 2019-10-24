@@ -48,7 +48,7 @@ def second(iterable):
     return first(it)
 
 
-def link_surfaces(model, tags, shape, links, tol=1E-10, metric=None):
+def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
     '''
     Let tags be surfaces of the model. For every surface of the shape 
     we try to pair it with one of the tagged surfaces based on metric(x, y)
@@ -61,24 +61,34 @@ def link_surfaces(model, tags, shape, links, tol=1E-10, metric=None):
     '''
     if metric is None:
         metric = lambda x, y: np.linalg.norm(y-x, axis=1)
-
     tags_ = list(tags)
     # Precompute
     x = np.array([model.occ.getCenterOfMass(2, tag) for tag in tags_])
 
     for name in shape.surfaces:
-        if name in links: continue
+        if name in links:
+            continue
         y = shape.surfaces[name]
 
         # Correspondence
         dist = metric(x, y)
+        print '>>>>', dist
         i = np.argmin(dist)
         # Accept
         if dist[i] < tol:
             link = tags_[i]
             links[name] = link
+            print 'Adding', name
             tags.remove(link)
 
+            x = np.delete(x, i, axis=0)
+            del tags_[i]
+
+    # If there is just one remainig we claim it with warning
+    if len(tags_) == 1:
+        name, = set(shape.surfaces.keys()) - set(links.keys())
+        links[name] = tags_.pop()
+    
     return links
 
 

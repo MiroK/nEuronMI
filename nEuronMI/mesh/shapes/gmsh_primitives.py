@@ -49,17 +49,12 @@ class Box(BaseShape):
 
     def link_surfaces(self, model, tags, links, box=None, tol=1E-10):
         '''Account for possible cut and shift of center of mass of face'''
-        # This pass is blind
-        links = utils.link_surfaces(model, tags, self, links, tol=tol)
-        # NOTE: everything is assumed to be z aligned. We might have
-        # a cut z plane
-        metric = lambda x, y: np.abs((y - x)[:,2])  # But z coord should match
+        return utils.link_surfaces(model, tags, self, links, tol=tol)
         
-        return utils.link_surfaces(model, tags, self, tol=tol, links=links, metric=metric)
 
     
 class Sphere(BaseShape):
-    '''Defined by Center + radius'''
+    '''Defined by Center + radius. Optional radii of z-axis planes that chop it.'''
     def __init__(self, c, r):
         assert r > 0
         assert len(c) == 3
@@ -72,10 +67,10 @@ class Sphere(BaseShape):
         dx = np.max(self._control_points, axis=0) - min_
         self._bbox = Box(min_, dx)
 
-        self.c = c
         self.r = r
+        self.c = c   
 
-        self._center_of_mass = c
+        self._center_of_mass = c 
         self._surfaces = {'all': c}
 
     def contains(self, point, tol):
@@ -87,20 +82,6 @@ class Sphere(BaseShape):
         '''Return volume tag under which shape has been added'''
         args = np.r_[self.c, self.r]
         return model.occ.addSphere(*args, tag=tag)
-
-    def center_of_mass(self, r0=None, r1=None):
-        '''
-        Center of mass of the balls surface(shell) if it we chopped  
-        at z corrsponging to radii.
-        '''
-        if r0 is None: r0 = self.r  # Z+
-
-        if r1 is None: r1 = self.r  # Z-
-
-        R = self.r
-        
-        zshift= 0.5*(r1-r0)/(sqrt(1-(r1/R)**2) + sqrt(1-(r0/R)**2))
-        return self.c + np.array([0, 0, zshift])
 
     
 class Cylinder(BaseShape):

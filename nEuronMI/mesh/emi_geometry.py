@@ -52,7 +52,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     volumes_surfs = map(model.getBoundary, volumes)
     # A boundary can also contain curves - we ignore those; only keep 2d
     volumes_surfs = [set(s[1] for s in ss if s[0] == 2) for ss in volumes_surfs]
-
+    
     volume_pairs = zip(volumes, volumes_surfs)
     # Volume with largest bdry is external
     external_pair = max(volume_pairs, key=lambda vs: len(second(vs)))
@@ -62,6 +62,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     # Ther rest are neurons
     volume_pairs.remove(external_pair)
     volume_pairs = deque(volume_pairs)
+
     for i, neuron in enumerate(neurons):
         match = False
         neuron_surfaces = {}  # Find them in the bounding surfaces of model
@@ -85,13 +86,14 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
             # Try with a different neuron
             else:
                 volume_pairs.appendleft(pair)
-                
+
     # At this point the external_surfs either belong to the box or the probe
     probe_surfaces = {}
     if probe is not None:
         probe.link_surfaces(model, external_surfs, box=box, tol=tol, links=probe_surfaces)
         assert set(probe_surfaces.keys()) == set(probe.surfaces.keys())
-    
+        print "IJ"
+        
     box_surfaces = {}
     box.link_surfaces(model, external_surfs, links=box_surfaces)
     # Success, what box wanted was found
@@ -121,51 +123,46 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     return model, EMIEntityMap(tagged_volumes, tagged_surfaces)
 
 
-def mesh_config_EMI_model(model, mapping, mesh_sizes):
+def mesh_config_EMI_model(model, mapping, size_params):
     '''Extend model by adding mesh size info'''
     # NOTE: this is really now just an illustration of how it could be
     # done. With the API the model can be configured in any way
     
     field = model.mesh.field
-    # We want to specify size for neuron surfaces and surfaces of the
-    # probe separately; let's collect them
+    # The mesh size here is based on the distance from probe & neurons.
+    # If distance < DistMin the mesh size LcMin
+    #    DistMin < distance < DistMax the mesh size interpolated LcMin, LcMax
+    #    Outside Gmsh takes Over
+    #
     neuron_surfaces = mapping.surface_entity_tags('all_neurons').values()
-    print mapping.surface_entity_tags('probe')
+    neuron_surfaces.extend(mapping.surface_entity_tags('probe').values())
+
     field.add('MathEval', 1)
-    field.setString(1, 'F', str(mesh_sizes['neuron']))
-    field.add('Restrict', 2)
-    field.setNumber(2, 'IField', 1)
-    field.setNumbers(2, 'FacesList', neuron_surfaces)
+    field.setString(1, 'F', 'x')
 
-    next_field = 2
-    probe_surfaces = mapping.surface_entity_tags('probe').values()
-    if probe_surfaces:
-        next_field += 1
-        field.add('MathEval', next_field)
-        field.setString(next_field, 'F', str(mesh_sizes['probe']))
-        
-        next_field += 1
-        field.add('Restrict', next_field)
-        field.setNumber(next_field, 'IField', next_field-1)
-        field.setNumbers(next_field, 'FacesList', probe_surfaces)
+    field.add('MathEval', 2)
+    field.setString(2, 'F', 'y')
 
-    box_surfaces = mapping.surface_entity_tags('box').values()
-    next_field += 1
-    field.add('MathEval', next_field)
-    field.setString(next_field, 'F', str(mesh_sizes['box']))
-        
-    next_field += 1
-    field.add('Restrict', next_field)
-    field.setNumber(next_field, 'IField', next_field-1)
-    field.setNumbers(next_field, 'FacesList', box_surfaces)
+    field.add('MathEval', 3)
+    field.setString(3, 'F', 'y')
 
-    next_field += 1
-    fields = list(range(2, next_field, 2))
+    field.add('Distance', 4)
+    field.setNumber(4, 'FieldX', 1)
+    field.setNumber(4, 'FieldY', 2)
+    field.setNumber(4, 'FieldZ', 3)
+    field.setNumbers(4, 'FacesList', neuron_surfaces)
 
-    # Where they meet
-    field.add('Min', next_field)
-    field.setNumbers(next_field, 'FieldsList', fields)
-    field.setAsBackgroundMesh(next_field)
+    field.add('Threshold', 5)
+    field.setNumber(5, 'IField', 4)
+    field.setNumber(5, 'DistMax', size_params['DistMax'])  # <----
+    field.setNumber(5, 'LcMax', size_params['LcMax'])     # <----
+
+    field.setNumber(5, 'DistMin', size_params['DistMin'])  # <----
+    field.setNumber(5, 'LcMin', size_params['LcMin'])     # <----
+    field.setNumber(5, 'StopAtDistMax', 1)
+
+
+    field.setAsBackgroundMesh(5)
 
     return model
 
@@ -182,13 +179,13 @@ if __name__ == '__main__':
     box = Box(np.array([-100, -100, -100]), np.array([200, 200, 200]))
     neurons = [#TaperedNeuron({'dend_rad': 0.2, 'axon_rad': 0.3}),
                #BallStickNeuron({'soma_x': -2, 'soma_y': -2, 'soma_z': 2}),
-               BallStickNeuron({'soma_x': 0, 'soma_y': 0, 'soma_z': 0,
+               BallStickNeuron({'soma_x': 20, 'soma_y': 20, 'soma_z': 0,
                                 'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
-                                'dend_rad': 10, 'axon_rad': 10})]
+                                'dend_rad': 15, 'axon_rad': 10})]
 
     probe = MicrowireProbe({'tip_x': 1.5, 'radius': 0.2, 'length': 10})
 
-    mesh_sizes = {'neuron': 2, 'probe': 5, 'box': 7.5}
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10, 'LcMin': 2}
     
     model = gmsh.model
     factory = model.occ
@@ -200,6 +197,7 @@ if __name__ == '__main__':
 
     # Add components to model
     model, mapping = build_EMI_geometry(model, box, neurons, probe=None)
+
     # Dump the mapping as json
     with open('%s.json' % root, 'w') as out:
         mapping.dump(out)
@@ -208,7 +206,7 @@ if __name__ == '__main__':
         mapping = EMIEntityMap(json_fp=json_fp)
 
     # Add fields controlling mesh size
-    mesh_config_EMI_model(model, mapping, mesh_sizes)
+    mesh_config_EMI_model(model, mapping, size_params)
     
     factory.synchronize();
     # This is a way to store the geometry as geo file

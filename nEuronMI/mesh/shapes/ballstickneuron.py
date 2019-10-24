@@ -20,24 +20,24 @@ class BallStickNeuron(Neuron):
         'axon_len': 1
         }
     
-    def __init__(self, params=None):
-        Neuron.__init__(self, params)
+    def __init__(self, params=None, tol=1E-7):
+        Neuron.__init__(self, params, tol)
 
         # Define as Cylinder-Sphere-Cylinder
         # axon-axon hill-some-dend hill-dendrite
         params = as_namedtuple(self._params)
         C = np.array([params.soma_x, params.soma_y, params.soma_z])
         # Move up
-        shift = sqrt(params.soma_rad**2 - params.axon_rad**2)
+        shift = sqrt(params.soma_rad**2 - params.axon_rad**2) - tol
         
         A0 = C + np.array([0, 0, shift])
-        A1 = A0 + np.array([0, 0, params.axon_len])
+        A1 = A0 + np.array([0, 0, params.axon_len+tol])
 
         # Move down
-        shift = sqrt(params.soma_rad**2 - params.dend_rad**2)
+        shift = sqrt(params.soma_rad**2 - params.dend_rad**2) + tol
         
         D0 = C - np.array([0, 0, shift])
-        D1 = D0 - np.array([0, 0, params.dend_len])
+        D1 = D0 - np.array([0, 0, params.dend_len+tol])
 
         self.pieces = OrderedDict(axon=Cylinder(A0, A1, params.axon_rad),
                                   soma=Sphere(C, params.soma_rad),
@@ -84,7 +84,7 @@ class BallStickNeuron(Neuron):
         model.occ.synchronize()
 
         surfs = model.getBoundary(neuron_tags)
-
+        
         # Volume tag, surfaces tag
         return neuron_tags[0][1], [s[1] for s in surfs]
         

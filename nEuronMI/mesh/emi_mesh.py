@@ -60,71 +60,59 @@ def load_h5_mesh(h5_file):
 
 if __name__ == '__main__':
     # Demo of generating mesh from model
-    from dolfin import File
-    
+    from emi_geometry import build_EMI_geometry, mesh_config_EMI_model
+    from shapes import Box, BallStickNeuron, MicrowireProbe, TaperedNeuron
+    import gmsh, sys, json, os
+    from dolfin import File    
+    import numpy as np
+
     root = 'test_neuron'
     msh_file = '%s.msh' % root
-    if True: #not os.path.exists(msh_file):
         
-        from emi_geometry import build_EMI_geometry, mesh_config_EMI_model
-        from shapes import Box, BallStickNeuron, MicrowireProbe
-        import gmsh, sys, json, os
-        import numpy as np
-
-        # Components
-        box = Box(np.array([-3.5, -3, -5]), np.array([6, 6, 10]))
-        neuron = BallStickNeuron()
-        probe = MicrowireProbe({'tip_x': 1.5, 'radius': 0.2, 'length': 10})
-
-        mesh_sizes = {'neuron': 0.3, 'probe': 0.05, 'box': 0.2}
+    # Components
+    box = Box(np.array([-100, -100, -100]), np.array([200, 200, 200]))
     
-        model = gmsh.model
-        factory = model.occ
-        # You can pass -clscale 0.25 (to do global refinement)
-        # or -format msh2            (to control output format of gmsh)
-        args = sys.argv + ['-format', 'msh2']  # Dolfin convert handles only this
-        gmsh.initialize(args)
+    neurons = [BallStickNeuron({'soma_x': 20, 'soma_y': 20, 'soma_z': 0,
+                                'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
+                                'dend_rad': 15, 'axon_rad': 10}),
+               TaperedNeuron({'soma_x': 30, 'soma_y': -30, 'soma_z': 20,
+                              'soma_rad': 20, 'dend_len': 20, 'axon_len': 20, 'axonh_len': 30, 'dendh_len': 20,
+                              'dend_rad': 10, 'axon_rad': 8, 'axonh_rad': 10, 'dendh_rad': 15})]
+    
+    probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
+    
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10, 'LcMin': 2}
+    
+    model = gmsh.model
+    factory = model.occ
+    # You can pass -clscale 0.25 (to do global refinement)
+    # or -format msh2            (to control output format of gmsh)
+    args = sys.argv + ['-format', 'msh2']  # Dolfin convert handles only this
+    gmsh.initialize(args)
 
-        gmsh.option.setNumber("General.Terminal", 1)
+    gmsh.option.setNumber("General.Terminal", 1)
 
-        # Add components to model
-        model, mapping = build_EMI_geometry(model, box, neuron, probe)
-        # Dump the mapping as json
-        mesh_config_EMI_model(model, mapping, mesh_sizes)
+    # Add components to model
+    model, mapping = build_EMI_geometry(model, box, neurons, probe=probe)
+    
+    # Dump the mapping as json
+    mesh_config_EMI_model(model, mapping, size_params)
+    factory.synchronize()
 
-
-        gmsh.fltk.initialize()
-        gmsh.fltk.run()
-        
-        factory.synchronize();
-        # This is a way to store the geometry as geo file
-        gmsh.write('%s.geo_unrolled' % root)
-        # 3d model
-        model.mesh.generate(3)
-        # Native optimization
-        model.mesh.optimize('')
-        gmsh.write(msh_file)
-        gmsh.finalize()
-
+    # This is a way to store the geometry as geo file
+    gmsh.write('%s.geo_unrolled' % root)
+    # 3d model
+    model.mesh.generate(3)
+    # Native optimization
+    model.mesh.optimize('')
+    gmsh.write(msh_file)
+    gmsh.finalize()
+    
     # Convert
     h5_file = msh_to_h5(msh_file)
 
     mesh, volumes, surfaces = load_h5_mesh(h5_file)
 
-    assert set(volumes.array()) == set((1, 2))
-    assert set(surfaces.array()) == set(range(14))
-
     # Eye check
     File('surfaces.pvd') << surfaces
-    File('volumes.pvd') << surfaces
-
-    # Dupliecate vertices?
-    from scipy.spatial import distance_matrix
-    
-    x = mesh.coordinates()
-    M = distance_matrix(x, x)
-
-    hmin = mesh.hmin()/2
-    # No duplicates
-    print all(np.min(row[i+1:]) > 1E-5 for i, row in zip(range(len(x)-2), M))
-
+    File('volumes.pvd') << volumes
