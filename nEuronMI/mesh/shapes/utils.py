@@ -59,6 +59,10 @@ def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
 
     NOTE: tags is altered in the process. 
     '''
+    # Done?
+    if set(shape.surfaces.keys()) <= set(links.keys()):
+        return links
+
     if metric is None:
         metric = lambda x, y: np.linalg.norm(y-x, axis=1)
     tags_ = list(tags)
@@ -72,13 +76,11 @@ def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
 
         # Correspondence
         dist = metric(x, y)
-        print '>>>>', dist
         i = np.argmin(dist)
         # Accept
         if dist[i] < tol:
             link = tags_[i]
             links[name] = link
-            print 'Adding', name
             tags.remove(link)
 
             x = np.delete(x, i, axis=0)
@@ -87,8 +89,10 @@ def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
     # If there is just one remainig we claim it with warning
     if len(tags_) == 1:
         name, = set(shape.surfaces.keys()) - set(links.keys())
-        links[name] = tags_.pop()
-    
+        link = tags_.pop()
+        links[name] = link
+        tags.remove(link)
+        
     return links
 
 
@@ -106,7 +110,6 @@ if __name__ == '__main__':
     
     d = {'a': 1, 'b': 2}
     print(as_namedtuple(d))
-
 
     n = np.array([1, 1, 1])
     n = n/np.linalg.norm(n)

@@ -14,14 +14,31 @@ parameters['form_compiler']['cpp_optimize_flags'] = '-O3 -ffast-math -march=nati
 parameters['ghost_mode'] = 'shared_facet'
 
 
-def neuron_solver(mesh_path, problem_parameters, solver_parameters):
-    '''Solver for the Hdiv formulation of the EMI equations'''
-    mesh, facet_marking_f, volume_marking_f, tags = load_mesh(mesh_path)
+def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
+    '''
+    Solver for the Hdiv formulation of the EMI equations
+    
+    mesh_path: str that is the path to HDF5File containing mesh, ...
+    emi_map: EMIEntityMap of the mesh
+    problem_parameters: dict specifying the following
+
+      For each neuron (neuron_i) the I_ion, cond[uctivity], C_m, parameters for stim[_*]ulation params
+      For exterior (external) cond[uctivity], names of insulated exterior boundaries
+      For probe stimulated_sites (named) and their currents
+
+    solver_parameters: time_step, dt (of EMI), dt_ode
+    '''    
+    mesh, volume_marking_f, facet_marking_f = load_mesh(mesh_path)
+
+    num_neurons = emi_map.num_neurons
+    # Do we have properties for each one
+    neuron_props = [problem_parameters['neuron_%d'] % i for i in range(num_neurons)]
+    ext_props = problem_parameters['external']
 
     cell = mesh.ufl_cell()
     # We have 3 spaces S for sigma = -kappa*grad(u)   [~electric field]
     #                  U for potential u
-    #                  Q for transmebrane potential p
+    #                  Q for transmebrane potential p;
     Sel = FiniteElement('RT', cell, 1)
     Vel = FiniteElement('DG', cell, 0)
     Qel = FiniteElement('Discontinuous Lagrange Trace', cell, 0)
@@ -30,89 +47,12 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     sigma, u, p = TrialFunctions(W)
     tau, v, q = TestFunctions(W)
 
-    soma, axon, dendrite = {1}, tags['axon'], tags['dendrite']        
-    # For simplicity there shall be the same physics on hillock as on the
-    # connected dendrite/exon. So we rename 31->3 and 21->2
-    if 31 in dendrite:
-        dendrite.remove(31)
-        for c in SubsetIterator(facet_marking_f, 31):
-            facet_marking_f[c] = 3
-
-    if 21 in axon:
-        axon.remove(21)
-        for c in SubsetIterator(facet_marking_f, 21):
-            facet_marking_f[c] = 2
-    assert len(soma) == len(axon) == len(dendrite) == 1
-
-    insulated_surfaces = tags['probe_surfaces']
-    grounded_surfaces = {5, 6}
-    neuron_surfaces = soma | axon | dendrite
-    other_surfaces = {0}
-    
-    # We now want to add all but the stimulated probe site to insulated
-    # surfaces and for the stimulated probe prescribe ...
-    stimulated_site = problem_parameters['stimulated_site']
-    all_sites = tags['contact_surfaces']
-    assert stimulated_site in all_sites
-
-    all_sites.remove(stimulated_site)
-    insulated_surfaces.update(all_sites)  # Rest is insulated
-
-    # It might be useful to reduce the size of grounded domain keeping it
-    # only at the plane z_min. We do this by tagging as 6 everything but the
-    # base and then making 6 an insulated surface.
-    if problem_parameters.get('grounded_bottom_only', False):
-        zmin = mesh.coordinates().min(0)[-1]
-
-        for facet in SubsetIterator(facet_marking_f, 5):
-            # Make a non base surface 6
-            if not near(facet.midpoint()[2], zmin):
-                facet_marking_f[facet] = 6
-        # 6 is newly insulated
-        grounded_surfaces.remove(6)  # Leaving only 5/base grounded
-        insulated_surfaces.add(6)
-
-    bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
-                    for tag in insulated_surfaces]
-    # NOTE: (0, 0, 0) means that the dof is set based on (0, 0, 0).n
-    # Add the stimulated site
-    site_current = problem_parameters['site_current']
-    assert len(site_current) == 3
-    bc_insulated.append(DirichletBC(W.sub(0), site_current, facet_marking_f, stimulated_site))
-
-    # Conraint dofe where there are no bcs
-    other_surfaces.add(stimulated_site)   # Will not be constrained, others are in insulated
-    all_surfaces = insulated_surfaces | grounded_surfaces | neuron_surfaces | other_surfaces
-    # A specific of the setup is that the facet space is too large. It
-    # should be defined only on the neuron surfaces but it is defined
-    # everywhere instead. So the not neuron part should be set to 0
-    bc_constrained = [DirichletBC(W.sub(2), Constant(0), facet_marking_f, tag)
-                      for tag in (all_surfaces - neuron_surfaces)]
-    ncstr_dofs = sum(len(bc.get_boundary_values()) for bc in bc_constrained)
-
-    # To integrate over inside and outside of the neuron we define a volume
-    # measure. Note that interior is mared as 1 and outside is 2
-    neuron_int = 1
-    neuron_ext = 2
+    # To integrate over inside and outside of the neurons we define a volume
     dx = Measure('dx', domain=mesh, subdomain_data=volume_marking_f)
-
-    # We will also need a measure for integratin over the neuron surface
+    # We will also need a measure for integratin over the neuron surfaces
     dS = Measure('dS', domain=mesh, subdomain_data=facet_marking_f)
-    
-    # And finally a normal fo the INTERIOR surface. Note that 1, 2 marking
-    # of volume makes 2 cells the '+' cells w.r.t to neuron survace. n('+')
-    # would therefore be their outer normal (that is an outer normal of the
-    # outside). ('-') makes the orientation right
-    n = FacetNormal(mesh)('-')
-
-    # Now onto the weak form
-    # Load up user parameters of the problem and the solver
-    C_m = Constant(problem_parameters['C_m'])
-    cond_int = Constant(problem_parameters['cond_int'])
-    cond_ext = Constant(problem_parameters['cond_ext'])
-    # FIXME: is ionic current always constant in this application
-    I_ion = Constant(problem_parameters['I_ion'])    
-    dt_fem = Constant(solver_parameters['dt_fem'])
+    # Orient normal so that it is outer normal of neurons
+    n = FacetNormal(mesh)('+')
 
     # Everything is driven by membrane response. This will be updated
     # by the ode solver. The ode solver will work on proper space defined
@@ -126,68 +66,110 @@ def neuron_solver(mesh_path, problem_parameters, solver_parameters):
     # -(div sigma, v)*dx                                            = 0
     # (sigma.n - Cm/dt*p, q)*dS                                     = (I_ion - Cm/dt*p0)*dS
 
-    a = ((1/cond_int)*inner(sigma, tau)*dx(neuron_int)+(1/cond_ext)*inner(sigma, tau)*dx(neuron_ext)
-         - inner(div(tau), u)*dx(neuron_int) - inner(div(tau), u)*dx(neuron_ext)
-         + sum(inner(p('+'), dot(tau('+'), n))*dS(i) for i in neuron_surfaces)
-         - inner(div(sigma), v)*dx(neuron_int) - inner(div(sigma), v)*dx(neuron_ext)
-         + sum(inner(q('+'), dot(sigma('+'), n))*dS(i) for i in neuron_surfaces)
-         - sum((C_m/dt_fem)*inner(q('+'), p('+'))*dS(i) for i in neuron_surfaces))
-
-    L = sum(inner(q('+'), I_ion-(C_m/dt_fem)*p0('+'))*dS(i) for i in neuron_surfaces)
-
-    # Ode solver. Defined on the neuron mesh
-    neuron_surf_mesh, neuron_subdomains = EmbeddedMesh(facet_marking_f, neuron_surfaces)
-    # This is not a very pretty solution to the problem of getting the neuron
-    # subdomains out for the purpose of integrating memebrane current.
-    yield neuron_subdomains
+    # Extract volumes tags for volume and neurons
+    ext_Vtag = emi_map.volume_physical_tags('external')['all']
+    n_Vtags = [emi_map.volume_physical_tags('neuron_%d' % i)['all'] for i in range(num_neurons)]
     
-    dt_ode = solver_parameters['dt_ode']
-    assert dt_ode <= dt_fem(0)
+    a = ((1/Constant(ext_props['cond']))*inner(sigma, tau)*dx(ext_Vtag)
+         - inner(div(tau), u)*dx(ext_Vtag)
+         - inner(div(sigma), v)*dx(ext_Vtag))
+    # Add neurons
+    for n_Vtag, n_props in zip(n_Vtags, neuron_props):
+        a += ((1/Constant(n_props['cond']))*inner(sigma, tau)*dx(n_Vtag)+
+              - inner(div(tau), u)*dx(n_Vtag)
+              - inner(div(sigma), v)*dx(n_Vtag))
 
-    # Set up neuron model and ODE solver
-    ode_solver = ODESolver(neuron_subdomains,
-                           soma=next(iter(soma)),
-                           axon=next(iter(axon)),
-                           dendrite=next(iter(dendrite)),
-                           problem_parameters=problem_parameters)
+    dt_fem = solver_parameters['dt_fem']
+    # Extract surface tags for surface contribs of the neurons.
+    # NOTE: here the distanction between surfaces does of neuron does
+    # not matter
+    n_Stags = [emi_map.surface_physical_tags('neuron_%d' % i).keys() for i in range(num_neurons)]
 
-    Tstop = problem_parameters['Tstop']; assert Tstop > 0.0
-    interval = (0.0, Tstop)
-    
-    fem_ode_sync = int(dt_fem(0)/dt_ode)
-    # NOTE: a generator; nothing is computed so far
-    ode_solutions = ode_solver.solve(interval, dt_ode)  # Potentials only
+    for n_Stag, n_props in zip(n_Stags, neuron_props):
+        a += sum(inner(p('+'), dot(tau('+'), n))*dS(i) for i in n_Stag)
+        a += sum(inner(q('+'), dot(sigma('+'), n))*dS(i) for i in n_Stag)
+        a += -sum(Constant(n_props['C_m']/dt_fem)*inner(q('+'), p('+'))*dS(i) for i in n_Stag)
 
-    transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
-    # The ODE solver talks to the worlk via chain: Q_neuron <-> Q <- W
-    Q_neuron = ode_solver.V
-    p0_neuron = Function(Q_neuron)
+    # Rhs contributions
+    L = 0
+    for n_Stag, n_props in zip(n_Stags, neuron_props):
+        L += sum(inner(q('+'), n_props['I_ion']-Constant(n_props['C_m']/dt_fem)*p0('+'))*dS(i)
+                 for i in neuron_surfaces)
 
-    # From component to DLT on mesh
-    toQ_fromW2 = FunctionAssigner(Q, W.sub(2))
-    # Between DLT mesh and submesh space
-    assign_toQ_neuron_fromQ = transfer.compute_map(Q_neuron, Q, strict=False)
-    assign_toQ_fromQ_neuron = transfer.compute_map(Q, Q_neuron, strict=False)
+    # Boundary conditions: grounded surfaces are neumann and we don't do
+    # anything special there. Insulated sites and the stimated site(s) of
+    # the probe are Dirichlet. Additional Dirichlet bcs contrain DLT dofs
+    insulated_tags = [emi_map.surface_physical_tags('external')[name] for name in ext_props['bcs']]
+    # NOTE: (0, 0, 0) means that the dof is set based on (0, 0, 0).n
+    bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
+                    for tag in insulated_surfaces]
 
-    # Get the linear system
+    # Add the stimulated site
+    if 'probe' in emi_map:
+        probe_params = problem_parameters['probe']
+        
+        site_currents = probe_params['site_currents']
+        stim_sites = [emi_map.physical_surfaces_tags('probe')[name]
+                      for name in probe_params['stimulated_siters']]
+
+        bc_stimulated = [DirichletBC(W.sub(0), site, facet_marking_f, current)
+                         for site, current in zip(stim_sites, site_currents)]
+        # From the system they are the same
+        bc_insulated.extend(bc_stimulated)
+
+    not_neuron_surfaces = set(facet_marking_f.array()) - set(sum(n_Stags, []))
+    # A specific of the setup is that the facet space is too large. It
+    # should be defined only on the neuron surfaces but it is defined
+    # everywhere instead. So the not neuron part should be set to 0
+    bc_constrained = [DirichletBC(W.sub(2), Constant(0), facet_marking_f, tag) for tag in not_neuron_surfaces]
+
     assembler = SystemAssembler(a, L, bcs=bc_insulated+bc_constrained)
     A, b = Matrix(), Vector()
     assembler.assemble(A) 
     assembler.assemble(b)
-
-    # And its solver
-    if solver_parameters.get('use_reduced', False):
-        # For reduction it is necessary to add cstr_dofs for the subspace
-        # number 2
-        solver_parameters['constrained_dofs'] = {
-            2: reduce(operator.or_,
-                      (set(bc.get_boundary_values().keys()) for bc in bc_constrained))
-            }
-
     # import numpy as np
     # print np.min(np.abs(np.linalg.eigvalsh(A.array())))
-    
     la_solver = LinearSystemSolver(A, W, solver_parameters)
+    
+    dt_ode = solver_parameters['dt_ode']
+    assert dt_ode <= dt_fem(0)
+    # Setup neuron
+    fem_ode_sync = int(dt_fem(0)/dt_ode)
+
+    # For each neuron we wa
+
+    for i, neuron_surfaces in enumerate(n_Stags):
+        # Ode solver. Defined on the neuron mesh
+        neuron_surf_mesh, neuron_subdomains = EmbeddedMesh(facet_marking_f, neuron_surfaces)
+
+        # FIXME: union axon_*, dendrite=*
+        soma = 1
+        dendrite = 1
+        axon = 1
+        
+        ode_solver = ODESolver(neuron_subdomains,
+                               soma=soma, axon=axons, dendrite=dendrite,
+                               problem_parameters=problem_parameters['neuron_%d' % i])
+
+        Tstop = problem_parameters['Tstop']; assert Tstop > 0.0
+        interval = (0.0, Tstop)
+    
+        # NOTE: a generator; nothing is computed so far
+        ode_solutions = ode_solver.solve(interval, dt_ode)  # Potentials only
+
+        transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
+        # The ODE solver talks to the worlk via chain: Q_neuron <-> Q <- W
+        Q_neuron = ode_solver.V
+        p0_neuron = Function(Q_neuron)
+
+        # Between DLT mesh and submesh space
+        assign_toQ_neuron_fromQ = transfer.compute_map(Q_neuron, Q, strict=False)
+        assign_toQ_fromQ_neuron = transfer.compute_map(Q, Q_neuron, strict=False)
+
+    # Get the linear system
+    # From component to DLT on mesh
+    toQ_fromW2 = FunctionAssigner(Q, W.sub(2))
+
 
     w = Function(W)
     # Finally for postprocessing we return the current time, potential

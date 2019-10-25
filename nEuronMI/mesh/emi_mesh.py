@@ -94,7 +94,10 @@ if __name__ == '__main__':
 
     # Add components to model
     model, mapping = build_EMI_geometry(model, box, neurons, probe=probe)
-    
+
+    with open('%s.json' % root, 'w') as out:
+        mapping.dump(out)
+
     # Dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
     factory.synchronize()

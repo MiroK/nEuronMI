@@ -40,8 +40,8 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     # |
     # | zmax_soma (x - stim_pos)
     # |
-    # We have 3 ways of stimulating the dendrite. If `stip_pos` is a float
-    # is is interpreted as a distance from the soma top where the dendrite
+    # We have 3 ways of stimulating the dendrite. If `stim_pos` is a float
+    # it is interpreted as a distance from the soma top where the dendrite
     # piece of length `stim_length` is stimulated. If `stim_pos` is a
     # an iterable of len 3 it is interpreted as a source location and the
     # stimulus location is defined using the dendrite point P closest to it.
@@ -216,7 +216,7 @@ class SubDomainCardiacODESolver(object):
 
 if __name__ == '__main__':
     mesh = UnitSquareMesh(32, 32)
-    cell_f = CellFunction('size_t', mesh, 2)
+    cell_f = MeshFunction('size_t', mesh, mesh.topology().dim(), 2)
 
     inside = ' && '.join(['0.25-tol<x[0]', 'x[0]<0.75+tol', '0.25-tol<x[1]', 'x[1]<0.75+tol'])
     CompiledSubDomain(inside, tol=1e-13).mark(cell_f, 1)

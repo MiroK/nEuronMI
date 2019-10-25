@@ -49,8 +49,13 @@ class Box(BaseShape):
 
     def link_surfaces(self, model, tags, links, box=None, tol=1E-10):
         '''Account for possible cut and shift of center of mass of face'''
-        return utils.link_surfaces(model, tags, self, links, tol=tol)
-        
+        # This pass is blind
+        links = utils.link_surfaces(model, tags, self, links, tol=tol)
+        # NOTE: everything is assumed to be z aligned. We might have
+        # a cut z plane
+        metric = lambda x, y: np.abs((y - x)[:,2])  # But z coord should match
+        print links
+        return utils.link_surfaces(model, tags, self, tol=tol, links=links, metric=metric)        
 
     
 class Sphere(BaseShape):

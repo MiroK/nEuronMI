@@ -92,14 +92,16 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     if probe is not None:
         probe.link_surfaces(model, external_surfs, box=box, tol=tol, links=probe_surfaces)
         assert set(probe_surfaces.keys()) == set(probe.surfaces.keys())
-        print "IJ"
         
     box_surfaces = {}
     box.link_surfaces(model, external_surfs, links=box_surfaces)
     # Success, what box wanted was found
     assert set(box_surfaces.keys()) == set(box.surfaces.keys())
 
-    external_surfs and info('There are unclaimed surfaces % s' % external_surfs)
+    # Raise on missing tag 
+    if external_surfs:
+        info('There are unclaimed surfaces % s' % external_surfs)
+        assert False
 
     # Finally we assign physical groups: name -> {name -> (entity tag, physical tag)}
     vtags, stags = count(1), count(1)
@@ -212,7 +214,7 @@ if __name__ == '__main__':
     # This is a way to store the geometry as geo file
     gmsh.write('%s.geo_unrolled' % root)
     # Launch gui for visual inspection
-    gmsh.fltk.initialize()
-    gmsh.fltk.run()
+    # gmsh.fltk.initialize()
+    # gmsh.fltk.run()
 
-    gmsh.finalize()
+    # gmsh.finalize()
