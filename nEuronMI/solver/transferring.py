@@ -13,7 +13,6 @@ class SubMeshTransfer(object):
     def __init__(self, mesh, submesh):
         # The submesh must have come from EmbeddedMesh/SubMesh
         # FIXME: own class?
-        assert hasattr(submesh, 'entity_map') or isinstance(submesh, df.SubMesh)
         assert any((mesh.topology().dim() >= submesh.topology().dim(), 
                     mesh.num_cells() > submesh.num_cells()))
 
@@ -24,7 +23,7 @@ class SubMeshTransfer(object):
         self.submesh = submesh
 
         try:
-            self.cell_map = submesh.entity_map[submesh.topology().dim()]
+            self.cell_map = submesh.parent_entity_map[mesh.id()][submesh.topology().dim()]
         except AttributeError:
             self.cell_map = submesh.data().array('parent_cell_indices',
                                                  submesh.topology().dim())
@@ -133,7 +132,7 @@ class SubMeshTransfer(object):
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from embedding import EmbeddedMesh
+    from xii import EmbeddedMesh
     import sys
 
     try:
@@ -150,7 +149,8 @@ if __name__ == '__main__':
         chi.mark(marking_f, i+1)
 
     markers = [1, 2, 3]
-    submesh, f = EmbeddedMesh(marking_f, markers)
+    submesh = EmbeddedMesh(marking_f, markers)
+    f = submesh.marking_function
     # Two function space of the respected meshes
     V = df.FunctionSpace(mesh, 'CG', 1)
     W = df.FunctionSpace(submesh, 'CG', 1)
@@ -218,3 +218,69 @@ if __name__ == '__main__':
     dS_ = df.Measure('dS', subdomain_data=marking_f, domain=mesh)
     error_form = sum((fV('+')-f('+'))**2*dS_(i) for i in markers)
     print df.sqrt(df.assemble(error_form))
+
+
+    # ----------------------------------------------------------------
+
+    mesh = df.UnitSquareMesh(n, n)
+
+    f = df.MeshFunction('size_t', mesh, 1, 0)
+    df.CompiledSubDomain('near(x[0], 0)').mark(f, 1)
+    df.CompiledSubDomain('near(x[0], 1)').mark(f, 2)
+    df.CompiledSubDomain('near(x[1], 0)').mark(f, 3)
+    df.CompiledSubDomain('near(x[1], 1)').mark(f, 4)
+
+    parent = EmbeddedMesh(f, [1, 2, 3, 4])
+    subdomains = parent.marking_function
+
+    child0 = EmbeddedMesh(subdomains, [1, 2])
+    child1 = EmbeddedMesh(subdomains, [3, 4])
+
+    V, V0, V1 = (df.FunctionSpace(m, 'DG', 0) for m in (parent, child0, child1))
+    
+    transfer0 = SubMeshTransfer(parent, child0)
+    transfer1 = SubMeshTransfer(parent, child1)
+    
+    toV0_fromV = transfer0.compute_map(V0, V)
+    toV_fromV0 = transfer0.compute_map(V, V0)
+
+    toV1_fromV = transfer1.compute_map(V1, V)
+    toV_fromV1 = transfer1.compute_map(V, V1)
+
+    expr = df.Expression('x[0] + x[1]', degree=1)
+      
+    f0 = df.interpolate(expr, V0)
+    f1 = df.interpolate(expr, V1)
+
+    f = df.Function(V)
+    x, y = df.SpatialCoordinate(parent)
+    
+    f = toV_fromV0(f, f0)
+    print df.assemble(df.inner(f - (x+y), f-(x+y))*df.dx)
+    
+    f = toV_fromV1(f, f1)
+    print df.assemble(df.inner(f - (x+y), f-(x+y))*df.dx)
+
+    # Go the other way
+    f0.vector().zero()
+    f1.vector().zero()
+
+    f0 = toV0_fromV(f0, f)
+    x0, y0 = df.SpatialCoordinate(V0.mesh())
+    print df.assemble(df.inner(f0 - (x0+y0), f0-(x0+y0))*df.dx)
+
+    f1 = toV1_fromV(f1, f)
+    x1, y1 = df.SpatialCoordinate(V1.mesh())
+    print df.assemble(df.inner(f1 - (x1+y1), f1-(x1+y1))*df.dx)
+
+    W = df.FunctionSpace(mesh, 'Discontinuous Lagrange Trace', 0)
+    transfer = SubMeshTransfer(mesh, parent)    
+    toW_fromV = transfer.compute_map(W, V, strict=False)
+
+    w = df.Function(W)
+    toW_fromV(w, f)
+
+    x, y = df.SpatialCoordinate(W.mesh())
+    print df.assemble(df.inner(w - (x+y), w -(x+y))*df.ds)
+    
+

@@ -98,7 +98,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     # Success, what box wanted was found
     assert set(box_surfaces.keys()) == set(box.surfaces.keys())
 
-    # Raise on missing tag 
+    # Raise on missing 
     if external_surfs:
         info('There are unclaimed surfaces % s' % external_surfs)
         assert False

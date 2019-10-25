@@ -80,8 +80,8 @@ if __name__ == '__main__':
                               'dend_rad': 10, 'axon_rad': 8, 'axonh_rad': 10, 'dendh_rad': 15})]
     
     probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
-    
-    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10, 'LcMin': 2}
+    # Coarse enough for tests
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 20, 'LcMin': 8}
     
     model = gmsh.model
     factory = model.occ
