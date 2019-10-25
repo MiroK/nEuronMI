@@ -116,8 +116,11 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
                          for site, current in zip(stim_sites, site_currents)]
         # From the system they are the same
         bc_insulated.extend(bc_stimulated)
+    else:
+        site_currents = []
 
-    not_neuron_surfaces = set(facet_marking_f.array()) - set(sum(n_Stags, []))
+    all_neuron_surfaces = set(sum(n_Stags, []))
+    not_neuron_surfaces = set(facet_marking_f.array()) - all_neuron_surfaces
     # A specific of the setup is that the facet space is too large. It
     # should be defined only on the neuron surfaces but it is defined
     # everywhere instead. So the not neuron part should be set to 0
@@ -136,18 +139,37 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # Setup neuron
     fem_ode_sync = int(dt_fem(0)/dt_ode)
 
-    # For each neuron we wa
+    # Mesh of all neurons; individual are its submesh
+    neuron_surf_mesh, neurons_subdomains = EmbeddedMesh(facet_marking_f, all_neuron_surfaces)
+    # It is on this mesh that ode will update transmemebrane current and
+    # talk with pde
+    Q_neuron = FunctionSpace(neurons_mesh, 'DG', 0)  # P0 on surface <-> DLT on facets
 
+    Q = FunctionSpace(mesh, Qel)  # Everywhere
+    p0 = Function(Q)              # Previous transm potential now 0
+
+    transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
+    # The ODE solver talks to the worlk via chain: Q_neuron <-> Q <- W
+    p0_neuron = Function(Q_neuron)
+    # Between DLT mesh and submesh space
+    assign_toQ_neuron_fromQ = transfer.compute_map(Q_neuron, Q, strict=False)
+    assign_toQ_fromQ_neuron = transfer.compute_map(Q, Q_neuron, strict=False)
+    # From component to DLT on mesh
+    toQ_fromW2 = FunctionAssigner(Q, W.sub(2))
+
+    toQin_fromQns, toQn_fromQins, p0is = [], [], []
+    # p0i \in Qi <-> Q_neuron \ni p0_neuron
+    neuron_solutions = []    
     for i, neuron_surfaces in enumerate(n_Stags):
-        # Ode solver. Defined on the neuron mesh
-        neuron_surf_mesh, neuron_subdomains = EmbeddedMesh(facet_marking_f, neuron_surfaces)
+        # Pick the nueuron from neuron collection
+        ni_mesh, ni_subdomains = EmbeddedMesh(neurons_subdomains, neuron_surfaces)
 
         # FIXME: union axon_*, dendrite=*
         soma = 1
         dendrite = 1
         axon = 1
         
-        ode_solver = ODESolver(neuron_subdomains,
+        ode_solver = ODESolver(ni_subdomains,
                                soma=soma, axon=axons, dendrite=dendrite,
                                problem_parameters=problem_parameters['neuron_%d' % i])
 
@@ -156,20 +178,20 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     
         # NOTE: a generator; nothing is computed so far
         ode_solutions = ode_solver.solve(interval, dt_ode)  # Potentials only
+        neuron_solutions.append(ode_solutions)
 
-        transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
-        # The ODE solver talks to the worlk via chain: Q_neuron <-> Q <- W
-        Q_neuron = ode_solver.V
-        p0_neuron = Function(Q_neuron)
+        transfer = SubMeshTransfer(neuron_surf_mesh, ni_mesh)
+        # Communication between neuron and the collection
+        Qi_neuron = ode_solver.V
+        p0i_neuron = Function(Qi_neuron)
 
         # Between DLT mesh and submesh space
-        assign_toQ_neuron_fromQ = transfer.compute_map(Q_neuron, Q, strict=False)
-        assign_toQ_fromQ_neuron = transfer.compute_map(Q, Q_neuron, strict=False)
+        assign_toQin_fromQn = transfer.compute_map(Qi_neuron, Q_neuron, strict=False)
+        assign_toQn_fromQin = transfer.compute_map(Q_neuron, Qi_neuron, strict=False)
 
-    # Get the linear system
-    # From component to DLT on mesh
-    toQ_fromW2 = FunctionAssigner(Q, W.sub(2))
-
+        toQin_fromQns.append(assign_toQin_fromQn)
+        toQn_fromQins.append(assign_toQn_fromQin)
+        p0is.append(p0i_neuron)
 
     w = Function(W)
     # Finally for postprocessing we return the current time, potential
@@ -183,8 +205,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     current_out, current_aux = map(Function, (Q_neuron, Q))
     w_aux = Function(W)
     current_form = sum(1./FacetArea(mesh)('+')*inner(dot(w.sub(0)('+'), n), q('+'))*dS(i)
-                       for i in neuron_surfaces)
-    current_form += inner(Constant(0), v)*dx(neuron_int)  # Fancy zero for orientation
+                       for i in all_neuron_surfaces)
+
+    current_form += inner(Constant(0), v)*dx(ext_Vtag)  # Fancy zero for orientation
     # The idea here is that assembling the current form gives the right
     # dof values to assign to the DLT space (evals at cell midpoints).
     # Then we reduce as normal to the subcomponent and submesh space
@@ -193,22 +216,31 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     assign_toQ_neuron_fromQ(current_out, current_aux)
     
     # To get initial state
-    yield 0, u_out, current_out, A.size(0)
-                    
+    yield 0, u_out, current_out
+
+    neuron_solutions = zip(neuron_solutions)
+
     step_count = 0
-    for ((t0, t1), ode_solution) in ode_solutions:
+    for ode_step in neuron_solutions:
         step_count += 1
         info('Time is (%g, %g)' % (t0, t1))
         if step_count == fem_ode_sync:
             step_count = 0
+
+            (t0, t1) = ode_step[0][0]
+            # From individual neuron to collection
+            for i in range(num_neurons):
+                # FIXME: does this override?
+                toQn_fromQins[i](p0_neuron, ode_step[i][1])
             # ODE -> p0_neuron
             p0_neuron.assign(ode_solution)
             # Upscale p0_neuron->p0
             assign_toQ_fromQ_neuron(p0, p0_neuron)
         
             # We could have changing in time simulation
-            if 't' in site_current.user_parameters:
-                site_current.t = float(t1)
+            for I in site_currents:
+                if 't' in site_current.user_parameters:
+                    I.t = float(t1)
             # Assemble right-hand side (changes with time, so need to reassemble)                
             assembler.assemble(b)  # Also applies bcs
       
@@ -225,8 +257,14 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
             assign_toQ_neuron_fromQ(current_out, current_aux)
 
             yield t1, u_out, current_out, A.size(0)
-            
+
             # Now transfer the new transm potential down to ode ...
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
-            ode_solution.assign(p0_neuron)         # As IC for ODE
+
+            
+            toQin_fromQns, toQn_fromQins, p0is = [], [], []
+
+            for i in range(num_neurons):
+                toQin_fromQns(p0is[i], p0_neuron)
+                ode_solution[i].assign(p0is[i]) 
