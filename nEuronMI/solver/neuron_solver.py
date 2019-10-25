@@ -262,9 +262,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
 
-            
-            toQin_fromQns, toQn_fromQins, p0is = [], [], []
-
             for i in range(num_neurons):
                 toQin_fromQns(p0is[i], p0_neuron)
                 ode_solution[i].assign(p0is[i]) 
