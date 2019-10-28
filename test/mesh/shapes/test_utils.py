@@ -1,4 +1,4 @@
-from nEuronMI.mesh.shapes.utils import *
+from neuronmi.mesh.shapes.utils import *
 import unittest
 
 

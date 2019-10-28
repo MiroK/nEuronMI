@@ -4,39 +4,30 @@
 
 Run from current directory
 ```python
-python -m unittest discover test
+python3 -m unittest discover ./test
 ```
 
 ### Dependencies
-- mesh generation relies on [Gmsh](https://gmsh.info/#Download)
-- the solver requires [FEniCS](https://fenicsproject.org/download/), [cbc.beat](https://bitbucket.org/meg/cbcbeat)
+#### 1. Generating meshes for neuron simulations with EMI models
+We rely on [Gmsh](http://gmsh.info/) for both mesh generation and geometry defition.
+All is done via python [API](https://gitlab.onelab.info/gmsh/gmsh/blob/master/api/gmsh.py) of Gmsh.
+The gmsh module has to be on python path. For the current shell session
+this can be accomplised by running 
+
+```bash
+export PYTHONPATH=`pwd`:"$PYTHONPATH"
+```
+
+in the directory where **gmsh.py** resides (e.g. /usr/local/lib/).
+
+#### 2. Partial differential equation part of EMI
+The solver requires [FEniCS](https://fenicsproject.org/download/) version 2019.1.0. In our 
+experience the simplest way of installation that also plays along nicely with Gmsh is by 
+conda.
+
+#### 3. Ordinary differential equation part of EMI
+Membrane physics is solved for using [cbc.beat](https://bitbucket.org/meg/cbcbeat)
   (which depends on [dolfin-adjoint](http://dolfin-adjoint-doc.readthedocs.io/en/latest/download/index.html))
-- the current code has been tested with FEniCS 2017.2.0 (fetched as the Ubuntu package),
-  the other dependencies were built from source again the latest maste (18/01/2018)
-  branches.
-- an optional dependency for computing the probe for contact surfaces is [networkx](https://networkx.github.io/)
 
-### Create mesh
-
-- in `mesh/geometries` change parameters of `geogen.py` and run (add name to generated file).
-
-- open the generated file in gmsh and refine by splitting + optimize 3D
-  Splitting may be done several time until the desired resolutions is met.
-  In this respect, the `*_mesh_size` parameters in `geogen.py` determine
-  the ratios of element sizes in the given region. After refinement keep
-  an eye on the number of elements (Tools->Statistics).
-  
-- save the .msh file
-
-- run `msh_convert.py` with the .msh file as argument to create the .h5 file used from FEniCS
-
-### Solve the FEM problem
-- see `example.py`
-- for simulated meshes run:
-
-`python simulate_emi.py -mesh path-to-mesh-with-probe`
-
-`python simulate_emi.py -mesh path-to-mesh-without-probe -probemesh path-to-mesh-with-probe`
-
-Results are saved in the `src/results` folder. Running the script `python create_datasets.py` creates a `results.pkl` pandas dataframe containing information about each simulation.
-
+#### Optional
+An optional dependency for computing the probe for contact surfaces is [networkx](https://networkx.github.io/)

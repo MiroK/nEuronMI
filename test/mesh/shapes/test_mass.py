@@ -1,4 +1,4 @@
-from nEuronMI.mesh.shapes.gmsh_primitives import Sphere
+from neuronmi.mesh.shapes.gmsh_primitives import Sphere
 import unittest, gmsh
 from math import sqrt
 import numpy as np
