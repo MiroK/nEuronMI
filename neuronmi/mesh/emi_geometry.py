@@ -137,7 +137,6 @@ def mesh_config_EMI_model(model, mapping, size_params):
     #    Outside Gmsh takes Over
     #
     neuron_surfaces = list(mapping.surface_entity_tags('all_neurons').values())
-    neuron_surfaces.extend(list(mapping.surface_entity_tags('probe').values()))
 
     field.add('MathEval', 1)
     field.setString(1, 'F', 'x')

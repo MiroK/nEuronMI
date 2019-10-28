@@ -12,3 +12,4 @@
 *.json
 
 results/
+neuronmi.egg-info/

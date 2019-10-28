@@ -1,12 +1,10 @@
 from linear_algebra import LinearSystemSolver
 from transferring import SubMeshTransfer
-from xii import EmbeddedMesh
-from itertools import izip
+from embedding import EmbeddedMesh
 from membrane import ODESolver
 from dolfin import *
-import operator
 
-from nEuronMI.mesh.emi_mesh import load_h5_mesh
+from neuronmi.mesh.emi_mesh import load_h5_mesh
 
 
 # Optimizations
@@ -85,16 +83,22 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # Extract surface tags for surface contribs of the neurons.
     # NOTE: here the distanction between surfaces does of neuron does
     # not matter
-    n_Stags = [emi_map.surface_physical_tags('neuron_%d' % i).values() for i in range(num_neurons)]
+    n_Stags = map(list,
+                  [emi_map.surface_physical_tags('neuron_%d' % i).values() for i in range(num_neurons)])
+    n_Stags = list(n_Stags)
 
     for n_Stag, n_props in zip(n_Stags, neuron_props):
         a += sum(inner(p('+'), dot(tau('+'), n))*dS(i) for i in n_Stag)
         a += sum(inner(q('+'), dot(sigma('+'), n))*dS(i) for i in n_Stag)
         a += -sum(Constant(n_props['C_m']/dt_fem)*inner(q('+'), p('+'))*dS(i) for i in n_Stag)
 
+    iterator = zip(n_Stags, neuron_props)
     # Rhs contributions
-    L = 0
-    for n_Stag, n_props in zip(n_Stags, neuron_props):
+    n_Stag, n_props = next(iterator)
+    L = sum(inner(q('+'), n_props['I_ion']-Constant(n_props['C_m']/dt_fem)*p0('+'))*dS(i)
+            for i in n_Stag)
+
+    for n_Stag, n_props in iterator:
         L += sum(inner(q('+'), n_props['I_ion']-Constant(n_props['C_m']/dt_fem)*p0('+'))*dS(i)
                  for i in n_Stag)
 
@@ -225,7 +229,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # To get initial state
     yield 0, u_out, current_out
 
-    neuron_solutions = izip(*neuron_solutions)
+    neuron_solutions = zip(*neuron_solutions)
 
     step_count = 0
     for odes in neuron_solutions:
@@ -273,10 +277,10 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from nEuronMI.mesh.emi_map import EMIEntityMap
-    mesh_path = '../mesh/test_neuron.h5'
+    from neuronmi.mesh.emi_map import EMIEntityMap
+    mesh_path = '../../mesh/test_neuron.h5'
 
-    emi_map = '../mesh/test_neuron.json'
+    emi_map = '../../mesh/test_neuron.json'
     with open(emi_map) as json_fp:
         emi_map = EMIEntityMap(json_fp=json_fp)
 

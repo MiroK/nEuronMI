@@ -123,19 +123,19 @@ class SubMeshTransfer(object):
                 # Insert
                 mapping[s_dof] = m_dof
         # And we foudn them all 
-        assert not filter(np.isnan, mapping)
+        assert not list(filter(np.isnan, mapping))
                 
         return np.array(mapping, dtype=int)
             
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from xii import EmbeddedMesh
+    from embedding import EmbeddedMesh
     import sys
 
     try:
         n = int(sys.argv[1])
-    except ValueError:
+    except (ValueError, IndexError):
         n = 8
     
     mesh = df.UnitCubeMesh(*(n, )*3)
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     marking_f = df.MeshFunction('size_t', mesh, mesh.topology().dim()-1, 0)
     chi = df.CompiledSubDomain('near(x[i], 0.5)', i=0) 
     for i in range(3):
-        chi.i=i
+        chi.set_property('i', i)
         chi.mark(marking_f, i+1)
 
     markers = [1, 2, 3]
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     # on mesh refinement
     dS_ = df.Measure('dS', subdomain_data=marking_f, domain=mesh)
     error_form = sum((fV('+')-f('+'))**2*dS_(i) for i in markers)
-    print df.sqrt(df.assemble(error_form))
+    print(df.sqrt(df.assemble(error_form)))
 
 
     # ----------------------------------------------------------------
@@ -254,10 +254,10 @@ if __name__ == '__main__':
     x, y = df.SpatialCoordinate(parent)
     
     f = toV_fromV0(f, f0)
-    print df.assemble(df.inner(f - (x+y), f-(x+y))*df.dx)
+    print(df.assemble(df.inner(f - (x+y), f-(x+y))*df.dx))
     
     f = toV_fromV1(f, f1)
-    print df.assemble(df.inner(f - (x+y), f-(x+y))*df.dx)
+    print(df.assemble(df.inner(f - (x+y), f-(x+y))*df.dx))
 
     # Go the other way
     f0.vector().zero()
@@ -265,11 +265,11 @@ if __name__ == '__main__':
 
     f0 = toV0_fromV(f0, f)
     x0, y0 = df.SpatialCoordinate(V0.mesh())
-    print df.assemble(df.inner(f0 - (x0+y0), f0-(x0+y0))*df.dx)
+    print(df.assemble(df.inner(f0 - (x0+y0), f0-(x0+y0))*df.dx))
 
     f1 = toV1_fromV(f1, f)
     x1, y1 = df.SpatialCoordinate(V1.mesh())
-    print df.assemble(df.inner(f1 - (x1+y1), f1-(x1+y1))*df.dx)
+    print(df.assemble(df.inner(f1 - (x1+y1), f1-(x1+y1))*df.dx))
 
     W = df.FunctionSpace(mesh, 'Discontinuous Lagrange Trace', 0)
     transfer = SubMeshTransfer(mesh, parent)    
@@ -279,6 +279,6 @@ if __name__ == '__main__':
     toW_fromV(w, f)
 
     x, y = df.SpatialCoordinate(W.mesh())
-    print df.assemble(df.inner(w - (x+y), w -(x+y))*df.ds)
+    print(df.assemble(df.inner(w - (x+y), w -(x+y))*df.ds))
     
 

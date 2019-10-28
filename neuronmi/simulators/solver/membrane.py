@@ -2,9 +2,10 @@ import cbcbeat as beat
 from Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
 from transferring import SubMeshTransfer
 from aux import subdomain_bbox, closest_entity, as_tuple
-from xii import EmbeddedMesh
+from embedding import EmbeddedMesh
 from Passive import Passive
-from dolfin import *
+from dolfin import (FunctionAssigner, Constant, info, Expression,
+                    FunctionSpace, Function)
 import numpy as np
 
 
@@ -192,8 +193,9 @@ class SubDomainCardiacODESolver(object):
                 except StopIteration:
                     stopped[j] = True
                 solutions.append(uj)
-                
-            if all(stopped): raise StopIteration
+
+            if all(stopped): return    
+
             # Glue
             for j, uj in enumerate(solutions):
                 toSub_fromMixed_map[j].assign(adapters[j], uj.sub(0))
@@ -210,55 +212,3 @@ class SubDomainCardiacODESolver(object):
 
             # They either all be true or all be False
             assert len(set(stopped)) == 1
-
-            
-# --------------------------------------------------------------------
-
-
-if __name__ == '__main__':
-    mesh = UnitSquareMesh(32, 32)
-    cell_f = MeshFunction('size_t', mesh, mesh.topology().dim(), 3)
-    CompiledSubDomain('x[1] > 0.5-DOLFIN_EPS').mark(cell_f, 2)
-    inside = ' && '.join(['0.25-tol<x[0]', 'x[0]<0.75+tol', '0.25-tol<x[1]', 'x[1]<0.75+tol'])
-    CompiledSubDomain(inside, tol=1e-13).mark(cell_f, 1)
-
-    axon_model = Hodgkin_Huxley_1952()
-
-    dendrite_model = Passive()
-    
-    # Adjust parameters of the dendrite model
-    # Note: similar adjustments may be done for the soma and axon models in the same manner
-    dendrite_params = dendrite_model.default_parameters()
-    dendrite_params["g_leak"] = 0.06    #  passive membrane conductance (in mS/cm**2)
-    dendrite_params["E_leak"] = -75.0   #  passive resting membrane potential (in mV)
-    dendrite_params["Cm"] = 1.0         #  membrane capacitance (in uF/cm**2)
-
-    # Adjust stimulus current
-    # Note: Stimulation is currently implemented as a part of the passive membrane model
-    # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
-    dendrite_params["alpha"] = 2.0  # (ms)
-    dendrite_params["v_eq"] = 0.0   # (mV)
-    dendrite_params["g_s"] = Expression("stim_strength*(x[2]>1.0)",
-                                        stim_strength=1.0,
-                                        degree=1)
-
-    # Update dendrite parameters
-    dendrite_model = Passive(dendrite_params)
-
-    Solver = beat.BasicCardiacODESolver
-    odesolver_params = Solver.default_parameters()
-    # The timer in adjoint causes trouble so disable for now
-    odesolver_params['enable_adjoint'] = False
-
-    solver = SubDomainCardiacODESolver(subdomains=cell_f,
-                                       models={(1, 3):dendrite_model, 2: axon_model},
-                                       ode_solver=Solver,
-                                       params=odesolver_params)
-
-    gen = solver.solve((0, 1), 1E-1)
-    f = File('foo.pvd')
-    for ((t0, t1), x) in gen:
-        print x, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>', t1, x.vector().norm('l2')
-        f << x, t1
-
-        x.vector()[:] += 1.

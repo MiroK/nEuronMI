@@ -66,7 +66,7 @@ class EmbeddedMesh(df.Mesh):
 
             # So everybody is marked as 1
             one_cell_f = df.MeshFunction('size_t', base_mesh, tdim, 0)
-            for cells in color_cells.itervalues(): one_cell_f.array()[cells] = 1
+            for cells in color_cells.values(): one_cell_f.array()[cells] = 1
             
             # The Embedded mesh now steals a lot from submesh
             submesh = df.SubMesh(base_mesh, one_cell_f, 1)
@@ -87,7 +87,7 @@ class EmbeddedMesh(df.Mesh):
             f_values = f.array()
             if len(markers) > 1:
                 old2new = dict(zip(mapping_tdim, range(len(mapping_tdim))))
-                for color, old_cells in color_cells.iteritems():
+                for color, old_cells in color_cells.items():
                     new_cells = np.array([old2new[o] for o in old_cells], dtype='uintp')
                     f_values[new_cells] = color
             else:
@@ -150,7 +150,7 @@ class EmbeddedMesh(df.Mesh):
         f_ = f.array()
         # Finally the inherited marking function
         if len(markers) > 1:
-            for marker, cells in cell_colors.iteritems():
+            for marker, cells in cell_colors.items():
                 f_[cells] = marker
         else:
             f.set_all(markers[0])
@@ -164,12 +164,14 @@ class EmbeddedMesh(df.Mesh):
 
 
 if __name__ == '__main__':
+    import dolfin as df 
     mesh = df.UnitCubeMesh(10, 10, 10)
 
     f = df.MeshFunction('size_t', mesh, mesh.topology().dim()-1, 0)
     chi = df.CompiledSubDomain('near(x[i], 0.5)', i=0) 
+
     for i in range(3):
-        chi.i=i
+        chi.set_property('i', i)
         chi.mark(f, i+1)
 
     mesh = EmbeddedMesh(f, [1, 2, 3])

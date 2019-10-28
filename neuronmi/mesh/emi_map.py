@@ -1,4 +1,4 @@
-from shapes.utils import first, second
+from neuronmi.mesh.shapes.utils import first, second
 import json
 
 
