@@ -12,11 +12,9 @@ class SubMeshTransfer(object):
     '''
     def __init__(self, mesh, submesh):
         # The submesh must have come from EmbeddedMesh/SubMesh
-        # FIXME: own class?
         assert any((mesh.topology().dim() >= submesh.topology().dim(), 
                     mesh.num_cells() > submesh.num_cells()))
 
-        # FIXME: serial only (for now)
         assert df.MPI.size(mesh.mpi_comm()) == 1
 
         self.mesh = mesh

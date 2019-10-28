@@ -30,7 +30,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
 
     solver_parameters: time_step, dt (of EMI), dt_ode
     '''
-    print '>>>'        
     mesh, volume_marking_f, facet_marking_f = load_h5_mesh(mesh_path)
 
     num_neurons = emi_map.num_neurons
@@ -137,7 +136,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # Not singular
     # import numpy as np
     # print np.min(np.abs(np.linalg.eigvalsh(A.array())))
-    
     la_solver = LinearSystemSolver(A, W, solver_parameters)
     
     dt_ode = solver_parameters['dt_ode']
@@ -173,11 +171,12 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         ni_subdomains = ni_mesh.marking_function
         
         map_ =  emi_map.surface_physical_tags('neuron_%d' % i)
-        # FIXME: union axon_*, dendrite=*
-        soma = map_['soma']
-        dendrite = map_['dend']
-        axon = map_['axon']
-        print (soma, dendrite, axon), set(ni_subdomains.array())
+
+        soma = tuple(map_[k] for k in map_ if 'soma' in k)
+        dendrite = tuple(map_[k] for k in map_ if 'dend' in k)
+        axon = tuple(map_[k] for k in map_ if 'axon' in k)
+        
+        print i, '>>', (soma, dendrite, axon), set(ni_subdomains.array())
         
         ode_solver = ODESolver(ni_subdomains,
                                soma=soma, axon=axon, dendrite=dendrite,

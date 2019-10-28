@@ -3,6 +3,13 @@ import itertools
 import numpy as np
 
 
+def as_tuple(maybe):
+    '''Tuple of numbers'''
+    if isinstance(maybe, (int, float)):
+        return (maybe, )
+    return tuple(maybe)
+
+
 def mesh_statistics(mesh_file):
     '''Get num vertices, num cells, num facets on neuron, all facets'''
     mesh, surfaces, _, _ = load_mesh(mesh_file)
@@ -109,7 +116,10 @@ def closest_entity(x, subdomains, label):
     approximate.
     '''
     x = Point(*x)
-    e = min(SubsetIterator(subdomains, label), key=lambda e, x=x: (x-e.midpoint()).norm())
+    label = as_tuple(label)
+    sub_iter = itertools.chain(*[SubsetIterator(subdomains, l) for l in label])
+        
+    e = min(sub_iter, key=lambda e, x=x: (x-e.midpoint()).norm())
     
     return MeshEntity(subdomains.mesh(), e.dim(), e.index())
 
@@ -211,11 +221,11 @@ if __name__ == '__main__':
     mesh = UnitCubeMesh(10, 10, 10)
     facet_f = MeshFunction('size_t', mesh, 2, 0)
     CompiledSubDomain('near(x[0], 0)').mark(facet_f, 1)
-    CompiledSubDomain('near(x[2], 0.5)').mark(facet_f, 1)
+    CompiledSubDomain('near(x[2], 0.5)').mark(facet_f, 2)
 
-    bmesh, subdomains = EmbeddedMesh(facet_f, [1])
+    bmesh, subdomains = EmbeddedMesh(facet_f, [1, 2])
     x = np.array([1, 1., 1.])
-    entity = closest_entity(x, subdomains, 1)
+    entity = closest_entity(x, subdomains, (1, 2))
     x0 = entity.midpoint().array()[:3]
     
     f = point_source(entity, A=Expression('3', degree=1))

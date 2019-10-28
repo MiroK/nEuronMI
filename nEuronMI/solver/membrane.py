@@ -1,7 +1,8 @@
 import cbcbeat as beat
 from Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
 from transferring import SubMeshTransfer
-from aux import subdomain_bbox, closest_entity
+from aux import subdomain_bbox, closest_entity, as_tuple
+from xii import EmbeddedMesh
 from Passive import Passive
 from dolfin import *
 import numpy as np
@@ -11,6 +12,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     '''
     Setup a membrane model and an ODE solver for it.
     '''
+    soma, dendrite, axon = map(as_tuple, (soma, dendrite, axon))
     
     time = Constant(0.0)  # Start from now
     
@@ -33,74 +35,72 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["v_eq"] = 0.0   # (mV)
     dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
 
-    # FIXME
-    # # ^z
-    # # | x + length [END]                   
-    # # | 
-    # # | x = zmax_soma + stim_pos  [START]
-    # # |
-    # # | zmax_soma (x - stim_pos)
-    # # |
-    # # We have 3 ways of stimulating the dendrite. If `stim_pos` is a float
-    # # it is interpreted as a distance from the soma top where the dendrite
-    # # piece of length `stim_length` is stimulated. If `stim_pos` is a
-    # # an iterable of len 3 it is interpreted as a source location and the
-    # # stimulus location is defined using the dendrite point P closest to it.
-    # # If stim_length is not among the parameters only the closest point
-    # # will act as a point stimulus. Otherwise dendrite points X such that
-    # # their abs(X[2] - P[2]) < stim_length/2 are stimulated - 
-    # if isinstance(problem_parameters['stim_pos'], (int, float)):
-    #     info('Using stimulus based on soma location')
-    #     # Extract the bounds of the z coordinate to localize stimulation
-    #     zmin, zmax = subdomain_bbox(subdomains)[-1]
+    # ^z
+    # | x + length [END]                   
+    # | 
+    # | x = zmax_soma + stim_pos  [START]
+    # |
+    # | zmax_soma (x - stim_pos)
+    # |
+    # We have 3 ways of stimulating the dendrite. If `stim_pos` is a float
+    # it is interpreted as a distance from the soma top where the dendrite
+    # piece of length `stim_length` is stimulated. If `stim_pos` is a
+    # an iterable of len 3 it is interpreted as a source location and the
+    # stimulus location is defined using the dendrite point P closest to it.
+    # If stim_length is not among the parameters only the closest point
+    # will act as a point stimulus. Otherwise dendrite points X such that
+    # their abs(X[2] - P[2]) < stim_length/2 are stimulated - 
+    if isinstance(problem_parameters['stim_pos'], (int, float)):
+        info('Using stimulus based on soma location')
+        # Extract the bounds of the z coordinate to localize stimulation
+        zmin, zmax = subdomain_bbox(subdomains)[-1]
     
-    #     # Or just for the dendrite part
-    #     zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
+        # Or just for the dendrite part
+        zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
     
-    #     # Or just for the soma part
-    #     zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
+        # Or just for the soma part
+        zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
 
-    #     # Select start and end of the synaptic input area
-    #     stim_start_z = zmax_soma + problem_parameters["stim_pos"]
-    #     stim_end_z = stim_start_z + problem_parameters["stim_length"]
+        # Select start and end of the synaptic input area
+        stim_start_z = zmax_soma + problem_parameters["stim_pos"]
+        stim_end_z = stim_start_z + problem_parameters["stim_length"]
 
-    #     stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
-    #                           stim_strength=problem_parameters["stim_strength"],
-    #                           stim_start_z = stim_start_z,
-    #                           stim_end_z = stim_end_z,
-    #                           degree=1)
-    # else:
-    #     assert len(problem_parameters['stim_pos']) == 3
+        stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
+                              stim_strength=problem_parameters["stim_strength"],
+                              stim_start_z = stim_start_z,
+                              stim_end_z = stim_end_z,
+                              degree=1)
+    else:
+        assert len(problem_parameters['stim_pos']) == 3
 
-    #     P0 = problem_parameters['stim_pos']
+        P0 = problem_parameters['stim_pos']
         
-    #     # Get the closest dendrite point
-    #     X = closest_entity(P0, subdomains, label=dendrite).midpoint()
-    #     try:
-    #         X = X.array()
-    #     except AttributeError:
-    #         X = np.array([X[i] for i in range(3)])
+        # Get the closest dendrite point
+        X = closest_entity(P0, subdomains, label=dendrite).midpoint()
+        try:
+            X = X.array()
+        except AttributeError:
+            X = np.array([X[i] for i in range(3)])
 
-    #     if 'stim_length' in problem_parameters:
-    #         info('Using ring stimulus based on %r' % list(X))
+        if 'stim_length' in problem_parameters:
+            info('Using ring stimulus based on %r' % list(X))
 
-    #         stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
-    #                               stim_strength=problem_parameters["stim_strength"],
-    #                               stim_start_z=X[2]-problem_parameters['stim_length']/2,
-    #                               stim_end_z=X[2]+problem_parameters['stim_length']/2,
-    #                               degree=1)
-    #     else:
-    #         info('Using point stimulus at %r' % list(X))
+            stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
+                                  stim_strength=problem_parameters["stim_strength"],
+                                  stim_start_z=X[2]-problem_parameters['stim_length']/2,
+                                  stim_end_z=X[2]+problem_parameters['stim_length']/2,
+                                  degree=1)
+        else:
+            info('Using point stimulus at %r' % list(X))
 
-    #         norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
-    #         norm_code = 'sqrt(%s)' % norm_code
-    #         # NOTE: Points are considered distince if they are > h away
-    #         # from each other
-    #         params_ = {'h': 1E-10, 'A': problem_parameters['stim_strength']}
-    #         params_.update({('x%d' % i): X[i] for i in range(3)})
+            norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
+            norm_code = 'sqrt(%s)' % norm_code
+            # NOTE: Points are considered distince if they are > h away
+            # from each other
+            params_ = {'h': 1E-10, 'A': problem_parameters['stim_strength']}
+            params_.update({('x%d' % i): X[i] for i in range(3)})
 
-    #         stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
-    stimul_f = Constant(1)
+            stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
     
     dendrite_params["g_s"] = stimul_f
     # Update dendrite parameters
@@ -133,11 +133,10 @@ class SubDomainCardiacODESolver(object):
     def __init__(self, subdomains, models, ode_solver, params):
         time = Constant(0)
         # The subdomain solver instances
-        tags = models.keys()
-        models = [models[tag] for tag in tags]
+        tags, models = zip(*models.items())
 
         mesh = subdomains.mesh()
-        submeshes = [SubMesh(mesh, subdomains, tag) for tag in tags]
+        submeshes = [EmbeddedMesh(subdomains, tag) for tag in tags]
         solvers = [ode_solver(submesh, time, model, I_s=Constant(0.0), params=params)
                    for submesh, model in zip(submeshes, models)]
 
@@ -218,8 +217,8 @@ class SubDomainCardiacODESolver(object):
 
 if __name__ == '__main__':
     mesh = UnitSquareMesh(32, 32)
-    cell_f = MeshFunction('size_t', mesh, mesh.topology().dim(), 2)
-
+    cell_f = MeshFunction('size_t', mesh, mesh.topology().dim(), 3)
+    CompiledSubDomain('x[1] > 0.5-DOLFIN_EPS').mark(cell_f, 2)
     inside = ' && '.join(['0.25-tol<x[0]', 'x[0]<0.75+tol', '0.25-tol<x[1]', 'x[1]<0.75+tol'])
     CompiledSubDomain(inside, tol=1e-13).mark(cell_f, 1)
 
@@ -252,7 +251,7 @@ if __name__ == '__main__':
     odesolver_params['enable_adjoint'] = False
 
     solver = SubDomainCardiacODESolver(subdomains=cell_f,
-                                       models={1:dendrite_model, 2: axon_model},
+                                       models={(1, 3):dendrite_model, 2: axon_model},
                                        ode_solver=Solver,
                                        params=odesolver_params)
 
