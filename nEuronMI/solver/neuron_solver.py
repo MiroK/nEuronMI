@@ -176,8 +176,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         dendrite = tuple(map_[k] for k in map_ if 'dend' in k)
         axon = tuple(map_[k] for k in map_ if 'axon' in k)
         
-        print i, '>>', (soma, dendrite, axon), set(ni_subdomains.array())
-        
         ode_solver = ODESolver(ni_subdomains,
                                soma=soma, axon=axon, dendrite=dendrite,
                                problem_parameters=problem_parameters['neuron_%d' % i])
@@ -262,7 +260,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
             toQ_fromW2.assign(current_aux, w_aux.sub(2))
             assign_toQ_neuron_fromQ(current_out, current_aux)
 
-            yield t1, u_out, current_out, A.size(0)
+            yield t1, u_out, current_out
 
             # Now transfer the new transm potential down to ode ...
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
@@ -309,5 +307,6 @@ if __name__ == '__main__':
                          'dt_ode': 0.01,
                          'Tstop': 1}
 
-    for x in neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
-        print x
+    I_out = File('I.pvd')
+    for (t, u, I) in neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
+        I_out << I, t
