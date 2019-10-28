@@ -1,7 +1,7 @@
-from utils import as_namedtuple, has_positive_values
-from gmsh_primitives import Sphere, Cylinder, Cone, Box
+from .utils import as_namedtuple, has_positive_values
+from .gmsh_primitives import Sphere, Cylinder, Cone, Box
+from .baseneuron import Neuron
 from collections import OrderedDict
-from baseneuron import Neuron
 from math import sqrt
 import numpy as np
 
@@ -10,14 +10,14 @@ class BallStickNeuron(Neuron):
     '''Soma(sphere) with cylinders as axon/dendrite.'''
     
     _defaults = {
-        'soma_rad': 1,
+        'soma_rad': 10,
         'soma_x': 0,
         'soma_y': 0,
         'soma_z': 0,  # Center
-        'dend_rad': 0.4,
-        'dend_len': 1,
-        'axon_rad': 0.4,
-        'axon_len': 1
+        'dend_rad': 2,
+        'dend_len': 50,
+        'axon_rad': 2,
+        'axon_len': 50
         }
     
     def __init__(self, params=None, tol=1E-7):
@@ -45,7 +45,7 @@ class BallStickNeuron(Neuron):
 
         # Now draw circle around them
         self._control_points = np.row_stack([p.control_points for p in self.pieces.values()])
-                               
+
         # Setup bounding box
         min_ = np.min(self._control_points, axis=0)
         max_ = np.max(self._control_points, axis=0)
@@ -58,6 +58,7 @@ class BallStickNeuron(Neuron):
         # Still missing end tips
         self._surfaces['axon_base'] = A1
         self._surfaces['dend_base'] = D1
+
         
 
     def check_geometry_parameters(self, params):
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     gmsh.option.setNumber("General.Terminal", 1)
 
     neuron.as_gmsh(model)
-    factory.synchronize();
+    factory.synchronize()
 
     #gmsh.fltk.initialize()
     #gmsh.fltk.run()

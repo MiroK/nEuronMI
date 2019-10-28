@@ -1,13 +1,16 @@
-import hashlib, time, os
-from os.path import join
-import subprocess, os
+import subprocess
+import os, sys
 import numpy as np
-from .shapes import BASNeuron, TaperedNeuron
-from .shapes import MicrowireProbe, NeuronexusProbe, Neuropixels24Probe
+import gmsh
+import time
+from pathlib import Path
+from .shapes import Box, BallStickNeuron, TaperedNeuron
+from .shapes import MicrowireProbe #, NeuronexusProbe, Neuropixels24Probe
 from .shapes import neuron_list, probe_list
+from .mesh_utils import build_geometry, mesh_config_model
 
 
-def generate_mesh(neuron_type='tapered', probe_type='neuronexus', mesh_resolution=2, box_size=2, neuron_params=None,
+def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, box_size=2, neuron_params=None,
                   probe_params=None, save_mesh_folder=None):
     '''
     Parameters
@@ -22,21 +25,23 @@ def generate_mesh(neuron_type='tapered', probe_type='neuronexus', mesh_resolutio
         Resolution of the mesh. It can be 00, 0, 1, 2, 3 (less course to more coarse) or
         a dictionary with 'neuron', 'probe', 'rest' fields with cell size in um
     box_size: int or limits
-        Size of the boundig box. It can be 1, 2, 3, 4, 5, 6 (smaller to larger) or
+        Size of the bounding box. It can be 1, 2, 3, 4, 5, 6 (smaller to larger) or
         a dictionary with 'xlim', 'ylim', 'zlim' (scalar or vector of 2), which are the boundaries of the box
     neuron_params: dict
         Dictionary with neuron params: 'rad_soma', 'rad_dend', 'rad_axon', 'len_dend', 'len_axon'.
         If the 'neuron_type' is 'tapered', also 'rad_dend_base' and 'rad_axon_base'
     probe_params: dict
         Dictionary with probe params, including probe_tip and probe specific params (if any)
-    save_mesh_path: str or Path
+    save_mesh_folder: str or Path
         The output path. If None, a 'mesh' folder is created in the current working directory.
     Returns
     -------
-    mesh_h5: str
-        Path to the h5-converted mesh, ready for simulation
+    save_mesh_folder: str
+        Path to the mesh folder, ready for simulation
     '''
-    # generate
+    # convert um to cm
+    conv = 1e4
+
     # todo only generate 1 probe (with or without probe, with or without neuron)
     if isinstance(box_size, int):
         xlim, ylim, zlim = return_boxsizes(box_size)
@@ -44,37 +49,88 @@ def generate_mesh(neuron_type='tapered', probe_type='neuronexus', mesh_resolutio
         xlim = box_size['xlim']
         ylim = box_size['ylim']
         zlim = box_size['zlim']
+    if np.array(xlim).size == 1:
+        xlim = np.array([xlim, xlim])
+    if np.array(ylim).size == 1:
+        ylim = np.array([ylim, ylim])
+    if np.array(zlim).size == 1:
+        zlim = np.array([zlim, zlim])
 
-    conv = 1e4
+    box = Box(np.array([xlim[0], ylim[0], zlim[0]]), np.array([xlim[1], ylim[1], zlim[1]]))
 
     if isinstance(mesh_resolution, int):
         mesh_resolution = return_coarseness(mesh_resolution)
     elif isinstance(mesh_resolution, dict):
         assert 'neuron' in mesh_resolution.keys()
         assert 'probe' in mesh_resolution.keys()
-        assert 'rest' in mesh_resolution.keys()
+        assert 'ext' in mesh_resolution.keys()
     else:
         # set default here
-        mesh_resolution = {'neuron': 3, 'probe': 6, 'rest': 9}
+        mesh_resolution = {'neuron': 3, 'probe': 6, 'ext': 9}
 
-        # if neuron_params is None:
-    #     geometrical_params = {'rad_soma': 10 * conv, 'rad_dend': 2.5 * conv, 'rad_axon': 1 * conv,
-    #                           'length_dend': 400 * conv, 'length_axon': 200 * conv, 'rad_hilox_d': 4 * conv,
-    #                           'length_hilox_d': 20 * conv, 'rad_hilox_a': 2 * conv, 'length_hilox_a': 10 * conv,
-    #                           'dxp': dx * conv, 'dxn': dx * conv, 'dy': dy * conv, 'dz': dz * conv}
-    # else:
-    #     geometrical_params = neuron_params
-
-    mesh_sizes = {'neuron': mesh_resolution['neuron'] * conv,
-                  'probe': mesh_resolution['probe'] * conv,
-                  'rest_mesh_size': mesh_resolution['rest'] * conv}
-
+    # load correct neuron and probe
     # todo handle lists of neurons and neuron_params
     if neuron_type is not None and neuron_type in neuron_list.keys():
         neuron = neuron_list[neuron_type](neuron_params)
+        neuron_str = neuron_type
+    else:
+        neuron = None
+        neuron_str = 'noneuron'
 
     if probe_type is not None and probe_type in probe_list.keys():
         probe = probe_list[probe_type](probe_params)
+        probe_str = probe_type
+    else:
+        probe = None
+        probe_str = 'noprobe'
+
+    mesh_sizes = {'neuron': mesh_resolution['neuron'] ,
+                  'probe': mesh_resolution['probe'],
+                  'ext': mesh_resolution['ext']}
+
+    if save_mesh_folder is None:
+        mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
+        save_mesh_folder = Path(mesh_name)
+    else:
+        mesh_name = str(save_mesh_folder)
+        save_mesh_folder = Path(save_mesh_folder)
+
+    if not save_mesh_folder.is_dir():
+        os.makedirs(str(save_mesh_folder), exist_ok=True)
+
+    # Components
+    model = gmsh.model
+    factory = model.occ
+    # You can pass -clscale 0.25 (to do global refinement)
+    # or -format msh2            (to control output format of gmsh)
+    args = sys.argv + ['-format', 'msh2', '-clscale', '0.5']  # Dolfin convert handles only this
+    gmsh.initialize(args)
+
+    gmsh.option.setNumber("General.Terminal", 1)
+
+    # # Add components to model
+    model, mapping = build_geometry(model, box, neuron, probe) #, mapping
+    # # Config fields and dump the mapping as json
+    mesh_config_model(model, mapping, mesh_sizes)
+    json_file = save_mesh_folder / ('%s.json' % mesh_name)
+    with json_file.open('w') as out:
+        mapping.dump(out)
+
+    factory.synchronize()
+    # This is a way to store the geometry as geo file
+    geo_unrolled_file = save_mesh_folder / ('%s.geo_unrolled' % mesh_name)
+    gmsh.write(str(geo_unrolled_file))
+    # gmsh.fltk.initialize()
+    # gmsh.fltk.run()
+    # 3d model
+    model.mesh.generate(3)
+    # Native optimization
+    model.mesh.optimize('')
+    msh_file = save_mesh_folder / ('%s.msh' % mesh_name)
+    gmsh.write(str(msh_file))
+    gmsh.finalize()
+
+
 
     # TODO make box
 
@@ -82,10 +138,9 @@ def generate_mesh(neuron_type='tapered', probe_type='neuronexus', mesh_resolutio
     # mesh = generate_mesh(neuron, probe, box, mesh_size)
 
     # TODO create folder and save files + params
-    os.makedirs(save_mesh_folder)
+    # os.makedirs(save_mesh_folder)
 
     # return mesh.h5
-
 
 def return_coarseness(coarse):
     if coarse == 00:
@@ -113,7 +168,7 @@ def return_coarseness(coarse):
 
     resolution = {'neuron': nmesh,
                   'probe': pmesh,
-                  'rest': rmesh}
+                  'ext': rmesh}
     return resolution
 
 
@@ -145,7 +200,7 @@ def return_boxsizes(box):
     else:
         raise Exception('boxsize must be 1, 2, 3, 4, 5, or 6')
 
-    return [-dx, dx], [-dy, dy], [-dz, dz]
+    return np.array([-dx, dx]), np.array([-dy, dy]), np.array([-dz, dz])
 
 
 def convert_msh2h5(msh_file, h5_file):

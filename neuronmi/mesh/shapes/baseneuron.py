@@ -1,5 +1,5 @@
-from baseshape import BaseShape
-import utils
+from .baseshape import BaseShape
+from .utils import link_surfaces
 
 
 class Neuron(BaseShape):
@@ -11,11 +11,7 @@ class Neuron(BaseShape):
 
     def link_surfaces(self, model, tags, links, box=None, tol=1E-10):
         '''Rely on correspondence of center of mass'''
-        return utils.link_surfaces(model, tags, self, links, tol=tol)
-        
-    @property
-    def default_params(self):
-        return type(self)._defaults
+        return link_surfaces(model, tags, self, links, tol=tol)
 
     def check_geometry_parameters(self, params):
         '''

@@ -1,5 +1,5 @@
-from shapes.utils import first, second
-from shapes.baseneuron import Neuron
+from neuronmi.mesh.shapes.utils import first, second
+from neuronmi.mesh.shapes.baseneuron import Neuron
 from itertools import count, chain
 from collections import deque
 from dolfin import info
@@ -49,11 +49,11 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
 
     # Now we would like to find in volumes the neurons and extecellular domain
     # The idea is that a neuron is a closed volume whose boundary has neuron surfaces
-    volumes_surfs = map(model.getBoundary, volumes)
+    volumes_surfs = list(map(model.getBoundary, volumes))
     # A boundary can also contain curves - we ignore those; only keep 2d
     volumes_surfs = [set(s[1] for s in ss if s[0] == 2) for ss in volumes_surfs]
     
-    volume_pairs = zip(volumes, volumes_surfs)
+    volume_pairs = list(zip(volumes, volumes_surfs))
     # Volume with largest bdry is external
     external_pair = max(volume_pairs, key=lambda vs: len(second(vs)))
     external_volume, external_surfs = external_pair
@@ -136,8 +136,8 @@ def mesh_config_EMI_model(model, mapping, size_params):
     #    DistMin < distance < DistMax the mesh size interpolated LcMin, LcMax
     #    Outside Gmsh takes Over
     #
-    neuron_surfaces = mapping.surface_entity_tags('all_neurons').values()
-    neuron_surfaces.extend(mapping.surface_entity_tags('probe').values())
+    neuron_surfaces = list(mapping.surface_entity_tags('all_neurons').values())
+    neuron_surfaces.extend(list(mapping.surface_entity_tags('probe').values()))
 
     field.add('MathEval', 1)
     field.setString(1, 'F', 'x')
@@ -172,7 +172,7 @@ def mesh_config_EMI_model(model, mapping, size_params):
 
 if __name__ == '__main__':
     # Demo of working with Gmsh
-    from shapes import *
+    from neuronmi.mesh.shapes import *
     import numpy as np
     import gmsh, sys, json
 

@@ -1,5 +1,5 @@
-from dolfin import Mesh, MeshFunction, HDF5File, mpi_comm_world
-import meshconvert
+from dolfin import Mesh, MeshFunction, HDF5File, MPI
+from neuronmi.mesh import meshconvert
 import numpy as np
 import os
 
@@ -43,7 +43,7 @@ def msh_to_h5(msh_file, clean_xml=True):
 def load_h5_mesh(h5_file):
     '''Unpack to mesh, volumes and surfaces'''
 
-    comm = mpi_comm_world()
+    comm = MPI.comm_world
     h5 = HDF5File(comm, h5_file, 'r')
     mesh = Mesh()
     h5.read(mesh, 'mesh', False)

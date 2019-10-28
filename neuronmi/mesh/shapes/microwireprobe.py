@@ -1,8 +1,7 @@
-from utils import as_namedtuple, has_positive_values
-from gmsh_primitives import Cylinder
-from baseprobe import Probe
+from .utils import as_namedtuple, has_positive_values, link_surfaces
+from .gmsh_primitives import Cylinder
+from .baseprobe import Probe
 import numpy as np
-import utils
 
 
 class MicrowireProbe(Probe):
@@ -12,17 +11,17 @@ class MicrowireProbe(Probe):
     '''
 
     _defaults = {
-        'tip_x': 0,
+        'tip_x': 50,
         'tip_y': 0,
         'tip_z': 0,
-        'radius': 1,
-        'length': 2
+        'radius': 10,
+        'length': 200
         }
     
     def __init__(self, params=None):
         Probe.__init__(self, params)
 
-        params = as_namedtuple(self._params)
+        params = as_namedtuple(self.params_cm)
         A = np.array([params.tip_x, params.tip_y, params.tip_z])
         B = A + np.array([0, 0, params.length])
         self.cylinder = Cylinder(A, B, params.radius)
@@ -41,7 +40,7 @@ class MicrowireProbe(Probe):
         assert set(params.keys()) == set(MicrowireProbe._defaults.keys()) 
         # Ignore center
         assert has_positive_values(params,
-                                   set(params.keys())-set(('tip_x', 'tip_y', 'tip_z')))
+                                   set(params.keys()) - set(('tip_x', 'tip_y', 'tip_z')))
         
     def contains(self, point, tol):
         '''Is point inside shape?'''
@@ -56,12 +55,12 @@ class MicrowireProbe(Probe):
     def link_surfaces(self, model, tags, links, box, tol=1E-10):
         '''Account for possible cut and shift of center of mass of face'''
         # Should be fine for tip
-        links = utils.link_surfaces(model, tags, self, links=links, tol=tol)
+        links = link_surfaces(model, tags, self, links=links, tol=tol)
         # NOTE: as we chop the by box, the wall won't be found with the
         # above metric; But we should match x, y and z should account for chop
-        Z0 = 0.5*(box.max_[2] + self._params['tip_z'])
+        Z0 = 0.5*(box.max_[2] + self.params_cm['tip_z'])
         metric = lambda x, y: np.sqrt(np.abs((y - x)[:, 0])**2 + np.abs((y - x)[:, 1])**2 + np.abs((x[:, 2]-Z0)**2))
-        return utils.link_surfaces(model, tags, self, links=links, metric=metric, tol=tol)
+        return link_surfaces(model, tags, self, links=links, metric=metric, tol=tol)
 
 # --------------------------------------------------------------------
 

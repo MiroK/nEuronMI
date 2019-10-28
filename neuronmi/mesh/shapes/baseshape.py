@@ -1,8 +1,15 @@
+import numpy as np
+
+
 class BaseShape(object):
     '''Common API of Neuron, Box, Shape'''
-    def __init__(self, params):
+    _defaults = {}
+
+    def __init__(self, params=None):
         if params is None:
             params = self.default_params
+
+        self.conversion_factor = 1
             
         try:
             # Let's add the missing keys
@@ -16,6 +23,18 @@ class BaseShape(object):
             print('No sanity checks ran on geometry inputs')
 
         self._params = params
+
+    @property
+    def default_params(self):
+        return type(self)._defaults
+
+    @property
+    def params_cm(self):
+        params = self._params
+        for k in params.keys():
+            if isinstance(params[k], (int, np.integer, float, np.float)):
+                params[k] = params[k] * self.conversion_factor
+        return params
         
     def contains(self, point, tol):
         '''Is point inside shape?'''
