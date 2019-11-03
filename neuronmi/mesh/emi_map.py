@@ -56,6 +56,9 @@ class EMIEntityMap(object):
         
         if isinstance(shape, int):
             shape = 'neuron_%d' % shape
-            
-        return {k: access(v) for k, v in entities[shape].items()}
+
+        if shape in entities:
+            return {k: access(v) for k, v in entities[shape].items()}
+        else:
+            return {}
 

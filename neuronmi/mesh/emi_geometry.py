@@ -147,6 +147,7 @@ def mesh_config_EMI_model(model, mapping, size_params):
     field.add('MathEval', 3)
     field.setString(3, 'F', 'y')
 
+    # Distance from the neuron
     field.add('Distance', 4)
     field.setNumber(4, 'FieldX', 1)
     field.setNumber(4, 'FieldY', 2)
@@ -159,12 +160,37 @@ def mesh_config_EMI_model(model, mapping, size_params):
     field.setNumber(5, 'LcMax', size_params['LcMax'])     # <----
 
     field.setNumber(5, 'DistMin', size_params['DistMin'])  # <----
-    field.setNumber(5, 'LcMin', size_params['LcMin'])     # <----
+    field.setNumber(5, 'LcMin', size_params['neuron_LcMin'])     # <----
     field.setNumber(5, 'StopAtDistMax', 1)
 
+    probe_surfaces = mapping.surface_entity_tags('probe')
+    # Done ?
+    if not probe_surfaces:
+        field.setAsBackgroundMesh(5)
+        return model
 
-    field.setAsBackgroundMesh(5)
+    probe_surfaces = list(probe_surfaces.values())
+    # Distance from probe
+    field.add('Distance', 6)
+    field.setNumber(6, 'FieldX', 1)
+    field.setNumber(6, 'FieldY', 2)
+    field.setNumber(6, 'FieldZ', 3)
+    field.setNumbers(6, 'FacesList', probe_surfaces)
 
+    field.add('Threshold', 7)
+    field.setNumber(7, 'IField', 6)
+    field.setNumber(7, 'DistMax', size_params['DistMax'])  # <----
+    field.setNumber(7, 'LcMax', size_params['LcMax'])     # <----
+
+    field.setNumber(7, 'DistMin', size_params['DistMin'])  # <----
+    field.setNumber(7, 'LcMin', size_params['probe_LcMin'])     # <----
+    field.setNumber(7, 'StopAtDistMax', 1)
+
+    # At the end we chose the min of both
+    field.add('Min', 8)
+    field.setNumbers(8, 'FieldsList', [5, 7])
+
+    field.setAsBackgroundMesh(8)
     return model
 
 # --------------------------------------------------------------------
@@ -184,9 +210,10 @@ if __name__ == '__main__':
                                 'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
                                 'dend_rad': 15, 'axon_rad': 10})]
 
-    probe = MicrowireProbe({'tip_x': 1.5, 'radius': 0.2, 'length': 10})
+    probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
 
-    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10, 'LcMin': 2}
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10,
+                   'neuron_LcMin': 2, 'probe_LcMin': 1}
     
     model = gmsh.model
     factory = model.occ
@@ -197,7 +224,7 @@ if __name__ == '__main__':
     gmsh.option.setNumber("General.Terminal", 1)
 
     # Add components to model
-    model, mapping = build_EMI_geometry(model, box, neurons, probe=None)
+    model, mapping = build_EMI_geometry(model, box, neurons, probe=probe)
 
     # Dump the mapping as json
     with open('%s.json' % root, 'w') as out:
@@ -213,7 +240,7 @@ if __name__ == '__main__':
     # This is a way to store the geometry as geo file
     gmsh.write('%s.geo_unrolled' % root)
     # Launch gui for visual inspection
-    # gmsh.fltk.initialize()
-    # gmsh.fltk.run()
+    gmsh.fltk.initialize()
+    gmsh.fltk.run()
 
     # gmsh.finalize()
