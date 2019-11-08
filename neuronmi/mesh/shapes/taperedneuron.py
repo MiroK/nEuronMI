@@ -31,8 +31,8 @@ class TaperedNeuron(Neuron):
         'axon_len': 1
         }
     
-    def __init__(self, params=None, tol=1E-7):
-        Neuron.__init__(self, params, tol)
+    def __init__(self, params=None):
+        Neuron.__init__(self, params)
 
         # Define as Cylinder-Cone-Sphere-Cone-Cylinder
         # axon-axon hill-some-dend hill-dendrite

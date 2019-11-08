@@ -81,8 +81,9 @@ if __name__ == '__main__':
     
     probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
     # Coarse enough for tests
-    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 40, 'LcMin': 20}
-    
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10,
+                   'neuron_LcMin': 4, 'probe_LcMin': 2}
+
     model = gmsh.model
     factory = model.occ
     # You can pass -clscale 0.25 (to do global refinement)

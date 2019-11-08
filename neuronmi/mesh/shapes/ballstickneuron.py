@@ -8,7 +8,6 @@ import numpy as np
 
 class BallStickNeuron(Neuron):
     '''Soma(sphere) with cylinders as axon/dendrite.'''
-    
     _defaults = {
         'soma_rad': 10,
         'soma_x': 0,
@@ -16,28 +15,28 @@ class BallStickNeuron(Neuron):
         'soma_z': 0,  # Center
         'dend_rad': 2,
         'dend_len': 50,
-        'axon_rad': 2,
+        'axon_rad': 1,
         'axon_len': 50
-        }
+        }    
     
-    def __init__(self, params=None, tol=1E-7):
-        Neuron.__init__(self, params, tol)
+    def __init__(self, params=None):
+        Neuron.__init__(self, params)
 
         # Define as Cylinder-Sphere-Cylinder
         # axon-axon hill-some-dend hill-dendrite
         params = as_namedtuple(self._params)
         C = np.array([params.soma_x, params.soma_y, params.soma_z])
         # Move up
-        shift = sqrt(params.soma_rad**2 - params.axon_rad**2) - tol
+        shift = sqrt(params.soma_rad**2 - params.axon_rad**2)
         
         A0 = C + np.array([0, 0, shift])
-        A1 = A0 + np.array([0, 0, params.axon_len+tol])
+        A1 = A0 + np.array([0, 0, params.axon_len])
 
         # Move down
-        shift = sqrt(params.soma_rad**2 - params.dend_rad**2) + tol
+        shift = sqrt(params.soma_rad**2 - params.dend_rad**2)
         
         D0 = C - np.array([0, 0, shift])
-        D1 = D0 - np.array([0, 0, params.dend_len+tol])
+        D1 = D0 - np.array([0, 0, params.dend_len])
 
         self.pieces = OrderedDict(axon=Cylinder(A0, A1, params.axon_rad),
                                   soma=Sphere(C, params.soma_rad),
@@ -79,7 +78,9 @@ class BallStickNeuron(Neuron):
         soma = self.pieces['soma'].as_gmsh(model)
         axon = self.pieces['axon'].as_gmsh(model)
         dend = self.pieces['dend'].as_gmsh(model)
-        
+
+        model.occ.synchronize()
+                
         neuron_tags, _ = model.occ.fuse([(3, soma)], [(3, axon), (3, dend)])
 
         model.occ.synchronize()
@@ -90,34 +91,3 @@ class BallStickNeuron(Neuron):
         return neuron_tags[0][1], [s[1] for s in surfs]
         
 # --------------------------------------------------------------------
-
-if __name__ == '__main__':
-
-    neuron = BallStickNeuron({'soma_rad': 10,
-                              'dend_rad': 6,
-                              'dend_len': 100,
-                              'axon_rad': 6,
-                              'axon_len': 100})
-
-    import gmsh
-    import sys
-
-    model = gmsh.model
-    factory = model.occ
-
-    gmsh.initialize(sys.argv)
-
-    gmsh.option.setNumber("General.Terminal", 1)
-
-    neuron.as_gmsh(model)
-    factory.synchronize()
-
-    #gmsh.fltk.initialize()
-    #gmsh.fltk.run()
-
-    model.mesh.generate(3)
-    model.mesh.optimize("")
-    
-    gmsh.write("neuron.geo_unrolled")
-    
-    gmsh.finalize()
