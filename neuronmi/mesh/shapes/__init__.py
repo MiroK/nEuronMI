@@ -2,6 +2,7 @@ from .taperedneuron import TaperedNeuron
 from .ballstickneuron import BallStickNeuron
 
 from .microwireprobe import MicrowireProbe
+from .neuropixels24probe import Neuropixels24Probe
 
 from .gmsh_primitives import Box, Sphere, Cylinder, Cone
 

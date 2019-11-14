@@ -59,7 +59,6 @@ class BallStickNeuron(Neuron):
         self._surfaces['dend_base'] = D1
 
         
-
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(BallStickNeuron._defaults.keys())
         # Ignore center

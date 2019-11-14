@@ -20,7 +20,7 @@ class MicrowireProbe(Probe):
     
     def __init__(self, params=None):
         Probe.__init__(self, params)
-
+        
         params = as_namedtuple(self.params_cm)
         A = np.array([params.tip_x, params.tip_y, params.tip_z])
         B = A + np.array([0, 0, params.length])
@@ -50,7 +50,7 @@ class MicrowireProbe(Probe):
         '''Add shape to model in terms of factory(gmsh) primitives'''
         probe = self.cylinder.as_gmsh(model, tag)
         
-        return probe
+        return [probe]
 
     def link_surfaces(self, model, tags, links, box, tol=1E-10):
         '''Account for possible cut and shift of center of mass of face'''

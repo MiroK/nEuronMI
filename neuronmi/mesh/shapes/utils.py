@@ -101,6 +101,15 @@ def find_first(item, iterable):
     pair = next(dropwhile(lambda ip: item != second(ip), enumerate(iter(iterable))))
     return first(pair)
 
+def entity_dim(arr, dim):
+    '''Get tags of entities with dim'''
+    # Gmsh boolean operations result in pairs (dim, tag)
+    if isinstance(arr, list):
+        return list(filter(lambda item: item[0] == dim, arr))
+
+    return sum([entity_dim(a, dim) for a in arr], [])
+
+
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
