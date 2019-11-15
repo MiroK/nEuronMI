@@ -92,8 +92,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     probe_surfaces = {}
     if probe is not None:
         probe.link_surfaces(model, external_surfs, box=box, tol=tol, links=probe_surfaces)
-        assert set(probe_surfaces.keys()) == set(probe.surfaces.keys())
-        
+        assert set(probe_surfaces.keys()) == set(probe.surfaces.keys()), set(probe.surfaces.keys())-set(probe_surfaces.keys())        
     box_surfaces = {}
     box.link_surfaces(model, external_surfs, links=box_surfaces)
     # Success, what box wanted was found
@@ -210,7 +209,8 @@ if __name__ == '__main__':
                                 'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
                                 'dend_rad': 15, 'axon_rad': 10})]
 
-    probe = Neuropixels24Probe({'tip_x': 80, 'length': 1200, 'angle': np.pi/3})
+    # probe = Neuropixels24Probe({'tip_x': 80, 'length': 1200, 'angle': np.pi/3})
+    probe = NeuronexusProbe({'tip_x': 100, 'length': 1200, 'angle': np.pi/3})
 
     size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10,
                    'neuron_LcMin': 3, 'probe_LcMin': 2}
