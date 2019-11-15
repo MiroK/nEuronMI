@@ -47,8 +47,14 @@ class Neuropixels24Probe(Probe):
         A, B0, C0, C1, B1 = back
         self._control_points = np.row_stack(front + back)
                                
-        # Setup bounding box; FIXME: rotation
-        self._bbox = Box(a, np.array([width, 0, length]))
+        # Setup bounding box
+
+        ll = np.array([tip_x - 0.5*width, tip_y-35, tip_z])
+        ur = np.array([tip_x + 0.5*width, tip_y+35, tip_z+length])
+        
+        self._bbox = Box(self.rotate(ll), self.rotate(ur) - self.rotate(ll))
+        # Keep the unrotated on to do contains
+        self._rbbox = Box(ll, ur - ll)
 
         # Centers of electrodes
         y_shifts = [2+12+6, -1-6, 1+6, -2-12-6]  # Again somethind hardcoded
@@ -80,12 +86,24 @@ class Neuropixels24Probe(Probe):
         assert set(params.keys()) == set(Neuropixels24Probe._defaults.keys()), (set(params.keys()), set(Neuropixels24Probe._defaults.keys()))
         # Ignore center
         assert all(params[k] > 0 for k in ('width', 'length', 'contact_rad'))
+
+    def rotate(self, x, a=None):
+        '''Transformation that rotates the probe'''
+        if a is None:
+            a = self.params_cm['angle']
+            
+        R = np.array([[np.cos(a), -np.sin(a), 0],
+                      [np.sin(a), np.cos(a), 0],
+                      [0, 0, 1.]])
+
+        x0 = np.array([self.params_cm[k] for k in ('tip_x', 'tip_y', 'tip_z')])
+
+        return x0 + R.dot(x-x0)
         
     def contains(self, point, tol):
         '''Is point inside shape?'''
-        # FIXME: need to do this
-        return False
-
+        return self._rbbox.contains(self.rotate(point, -self.params_cm['angle']), tol=tol)
+    
     def as_gmsh(self, model, tag=-1):
         '''Add shape to model in terms of factory(gmsh) primitives'''
         factory = model.occ
@@ -128,18 +146,9 @@ class Neuropixels24Probe(Probe):
 
     def link_surfaces(self, model, tags, links, box, tol=1E-10):
         '''Account for possible cut and shift of center of mass of face'''
-        a = self.params_cm['angle']
-        R = np.array([[np.cos(a), -np.sin(a), 0],
-                      [np.sin(a), np.cos(a), 0],
-                      [0, 0, 1.]])
-
-        x0 = np.array([self.params_cm[k] for k in ('tip_x', 'tip_y', 'tip_z')])
-
-        rotate = lambda x, x0=x0, R=R: x0 + R.dot(x-x0)
-        
         # Account for probe rotation in tagging
         for surf, point in self._surfaces.items():
-            self._surfaces[surf] = rotate(point)
+            self._surfaces[surf] = self.rotate(point)
 
         links = link_surfaces(model, tags, self, links=links, tol=tol)
         # NOTE: as we chop the by box, the wall won't be found with the above metric

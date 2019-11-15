@@ -61,7 +61,7 @@ def load_h5_mesh(h5_file):
 if __name__ == '__main__':
     # Demo of generating mesh from model
     from emi_geometry import build_EMI_geometry, mesh_config_EMI_model
-    from shapes import Box, BallStickNeuron, MicrowireProbe, TaperedNeuron
+    from shapes import Box, BallStickNeuron, Neuropixels24Probe, TaperedNeuron
     import gmsh, sys, json, os
     from dolfin import File    
     import numpy as np
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     msh_file = '%s.msh' % root
         
     # Components
-    box = Box(np.array([-100, -100, -100]), np.array([200, 200, 200]))
+    box = Box(np.array([-100, -100, -100]), np.array([200, 200, 400]))
     
     neurons = [BallStickNeuron({'soma_x': 20, 'soma_y': 20, 'soma_z': 0,
                                 'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
@@ -79,7 +79,8 @@ if __name__ == '__main__':
                               'soma_rad': 20, 'dend_len': 20, 'axon_len': 20, 'axonh_len': 30, 'dendh_len': 20,
                               'dend_rad': 10, 'axon_rad': 8, 'axonh_rad': 10, 'dendh_rad': 15})]
     
-    probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
+    # probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
+    probe = Neuropixels24Probe({'tip_x': 80, 'length': 1200, 'angle': 0})
     # Coarse enough for tests
     size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 10,
                    'neuron_LcMin': 4, 'probe_LcMin': 2}
@@ -102,6 +103,9 @@ if __name__ == '__main__':
     # Dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
     factory.synchronize()
+
+    # gmsh.fltk.initialize()
+    # gmsh.fltk.run()
 
     # This is a way to store the geometry as geo file
     gmsh.write('%s.geo_unrolled' % root)
