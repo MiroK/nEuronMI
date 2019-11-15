@@ -1,3 +1,5 @@
+from aux import SiteCurrent, surface_normal
+
 from linear_algebra import LinearSystemSolver
 from transferring import SubMeshTransfer
 from embedding import EmbeddedMesh
@@ -110,14 +112,21 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
                     for tag in insulated_tags]
 
+    # The site current are normal*magnitude where the normal is pointing
+    # into the inside of the probe. That is, wrt box that contains it it
+    # is outer normal.
+    inside_point = mesh.coordinates().min(axis=0)  # In the exterior of probe
     # Add the stimulated site
     if 'probe' in emi_map.surfaces:
         probe_params = problem_parameters['probe']
-        
+        # Grab the magnitudes
         site_currents = probe_params['site_currents']
         stim_sites = [emi_map.surface_physical_tags('probe')[name]
                       for name in probe_params['stimulated_sites']]
-
+        # Construct normal*I expressions for every site
+        site_currents = [SiteCurrent(I=current, n=surface_normal(site, facet_marking_f, inside_point))
+                         for site, current in zip(stim_sites, site_currents)]
+        # Now the bcs
         bc_stimulated = [DirichletBC(W.sub(0), current, facet_marking_f, site)
                          for site, current in zip(stim_sites, site_currents)]
         # From the system they are the same
@@ -284,6 +293,9 @@ if __name__ == '__main__':
     with open(emi_map) as json_fp:
         emi_map = EMIEntityMap(json_fp=json_fp)
 
+    # Current magnitude for probe tip
+    magnitude = Expression('exp(-1E-2*t)', t=0, degree=1)
+        
     problem_parameters = {'neuron_0': {'I_ion': Constant(0),
                                        'cond': 1,
                                        'C_m': 1,
@@ -304,7 +316,7 @@ if __name__ == '__main__':
                                        'bcs': ('max_x', 'max_y'),},
                           #
                           'probe': {'stimulated_sites': ('tip', ),
-                                    'site_currents': (Constant((1, 2, 3)), )}
+                                    'site_currents': (magnitude, )}
                           }
                           
     solver_parameters = {'dt_fem': 0.1,

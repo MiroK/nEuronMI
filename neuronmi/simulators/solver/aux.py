@@ -95,6 +95,53 @@ def snap_to_nearest(f):
 
     return ProxyExpression(f)
 
+
+class SiteCurrent(df.UserExpression):
+    '''normal*I where I can vary in time and normal is fixed'''
+    def __init__(self, I, n, **kwargs):
+        super().__init__(**kwargs)
+        self.n = n
+        self.I = I
+        self._time = 0
+        self.t = 0
+
+    def value_shape(self):
+        return (3, )
+
+    def eval(self, values, x):
+        values[:] = self.n*self.I(x)
+
+    @property
+    def t(self):
+        return self._time
+
+    @t.setter
+    def t(self, t):
+        self._time = t
+        hasattr(self.I, 't') and setattr(self.I, 't', self._time)
+
+
+def surface_normal(tag, facet_f, point):
+    '''Normal of taged surface which points away from the point'''
+    # NOTE: as this is a constant it will only work for a flat surface
+    mesh = facet_f.mesh()
+    tdim = facet_f.dim()
+    assert tdim == mesh.topology().dim()-1
+    assert mesh.geometry().dim() == 3
+
+    point = df.Point(*point)
+    
+    facets = df.SubsetIterator(facet_f, tag)
+    first = df.Facet(mesh, next(facets).index())
+    n = first.normal()
+    # Is this a flat surface
+    assert all(abs(abs(df.Facet(mesh, f.index()).normal().dot(n))-1) < 1E-10
+               for f in facets)
+
+    mid = first.midpoint()
+
+    return n.array() if n.dot(mid-point) > 0 else -1*n.array()
+
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -155,3 +202,18 @@ if __name__ == '__main__':
     
     f = point_source(entity, A=df.Expression('3', degree=1))
     assert abs(f(x0) - 3) < 1E-15, abs(f(x0 + 1E-9*np.ones(3))) < 1E-15
+
+    n = np.array([1, 2, 3])
+    I = df.Expression('t', degree=0, t=0)
+    i = SiteCurrent(n=n, I=I, degree=0)
+
+    for t in range(10):
+        i.t = t
+        assert np.linalg.norm(i(0.5, 0.5, 0.5)- n*t) < 1E-14
+
+    mesh = df.UnitCubeMesh(3, 3, 3)
+    facet_f = df.MeshFunction('size_t', mesh, 2, 0)
+    df.CompiledSubDomain('near(x[1], 0)').mark(facet_f, 1)
+
+    n = surface_normal(1, facet_f, point=np.array([0.5, 0.5, 0.5]))
+    assert np.linalg.norm(n - np.array([0, -1, 0])) < 1E-13
