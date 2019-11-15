@@ -73,7 +73,7 @@ def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
         if name in links:
             continue
         y = shape.surfaces[name]
-
+        
         # Correspondence
         dist = metric(x, y)
         i = np.argmin(dist)
@@ -101,6 +101,7 @@ def find_first(item, iterable):
     pair = next(dropwhile(lambda ip: item != second(ip), enumerate(iter(iterable))))
     return first(pair)
 
+
 def entity_dim(arr, dim):
     '''Get tags of entities with dim'''
     # Gmsh boolean operations result in pairs (dim, tag)
@@ -108,7 +109,6 @@ def entity_dim(arr, dim):
         return list(filter(lambda item: item[0] == dim, arr))
 
     return sum([entity_dim(a, dim) for a in arr], [])
-
 
 # --------------------------------------------------------------------
 
