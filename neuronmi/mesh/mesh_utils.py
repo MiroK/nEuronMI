@@ -3,8 +3,9 @@ from .shapes.baseneuron import Neuron
 from itertools import count, chain
 from collections import deque
 from dolfin import info
-from dolfin import Mesh, MeshFunction #, HDF5File, mpi_comm_world
+from dolfin import Mesh, MeshFunction, HDF5File #, mpi_comm_world
 from .meshconvert import convert2xml
+from itertools import count, chain, repeat
 import numpy as np
 import json
 import os
@@ -63,10 +64,10 @@ def load_h5_mesh(h5_file):
     return mesh, volumes, surfaces
 
 
-def build_geometry(model, box, neurons, probe=None, tol=1E-10):
+def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     '''
-    Define geometry for FEM simulations (fill the model). Return model
-    and mapping of external surfaces [EntityMap]
+    Define geometry for EMI simulations (fill the model). Return model
+    and mapping of external surfaces [EMIEntityMap]
     '''
     if isinstance(neurons, Neuron): neurons = [neurons]
 
@@ -93,9 +94,10 @@ def build_geometry(model, box, neurons, probe=None, tol=1E-10):
     box_tag = box.as_gmsh(model)
     # Otherwise we will refer to box as the difference of box and the probe
     if probe is not None:
-        probe_tag = probe.as_gmsh(model)
+        # NOTE: probe can consist of several volumes
+        probe_tags = probe.as_gmsh(model)
         # Box - probe; cur returns volumes and sufs. volume is pair (3, tag)
-        [(_, box_tag)] = first(model.occ.cut([(3, box_tag)], [(3, probe_tag)]))
+        [(_, box_tag)] = first(model.occ.cut([(3, box_tag)], list(zip(repeat(3), probe_tags))))
 
     # There is neuron in any case; so we add them to medel as volumes with
     # neuron_tags. The surfaces are only auxiliary as they will change during cut
@@ -106,22 +108,19 @@ def build_geometry(model, box, neurons, probe=None, tol=1E-10):
 
     # Now we would like to find in volumes the neurons and extecellular domain
     # The idea is that a neuron is a closed volume whose boundary has neuron surfaces
-    volumes_surfs = map(model.getBoundary, volumes)
+    volumes_surfs = list(map(model.getBoundary, volumes))
     # A boundary can also contain curves - we ignore those; only keep 2d
     volumes_surfs = [set(s[1] for s in ss if s[0] == 2) for ss in volumes_surfs]
 
-    volume_pairs = zip(volumes, volumes_surfs)
-
+    volume_pairs = list(zip(volumes, volumes_surfs))
     # Volume with largest bdry is external
     external_pair = max(volume_pairs, key=lambda vs: len(second(vs)))
     external_volume, external_surfs = external_pair
 
     neuron_mapping = []  # i-th neuron is neuron_mapping[i] volume and has surfaces ...
     # Ther rest are neurons
-    volume_neuron = [x for x in volumes if x != external_volume]
-    volume_surfs_neuron = [x for x in volumes_surfs if x != external_surfs]
-
-    volume_pairs = deque(zip(volume_neuron, volume_surfs_neuron))
+    volume_pairs.remove(external_pair)
+    volume_pairs = deque(volume_pairs)
 
     for i, neuron in enumerate(neurons):
         match = False
@@ -151,14 +150,16 @@ def build_geometry(model, box, neurons, probe=None, tol=1E-10):
     probe_surfaces = {}
     if probe is not None:
         probe.link_surfaces(model, external_surfs, box=box, tol=tol, links=probe_surfaces)
-        assert set(probe_surfaces.keys()) == set(probe.surfaces.keys())
-
+        assert set(probe_surfaces.keys()) == set(probe.surfaces.keys()), set(probe.surfaces.keys()) - set(
+            probe_surfaces.keys())
     box_surfaces = {}
     box.link_surfaces(model, external_surfs, links=box_surfaces)
     # Success, what box wanted was found
     assert set(box_surfaces.keys()) == set(box.surfaces.keys())
-
-    external_surfs and info('There are unclaimed surfaces % s' % external_surfs)
+    # Raise on missing
+    if external_surfs:
+        print('There are unclaimed surfaces % s' % external_surfs)
+        assert False
 
     # Finally we assign physical groups: name -> {name -> (entity tag, physical tag)}
     vtags, stags = count(1), count(1)
@@ -179,61 +180,81 @@ def build_geometry(model, box, neurons, probe=None, tol=1E-10):
     for (etag, ptag) in chain(*[d.values() for d in tagged_surfaces.values()]):
         model.addPhysicalGroup(2, [etag], ptag)
 
-    return model, EntityMap(tagged_volumes, tagged_surfaces)
+    return model, EMIEntityMap(tagged_volumes, tagged_surfaces)
 
 
-def mesh_config_model(model, mapping, mesh_sizes):
+def mesh_config_EMI_model(model, mapping, size_params):
     '''Extend model by adding mesh size info'''
     # NOTE: this is really now just an illustration of how it could be
     # done. With the API the model can be configured in any way
 
     field = model.mesh.field
-    # We want to specify size for neuron surfaces and surfaces of the
-    # probe separately; let's collect them
+    # The mesh size here is based on the distance from probe & neurons.
+    # If distance < DistMin the mesh size LcMin
+    #    DistMin < distance < DistMax the mesh size interpolated LcMin, LcMax
+    #    Outside Gmsh takes Over
+    #
     neuron_surfaces = list(mapping.surface_entity_tags('all_neurons').values())
 
     field.add('MathEval', 1)
-    field.setString(1, 'F', str(mesh_sizes['neuron']))
-    field.add('Restrict', 2)
-    field.setNumber(2, 'IField', 1)
-    field.setNumbers(2, 'FacesList', neuron_surfaces)
+    field.setString(1, 'F', 'x')
 
-    next_field = 2
-    probe_surfaces = list(mapping.surface_entity_tags('probe').values())
-    if probe_surfaces:
-        next_field += 1
-        field.add('MathEval', next_field)
-        field.setString(next_field, 'F', str(mesh_sizes['probe']))
+    field.add('MathEval', 2)
+    field.setString(2, 'F', 'y')
 
-        next_field += 1
-        field.add('Restrict', next_field)
-        field.setNumber(next_field, 'IField', next_field - 1)
-        field.setNumbers(next_field, 'FacesList', probe_surfaces)
+    field.add('MathEval', 3)
+    field.setString(3, 'F', 'y')
 
-    box_surfaces = list(mapping.surface_entity_tags('box').values())
-    next_field += 1
-    field.add('MathEval', next_field)
-    field.setString(next_field, 'F', str(mesh_sizes['ext']))
+    # Distance from the neuron
+    field.add('Distance', 4)
+    field.setNumber(4, 'FieldX', 1)
+    field.setNumber(4, 'FieldY', 2)
+    field.setNumber(4, 'FieldZ', 3)
+    field.setNumbers(4, 'FacesList', neuron_surfaces)
 
-    next_field += 1
-    field.add('Restrict', next_field)
-    field.setNumber(next_field, 'IField', next_field - 1)
-    field.setNumbers(next_field, 'FacesList', box_surfaces)
+    field.add('Threshold', 5)
+    field.setNumber(5, 'IField', 4)
+    field.setNumber(5, 'DistMax', size_params['DistMax'])  # <----
+    field.setNumber(5, 'LcMax', size_params['LcMax'])  # <----
 
-    next_field += 1
-    fields = list(range(2, next_field, 2))
+    field.setNumber(5, 'DistMin', size_params['DistMin'])  # <----
+    field.setNumber(5, 'LcMin', size_params['neuron_LcMin'])  # <----
+    field.setNumber(5, 'StopAtDistMax', 1)
 
-    # Where they meet
-    field.add('Min', next_field)
-    field.setNumbers(next_field, 'FieldsList', fields)
-    field.setAsBackgroundMesh(next_field)
+    probe_surfaces = mapping.surface_entity_tags('probe')
+    # Done ?
+    if not probe_surfaces:
+        field.setAsBackgroundMesh(5)
+        return model
 
+    probe_surfaces = list(probe_surfaces.values())
+    # Distance from probe
+    field.add('Distance', 6)
+    field.setNumber(6, 'FieldX', 1)
+    field.setNumber(6, 'FieldY', 2)
+    field.setNumber(6, 'FieldZ', 3)
+    field.setNumbers(6, 'FacesList', probe_surfaces)
+
+    field.add('Threshold', 7)
+    field.setNumber(7, 'IField', 6)
+    field.setNumber(7, 'DistMax', size_params['DistMax'])  # <----
+    field.setNumber(7, 'LcMax', size_params['LcMax'])  # <----
+
+    field.setNumber(7, 'DistMin', size_params['DistMin'])  # <----
+    field.setNumber(7, 'LcMin', size_params['probe_LcMin'])  # <----
+    field.setNumber(7, 'StopAtDistMax', 1)
+
+    # At the end we chose the min of both
+    field.add('Min', 8)
+    field.setNumbers(8, 'FieldsList', [5, 7])
+
+    field.setAsBackgroundMesh(8)
     return model
 
 
-class EntityMap(object):
+class EMIEntityMap(object):
     '''
-    In FEM model we tags surfaces(2) and volumes(3). For each we then
+    In EMI model we tags surfaces(2) and volumes(3). For each we then
     have a mapping of shape name to named surfaces/volumes with their
     geometrical and physical tags
     '''
@@ -287,4 +308,7 @@ class EntityMap(object):
         if isinstance(shape, int):
             shape = 'neuron_%d' % shape
 
-        return {k: access(v) for k, v in entities[shape].items()}
+        if shape in entities:
+            return {k: access(v) for k, v in entities[shape].items()}
+        else:
+            return {}

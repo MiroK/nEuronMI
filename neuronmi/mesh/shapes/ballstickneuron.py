@@ -27,16 +27,16 @@ class BallStickNeuron(Neuron):
         params = as_namedtuple(self._params)
         C = np.array([params.soma_x, params.soma_y, params.soma_z])
         # Move up
-        shift = sqrt(params.soma_rad**2 - params.axon_rad**2)
-        
-        A0 = C + np.array([0, 0, shift])
-        A1 = A0 + np.array([0, 0, params.axon_len])
+        shift = sqrt(params.soma_rad**2 - params.dend_rad**2)
+
+        D0 = C + np.array([0, 0, shift])
+        D1 = D0 + np.array([0, 0, params.dend_len])
 
         # Move down
-        shift = sqrt(params.soma_rad**2 - params.dend_rad**2)
-        
-        D0 = C - np.array([0, 0, shift])
-        D1 = D0 - np.array([0, 0, params.dend_len])
+        shift = sqrt(params.soma_rad**2 - params.axon_rad**2)
+
+        A0 = C - np.array([0, 0, shift])
+        A1 = A0 - np.array([0, 0, params.axon_len])
 
         self.pieces = OrderedDict(axon=Cylinder(A0, A1, params.axon_rad),
                                   soma=Sphere(C, params.soma_rad),

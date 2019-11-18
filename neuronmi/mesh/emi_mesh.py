@@ -61,7 +61,7 @@ def load_h5_mesh(h5_file):
 if __name__ == '__main__':
     # Demo of generating mesh from model
     from emi_geometry import build_EMI_geometry, mesh_config_EMI_model
-    from shapes import Box, BallStickNeuron, MicrowireProbe, TaperedNeuron
+    from shapes import Box, BallStickNeuron, MicrowireProbe, TaperedNeuron, NeuronexusProbe, Neuropixels24Probe
     import gmsh, sys, json, os
     from dolfin import File    
     import numpy as np
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # This gives course enough mesh that the solver runs fast
     box = Box(np.array([-100, -100, -100]), np.array([200, 200, 200]))
     
-    neurons = [BallStickNeuron({'soma_x': 20, 'soma_y': 20, 'soma_z': 0,
+    neurons = [BallStickNeuron({'soma_x': 0, 'soma_y': 0, 'soma_z': 0,
                                 'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
                                 'dend_rad': 15, 'axon_rad': 10}),
                TaperedNeuron({'soma_x': 30, 'soma_y': -30, 'soma_z': 20,
@@ -96,7 +96,8 @@ if __name__ == '__main__':
                               'dend_rad': 10, 'axon_rad': 8, 'axonh_rad': 10, 'dendh_rad': 15})]
     
     probe = MicrowireProbe({'tip_x': -20, 'radius': 5, 'length': 400})
-    
+    probe = NeuronexusProbe({'tip_x': 50, 'length': 1200, 'angle': 0})
+
     # Coarse enough for tests
     size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 40,
                    'neuron_LcMin': 20, 'probe_LcMin': 10}

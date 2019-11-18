@@ -7,7 +7,7 @@ from pathlib import Path
 from .shapes import Box, BallStickNeuron, TaperedNeuron
 from .shapes import MicrowireProbe #, NeuronexusProbe, Neuropixels24Probe
 from .shapes import neuron_list, probe_list
-from .mesh_utils import build_geometry, mesh_config_model
+from .mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
 
 
 def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, box_size=2, neuron_params=None,
@@ -39,9 +39,6 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     save_mesh_folder: str
         Path to the mesh folder, ready for simulation
     '''
-    # convert um to cm
-    conv = 1e4
-
     # todo only generate 1 probe (with or without probe, with or without neuron)
     if isinstance(box_size, int):
         xlim, ylim, zlim = return_boxsizes(box_size)
@@ -88,6 +85,10 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
                   'probe': mesh_resolution['probe'],
                   'ext': mesh_resolution['ext']}
 
+    # Coarse enough for tests
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 40,
+                   'neuron_LcMin': 20, 'probe_LcMin': 10}
+
     if save_mesh_folder is None:
         mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
         save_mesh_folder = Path(mesh_name)
@@ -109,9 +110,9 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     gmsh.option.setNumber("General.Terminal", 1)
 
     # # Add components to model
-    model, mapping = build_geometry(model, box, neuron, probe) #, mapping
+    model, mapping = build_EMI_geometry(model, box, neuron, probe) #, mapping
     # # Config fields and dump the mapping as json
-    mesh_config_model(model, mapping, mesh_sizes)
+    mesh_config_EMI_model(model, mapping, size_params)
     json_file = save_mesh_folder / ('%s.json' % mesh_name)
     with json_file.open('w') as out:
         mapping.dump(out)
@@ -129,6 +130,9 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     msh_file = save_mesh_folder / ('%s.msh' % mesh_name)
     gmsh.write(str(msh_file))
     gmsh.finalize()
+
+    # Convert
+    h5_file = msh_to_h5(msh_file)
 
 
 

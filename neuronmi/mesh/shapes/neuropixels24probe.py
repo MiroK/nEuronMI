@@ -10,7 +10,7 @@ class Neuropixels24Probe(Probe):
     angle around z-axis and length.
     '''
     _defaults = {
-        'tip_x': 0,
+        'tip_x': 50,
         'tip_y': 0,
         'tip_z': 0,
         'angle': 0,  # In radians as gmsh want it!

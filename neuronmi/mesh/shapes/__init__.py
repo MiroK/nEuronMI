@@ -8,4 +8,4 @@ from .neuronexusprobe import NeuronexusProbe
 from .gmsh_primitives import Box, Sphere, Cylinder, Cone
 
 neuron_list = {'bas': BallStickNeuron, 'tapered': TaperedNeuron}
-probe_list = {'microwire': MicrowireProbe}
+probe_list = {'microwire': MicrowireProbe, 'neuronexus': NeuronexusProbe, 'neuropixels': Neuropixels24Probe}
