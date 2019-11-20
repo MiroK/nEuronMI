@@ -1,4 +1,4 @@
-from make_mesh_cpp import make_mesh
+from .make_mesh_cpp import make_mesh
 from collections import defaultdict
 from itertools import chain
 import dolfin as df

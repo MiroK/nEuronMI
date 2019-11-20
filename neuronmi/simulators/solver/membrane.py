@@ -1,9 +1,9 @@
 import cbcbeat as beat
-from Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
-from transferring import SubMeshTransfer
-from aux import subdomain_bbox, closest_entity, as_tuple
-from embedding import EmbeddedMesh
-from Passive import Passive
+from .Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
+from .transferring import SubMeshTransfer
+from .aux import subdomain_bbox, closest_entity, as_tuple
+from .embedding import EmbeddedMesh
+from .Passive import Passive
 from dolfin import (FunctionAssigner, Constant, info, Expression,
                     FunctionSpace, Function)
 import numpy as np

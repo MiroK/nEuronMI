@@ -1,9 +1,9 @@
-from aux import SiteCurrent, surface_normal
+from .aux import SiteCurrent, surface_normal
 
-from linear_algebra import LinearSystemSolver
-from transferring import SubMeshTransfer
-from embedding import EmbeddedMesh
-from membrane import ODESolver
+from .linear_algebra import LinearSystemSolver
+from .transferring import SubMeshTransfer
+from .embedding import EmbeddedMesh
+from .membrane import ODESolver
 from dolfin import *
 
 from neuronmi.mesh.emi_mesh import load_h5_mesh
@@ -30,6 +30,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
 
     solver_parameters: time_step, dt (of EMI), dt_ode
     '''
+    mesh_path = str(mesh_path)
     mesh, volume_marking_f, facet_marking_f = load_h5_mesh(mesh_path)
 
     num_neurons = emi_map.num_neurons
@@ -116,23 +117,25 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # into the inside of the probe. That is, wrt box that contains it it
     # is outer normal.
     inside_point = mesh.coordinates().min(axis=0)  # In the exterior of probe
+
+    site_currents = []
     # Add the stimulated site
     if 'probe' in emi_map.surfaces:
         probe_params = problem_parameters['probe']
         # Grab the magnitudes
-        site_currents = probe_params['site_currents']
-        stim_sites = [emi_map.surface_physical_tags('probe')[name]
-                      for name in probe_params['stimulated_sites']]
-        # Construct normal*I expressions for every site
-        site_currents = [SiteCurrent(I=current, n=surface_normal(site, facet_marking_f, inside_point))
-                         for site, current in zip(stim_sites, site_currents)]
-        # Now the bcs
-        bc_stimulated = [DirichletBC(W.sub(0), current, facet_marking_f, site)
-                         for site, current in zip(stim_sites, site_currents)]
-        # From the system they are the same
-        bc_insulated.extend(bc_stimulated)
-    else:
-        site_currents = []
+        if 'stimulated_site' in probe_params.keys():
+            site_currents = probe_params['site_currents']
+            stim_sites = [emi_map.surface_physical_tags('probe')[name]
+                          for name in probe_params['stimulated_sites']]
+            # Construct normal*I expressions for every site
+            site_currents = [SiteCurrent(I=current, n=surface_normal(site, facet_marking_f, inside_point))
+                             for site, current in zip(stim_sites, site_currents)]
+            # Now the bcs
+            bc_stimulated = [DirichletBC(W.sub(0), current, facet_marking_f, site)
+                             for site, current in zip(stim_sites, site_currents)]
+            # From the system they are the same
+            bc_insulated.extend(bc_stimulated)
+
 
     all_neuron_surfaces = set(sum(n_Stags, []))
     not_neuron_surfaces = set(facet_marking_f.array()) - all_neuron_surfaces
@@ -177,7 +180,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
 
     toQin_fromQns, toQn_fromQins, p0is = [], [], []
     # p0i \in Qi <-> Q_neuron \ni p0_neuron
-    neuron_solutions = []    
+    neuron_solutions = []
     for i, neuron_surfaces in enumerate(n_Stags):
         # Pick the nueuron from neuron collection
         ni_mesh = EmbeddedMesh(neurons_subdomains, neuron_surfaces)

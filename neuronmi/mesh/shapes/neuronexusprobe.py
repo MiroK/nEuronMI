@@ -12,12 +12,11 @@ class NeuronexusProbe(Probe):
     _defaults = {
         'tip_x': 50,
         'tip_y': 0,
-        'tip_z': 0,
+        'tip_z': -80,
         'angle': 0,  # In radians as gmsh want it!
-        'length': 1000,
-        # These should be fixed?
-        'width': 5,  
-        'contact_rad': 2
+        'length': 500,
+        'width': 15,
+        'contact_rad': 7.5
         }
     
     def __init__(self, params=None):
@@ -67,7 +66,7 @@ class NeuronexusProbe(Probe):
             contacts.append([cx, cy, cz])
 
         for i in range(10):
-            cx = tip_x - 0.5*width;
+            cx = tip_x - 0.5*width
             cz = tip_z + 62 + np.sqrt(22*22 - 18*18) +i*25
             cy = tip_y + 18
             contacts.append([cx, cy, cz])
@@ -91,7 +90,7 @@ class NeuronexusProbe(Probe):
         self._surfaces['outline_ymax'] = 0.5*(c1 + C1)
 
     def check_geometry_parameters(self, params):
-        assert set(params.keys()) == set(NeuronexusProbe._defaults.keys()), (set(params.keys()), set(Neuropixels24Probe._defaults.keys()))
+        assert set(params.keys()) == set(NeuronexusProbe._defaults.keys()), (set(params.keys()), set(NeuronexusProbe._defaults.keys()))
         # Ignore center
         assert all(params[k] > 0 for k in ('width', 'length', 'contact_rad'))
 

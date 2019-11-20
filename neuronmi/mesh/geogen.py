@@ -54,6 +54,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         zlim = np.array([zlim, zlim])
 
     box = Box(np.array([xlim[0], ylim[0], zlim[0]]), np.array([xlim[1], ylim[1], zlim[1]]))
+    # box = Box(np.array([-100, -100, -100]), np.array([200, 200, 500]))
 
     if isinstance(mesh_resolution, int):
         mesh_resolution = return_coarseness(mesh_resolution)
@@ -86,8 +87,8 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
                   'ext': mesh_resolution['ext']}
 
     # Coarse enough for tests
-    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': 40,
-                   'neuron_LcMin': 20, 'probe_LcMin': 10}
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': mesh_sizes['ext'],
+                   'neuron_LcMin': mesh_sizes['neuron'], 'probe_LcMin': mesh_sizes['probe']}
 
     if save_mesh_folder is None:
         mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
@@ -113,13 +114,13 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     model, mapping = build_EMI_geometry(model, box, neuron, probe) #, mapping
     # # Config fields and dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
-    json_file = save_mesh_folder / ('%s.json' % mesh_name)
+    json_file = save_mesh_folder / f'{mesh_name}.json'
     with json_file.open('w') as out:
         mapping.dump(out)
 
     factory.synchronize()
     # This is a way to store the geometry as geo file
-    geo_unrolled_file = save_mesh_folder / ('%s.geo_unrolled' % mesh_name)
+    geo_unrolled_file = save_mesh_folder / f'{mesh_name}.geo_unrolled'
     gmsh.write(str(geo_unrolled_file))
     # gmsh.fltk.initialize()
     # gmsh.fltk.run()
@@ -127,24 +128,15 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     model.mesh.generate(3)
     # Native optimization
     model.mesh.optimize('')
-    msh_file = save_mesh_folder / ('%s.msh' % mesh_name)
+    msh_file = save_mesh_folder / f'{mesh_name}.msh'
     gmsh.write(str(msh_file))
     gmsh.finalize()
 
     # Convert
-    h5_file = msh_to_h5(msh_file)
+    h5_file = save_mesh_folder / f'{mesh_name}.h5'
+    msh_to_h5(msh_file, str(h5_file))
 
-
-
-    # TODO make box
-
-    # TODO assemble mesh
-    # mesh = generate_mesh(neuron, probe, box, mesh_size)
-
-    # TODO create folder and save files + params
-    # os.makedirs(save_mesh_folder)
-
-    # return mesh.h5
+    return h5_file
 
 def return_coarseness(coarse):
     if coarse == 00:
@@ -167,6 +159,14 @@ def return_coarseness(coarse):
         nmesh = 4
         pmesh = 10
         rmesh = 15
+    elif coarse == 4:
+        nmesh = 10
+        pmesh = 15
+        rmesh = 20
+    elif coarse == 5:
+        nmesh = 15
+        pmesh = 20
+        rmesh = 30
     else:
         raise Exception('coarseness must be 00, 0, 1, 2, or 3')
 
@@ -180,78 +180,29 @@ def return_boxsizes(box):
     if box == 1:
         dx = 80
         dy = 80
-        dz = 80
+        dz = 220
     elif box == 2:
         dx = 100
         dy = 100
-        dz = 100
+        dz = 240
     elif box == 3:
         dx = 120
         dy = 120
-        dz = 120
+        dz = 260
     elif box == 4:
         dx = 160
         dy = 160
-        dz = 160
+        dz = 280
     elif box == 5:
         dx = 200
         dy = 200
-        dz = 200
+        dz = 300
     elif box == 6:
         dx = 300
         dy = 300
-        dz = 300
+        dz = 500
     else:
         raise Exception('boxsize must be 1, 2, 3, 4, 5, or 6')
 
     return np.array([-dx, dx]), np.array([-dy, dy]), np.array([-dz, dz])
 
-
-def convert_msh2h5(msh_file, h5_file):
-    '''Temporary version of convertin from msh to h5'''
-    root, _ = os.path.splitext(msh_file)
-    assert os.path.splitext(msh_file)[1] == '.msh'
-    assert os.path.splitext(h5_file)[1] == '.h5'
-
-    # Get the xml mesh
-    xml_file = '.'.join([root, 'xml'])
-    subprocess.call(['dolfin-convert %s %s' % (msh_file, xml_file)], shell=True)
-    # Success?
-    assert os.path.exists(xml_file)
-
-    cmd = '''from dolfin import Mesh, HDF5File;\
-             mesh=Mesh('%(xml_file)s');\
-             assert mesh.topology().dim() == 3;\
-             out=HDF5File(mesh.mpi_comm(), '%(h5_file)s', 'w');\
-             out.write(mesh, 'mesh');''' % {'xml_file': xml_file,
-                                            'h5_file': h5_file}
-
-    for region in ('facet_region.xml', 'physical_region.xml'):
-        name, _ = region.split('_')
-        r_xml_file = '_'.join([root, region])
-        if os.path.exists(r_xml_file):
-            cmd_r = '''from dolfin import MeshFunction;\
-                       f = MeshFunction('size_t', mesh, '%(r_xml_file)s');\
-                       out.write(f, '%(name)s');\
-                       ''' % {'r_xml_file': r_xml_file, 'name': name}
-
-            cmd = ''.join([cmd, cmd_r])
-
-    cmd = 'python -c "%s"' % cmd
-
-    status = subprocess.call([cmd], shell=True)
-    assert status == 0
-    # Sucess?
-    assert os.path.exists(h5_file)
-
-    return True
-
-
-def cleanup(files=None, exts=()):
-    '''Get rid of xml'''
-    if files is not None:
-        return map(os.remove, files)
-    else:
-        files = filter(lambda f: any(map(f.endswith, exts)), os.listdir('.'))
-        print('Removing', files)
-        return cleanup(files)

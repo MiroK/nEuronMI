@@ -13,10 +13,10 @@ class BallStickNeuron(Neuron):
         'soma_x': 0,
         'soma_y': 0,
         'soma_z': 0,  # Center
-        'dend_rad': 2,
-        'dend_len': 50,
-        'axon_rad': 1,
-        'axon_len': 50
+        'dend_rad': 2.5,
+        'dend_len': 200,
+        'axon_rad': 2,
+        'axon_len': 100
         }    
     
     def __init__(self, params=None):

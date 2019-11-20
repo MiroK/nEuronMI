@@ -11,7 +11,7 @@ import json
 import os
 
 
-def msh_to_h5(msh_file, clean_xml=True):
+def msh_to_h5(msh_file, h5_file, clean_xml=True):
     '''Convert from msh to h5'''
     root, _ = os.path.splitext(msh_file)
     assert os.path.splitext(msh_file)[1] == '.msh'
@@ -26,7 +26,6 @@ def msh_to_h5(msh_file, clean_xml=True):
     assert os.path.exists(xml_file)
 
     mesh = Mesh(xml_file)
-    h5_file = '.'.join([root, 'h5'])
     out = HDF5File(mesh.mpi_comm(), h5_file, 'w')
     out.write(mesh, 'mesh')
 
@@ -43,8 +42,6 @@ def msh_to_h5(msh_file, clean_xml=True):
 
             clean_xml and os.remove(r_xml_file)
     clean_xml and os.remove(xml_file)
-
-    return h5_file
 
 
 def load_h5_mesh(h5_file):

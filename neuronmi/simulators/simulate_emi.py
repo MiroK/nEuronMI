@@ -1,8 +1,8 @@
 from .solver.neuron_solver import neuron_solver
 from .solver.aux import snap_to_nearest
-from .solver.aux import load_mesh
 from .solver.probing import probing_locations
 import dolfin
+from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
 from pathlib import Path
 import numpy as np
 import yaml
@@ -13,10 +13,60 @@ from os.path import join
 def simulate_emi(mesh_folder):
     mesh_folder = Path(mesh_folder)
 
-    mesh_name = [f for f in mesh_folder.iterdir() if f.suffix == '.h5']
-    if len(mesh_name) == 0:
-        mesh_name
-    mesh_root = mesh_name.stem
+    mesh_h5 = [f for f in mesh_folder.iterdir() if f.suffix == '.h5']
+    mesh_json = [f for f in mesh_folder.iterdir() if f.suffix == '.json']
+
+    if len(mesh_h5) != 1:
+        raise ValueError(f"No or more than one .h5 mesh file found in {mesh_folder}")
+    else:
+        mesh_h5_path = mesh_folder / mesh_h5[0]
+
+    if len(mesh_json) != 1:
+        raise ValueError(f"No or more than one .json mesh file found in {mesh_folder}")
+    else:
+        mesh_json_path = mesh_folder / mesh_json[0]
+
+    mesh_root = mesh_path.stem
+
+    with mesh_json_path.open() as json_fp:
+        emi_map = EMIEntityMap(json_fp=json_fp)
+
+    # Current magnitude for probe tip
+    # TODO add here stimulation expressions for exp, pulse, step
+    magnitude = dolfin.Expression('exp(-1E-2*t)', t=0, degree=1)
+
+    # todo: split problem params in: neurons, external, stimulation
+    problem_parameters = {'neuron_0': {'I_ion': dolfin.Constant(0),
+                                       'cond': 1,
+                                       'C_m': 1,
+                                       'stim_strength': 0.0,
+                                       'stim_start': 0.0,
+                                       'stim_pos': 0.0,
+                                       'stim_length': 0.0},
+                          #
+                          'neuron_1': {'I_ion': dolfin.Constant(0),
+                                       'cond': 1,
+                                       'C_m': 1,
+                                       'stim_strength': 0.0,
+                                       'stim_start': 0.0,
+                                       'stim_pos': 0.0,
+                                       'stim_length': 0.0},
+                          #
+                          'external': {'cond': 2,
+                                       'bcs': ('max_x', 'max_y'), },
+                          #
+                          'probe': {'stimulated_sites': ('tip',),
+                                    'site_currents': (magnitude,)}
+                          }
+
+    solver_parameters = {'dt_fem': 0.1,
+                         'dt_ode': 0.01,
+                         'Tstop': 1}
+
+    I_out = dolfin.File('I.pvd')
+    for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_parameters, solver_parameters):
+        I_out << I, t
+
 
 if __name__ == '__main__':
     if '-mesh' in sys.argv:

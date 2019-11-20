@@ -15,7 +15,7 @@ class MicrowireProbe(Probe):
         'tip_y': 0,
         'tip_z': 0,
         'radius': 10,
-        'length': 200
+        'length': 1000
         }
     
     def __init__(self, params=None):

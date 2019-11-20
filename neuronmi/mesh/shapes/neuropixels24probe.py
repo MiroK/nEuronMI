@@ -12,12 +12,11 @@ class Neuropixels24Probe(Probe):
     _defaults = {
         'tip_x': 50,
         'tip_y': 0,
-        'tip_z': 0,
+        'tip_z': -200,
         'angle': 0,  # In radians as gmsh want it!
         'length': 1000,
-        # These should be fixed?
-        'width': 5,  
-        'contact_rad': 2
+        'width': 20,
+        'contact_rad': 12
         }
     
     def __init__(self, params=None):

@@ -23,12 +23,12 @@ class TaperedNeuron(Neuron):
         'soma_z': 0,  # Center
         'dendh_rad': 4,
         'dendh_len': 20,
-        'dend_rad': 3,
-        'dend_len': 50,
-        'axonh_rad': 2,
-        'axonh_len': 20,
-        'axon_rad': 1,
-        'axon_len': 50
+        'dend_rad': 2.5,
+        'dend_len': 200,
+        'axonh_rad': 4,
+        'axonh_len': 10,
+        'axon_rad': 2,
+        'axon_len': 100
         }
     
     def __init__(self, params=None):
@@ -43,14 +43,14 @@ class TaperedNeuron(Neuron):
         
         D0 = C + np.array([0, 0, shift])
         D1 = D0 + np.array([0, 0, params.dendh_len])
-        D2 = D1 + np.array([0, 0, params.dend_len])
+        D2 = D1 + np.array([0, 0, params.dend_len - params.dendh_len])
 
         # Move down
         shift = sqrt(params.soma_rad**2 - params.axonh_rad**2)
         
         A0 = C - np.array([0, 0, shift])
         A1 = A0 - np.array([0, 0, params.axonh_len])
-        A2 = A1 - np.array([0, 0, params.axon_len])
+        A2 = A1 - np.array([0, 0, params.axon_len - params.axonh_len])
 
         self.pieces = OrderedDict(axon=Cylinder(A1, A2, params.axon_rad),
                                   axonh=Cone(A0, A1, params.axonh_rad, params.axon_rad),
