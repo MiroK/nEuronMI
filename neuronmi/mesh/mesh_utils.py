@@ -69,23 +69,25 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     if isinstance(neurons, Neuron): neurons = [neurons]
 
     # Neurons are contained
-    for neuron in neurons:
-        assert all(box.contains(p, tol) for p in neuron.control_points)
+    if neurons is not None:
+        for neuron in neurons:
+            assert all(box.contains(p, tol) for p in neuron.control_points)
 
     # There is no collision
     if probe is not None:
         # Between probe and neurons
-        for neuron in neurons:
-            check = not any(neuron.contains(p, tol) for p in probe.control_points)
-            assert check and not any(probe.contains(p, tol) for p in neuron.control_points)
+        if neurons is not None:
+            for neuron in neurons:
+                check = not any(neuron.contains(p, tol) for p in probe.control_points)
+                assert check and not any(probe.contains(p, tol) for p in neuron.control_points)
 
-        # And neurons themselves
-        for i, n0 in enumerate(neurons):
-            for n1 in neurons[i + 1:]:
-                assert not any(n1.contains(p, tol) for p in n0.control_points)
+            # And neurons themselves
+            for i, n0 in enumerate(neurons):
+                for n1 in neurons[i + 1:]:
+                    assert not any(n1.contains(p, tol) for p in n0.control_points)
 
-        # Also probe should cut the box
-        assert any(not box.contains(p, tol) for p in probe.control_points)
+            # Also probe should cut the box
+            assert any(not box.contains(p, tol) for p in probe.control_points)
 
     # Without the probe we have neurons as volumes and (box-volume) as the other
     box_tag = box.as_gmsh(model)
@@ -98,9 +100,10 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
 
     # There is neuron in any case; so we add them to medel as volumes with
     # neuron_tags. The surfaces are only auxiliary as they will change during cut
-    neurons_tags, neurons_surfs = zip(*(neuron.as_gmsh(model) for neuron in neurons))
-    # The volumes are created due to fragmentation
-    volumes = first(model.occ.fragment([(3, box_tag)], [(3, nt) for nt in neurons_tags]))
+    if neurons is not None:
+        neurons_tags, neurons_surfs = zip(*(neuron.as_gmsh(model) for neuron in neurons))
+        # The volumes are created due to fragmentation
+        volumes = first(model.occ.fragment([(3, box_tag)], [(3, nt) for nt in neurons_tags]))
     model.occ.synchronize()
 
     # Now we would like to find in volumes the neurons and extecellular domain
@@ -119,29 +122,30 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     volume_pairs.remove(external_pair)
     volume_pairs = deque(volume_pairs)
 
-    for i, neuron in enumerate(neurons):
-        match = False
-        neuron_surfaces = {}  # Find them in the bounding surfaces of model
+    if neurons is not None:
+        for i, neuron in enumerate(neurons):
+            match = False
+            neuron_surfaces = {}  # Find them in the bounding surfaces of model
 
-        while not match:
-            pair = volume_pairs.pop()
-            vol_tags, vol_surfs = pair
-            # Eliminite geom. checks if the number of surfs doesn' t match
-            if len(vol_surfs) != len(neurons_surfs[i]):
-                volume_pairs.appendleft(pair)
-                continue
-            # Try geom check
-            match = neuron.link_surfaces(model, vol_surfs, links=neuron_surfaces, tol=tol)
-            # If some found then all found
-            assert not match or set(neuron_surfaces.keys()) == set(neuron.surfaces.keys()), (neuron, neuron_surfaces)
-            # If success we can pair say that i-th neuron is that volume
-            if match:
-                neuron_mapping.append((vol_tags, neuron_surfaces))
-                # We can remove the surfaces froma all bounding
-                external_surfs.difference_update(neuron_surfaces.values())
-            # Try with a different neuron
-            else:
-                volume_pairs.appendleft(pair)
+            while not match:
+                pair = volume_pairs.pop()
+                vol_tags, vol_surfs = pair
+                # Eliminite geom. checks if the number of surfs doesn' t match
+                if len(vol_surfs) != len(neurons_surfs[i]):
+                    volume_pairs.appendleft(pair)
+                    continue
+                # Try geom check
+                match = neuron.link_surfaces(model, vol_surfs, links=neuron_surfaces, tol=tol)
+                # If some found then all found
+                assert not match or set(neuron_surfaces.keys()) == set(neuron.surfaces.keys()), (neuron, neuron_surfaces)
+                # If success we can pair say that i-th neuron is that volume
+                if match:
+                    neuron_mapping.append((vol_tags, neuron_surfaces))
+                    # We can remove the surfaces froma all bounding
+                    external_surfs.difference_update(neuron_surfaces.values())
+                # Try with a different neuron
+                else:
+                    volume_pairs.appendleft(pair)
 
     # At this point the external_surfs either belong to the box or the probe
     probe_surfaces = {}
@@ -166,9 +170,10 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     tagged_volumes = {'external': {'all': (second(external_volume), next(vtags))}}
     tagged_surfaces = {'box': tag_surfaces(box_surfaces), 'probe': tag_surfaces(probe_surfaces)}
 
-    for i, (neuron_volume, neuron_surfaces) in enumerate(neuron_mapping):
-        tagged_volumes['neuron_%d' % i] = {'all': (second(neuron_volume), next(vtags))}
-        tagged_surfaces['neuron_%d' % i] = tag_surfaces(neuron_surfaces)
+    if neurons is not None:
+        for i, (neuron_volume, neuron_surfaces) in enumerate(neuron_mapping):
+            tagged_volumes['neuron_%d' % i] = {'all': (second(neuron_volume), next(vtags))}
+            tagged_surfaces['neuron_%d' % i] = tag_surfaces(neuron_surfaces)
 
     # Add to model
     for (etag, ptag) in chain(*[d.values() for d in tagged_volumes.values()]):

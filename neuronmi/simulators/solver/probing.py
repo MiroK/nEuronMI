@@ -1,6 +1,6 @@
 from dolfin import SubsetIterator, Point, Cell, MPI
-from embedding import EmbeddedMesh
-from aux import load_mesh
+from .embedding import EmbeddedMesh
+from .aux import load_mesh
 
 
 import matplotlib
@@ -162,7 +162,7 @@ class Probe(object):
                 cells_for_x[i] = cell
         # Ignore the cells that are not in the mesh. Note that we don't
         # care if a node is found in several cells -l think CPU interface
-        xs_cells = filter(lambda (xi, c): c is not None, zip(locations, cells_for_x))
+        xs_cells = filter(lambda xi, c : c is not None, zip(locations, cells_for_x))
 
         V = u.function_space()
         element = V.dolfin_element()
@@ -214,45 +214,45 @@ class Probe(object):
 
         
 # --------------------------------------------------------------------
-
-
-if __name__ == '__main__':
-    from dolfin import *
-    mesh = UnitCubeMesh(10, 10, 10)
-
-    if False:
-        surfaces = FacetFunction('size_t', mesh, 0)
-        DomainBoundary().mark(surfaces, 1)
-        CompiledSubDomain('near(x[2], 1.0)').mark(surfaces, 2)
-        CompiledSubDomain('near(x[2], 0.0)').mark(surfaces, 3)
-
-        submesh, surfaces = EmbeddedMesh(surfaces, [1, 2, 3])  # To make life more difficult
-
-        centers = probing_locations_for_surfaces(surfaces, tag=[2, 3])
-        print centers
-
-        print probing_locations('../test.h5', 41)
-
-    V = FunctionSpace(mesh, 'CG', 1)
-    f = Expression('t*(x[0]+x[1]+x[2])', t=0, degree=1)
-    
-    u = interpolate(f, V)
-    locations = [np.array([0.2, 0.2, 0.4]),
-                 np.array([0.8, 0.8, 0.2]),
-                 np.array([2.0, 2.0, 2.0]),
-                 np.array([0.5, 0.5, 0.1])]
-
-    probes = Probe(u, locations, t0=0.0, record='test_record.txt')
-
-    for t in [0.1, 0.2, 0.3, 0.4]:
-        f.t = t
-        u.assign(interpolate(f, V))
-        probes.probe(t)
-
-    for record in probes.data:
-        t, values_x = record[0], record[1:]
-        f.t = t
-        for x, value_x in zip(probes.locations, values_x):
-            assert abs(value_x - f(x)) < 1E-15
-    
-    probes.save('test.txt')
+#
+#
+# if __name__ == '__main__':
+#     from dolfin import *
+#     mesh = UnitCubeMesh(10, 10, 10)
+#
+#     if False:
+#         surfaces = FacetFunction('size_t', mesh, 0)
+#         DomainBoundary().mark(surfaces, 1)
+#         CompiledSubDomain('near(x[2], 1.0)').mark(surfaces, 2)
+#         CompiledSubDomain('near(x[2], 0.0)').mark(surfaces, 3)
+#
+#         submesh, surfaces = EmbeddedMesh(surfaces, [1, 2, 3])  # To make life more difficult
+#
+#         centers = probing_locations_for_surfaces(surfaces, tag=[2, 3])
+#         print centers
+#
+#         print probing_locations('../test.h5', 41)
+#
+#     V = FunctionSpace(mesh, 'CG', 1)
+#     f = Expression('t*(x[0]+x[1]+x[2])', t=0, degree=1)
+#
+#     u = interpolate(f, V)
+#     locations = [np.array([0.2, 0.2, 0.4]),
+#                  np.array([0.8, 0.8, 0.2]),
+#                  np.array([2.0, 2.0, 2.0]),
+#                  np.array([0.5, 0.5, 0.1])]
+#
+#     probes = Probe(u, locations, t0=0.0, record='test_record.txt')
+#
+#     for t in [0.1, 0.2, 0.3, 0.4]:
+#         f.t = t
+#         u.assign(interpolate(f, V))
+#         probes.probe(t)
+#
+#     for record in probes.data:
+#         t, values_x = record[0], record[1:]
+#         f.t = t
+#         for x, value_x in zip(probes.locations, values_x):
+#             assert abs(value_x - f(x)) < 1E-15
+#
+#     probes.save('test.txt')

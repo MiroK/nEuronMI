@@ -136,7 +136,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     h5_file = save_mesh_folder / f'{mesh_name}.h5'
     msh_to_h5(msh_file, str(h5_file))
 
-    return h5_file
+    return save_mesh_folder
 
 def return_coarseness(coarse):
     if coarse == 00:
