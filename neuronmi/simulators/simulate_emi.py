@@ -33,6 +33,8 @@ def simulate_emi(mesh_folder):
     # TODO add here stimulation expressions for exp, pulse, step
     magnitude = dolfin.Expression('exp(-1E-2*t)', t=0, degree=1)
 
+
+
     # todo: split problem params in: neurons, external, stimulation
     problem_parameters = {'neuron_0': {'I_ion': dolfin.Constant(0),
                                        'cond': 1,
