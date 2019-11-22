@@ -34,7 +34,7 @@ class MicrowireProbe(Probe):
 
         # NOTE: missing center of gravity
         self._surfaces = {'wall': self.cylinder.center_of_mass,
-                          'tip': A}
+                          'contact_0': A}
 
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(MicrowireProbe._defaults.keys()) 

@@ -82,7 +82,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         probe = None
         probe_str = 'noprobe'
 
-    mesh_sizes = {'neuron': mesh_resolution['neuron'] ,
+    mesh_sizes = {'neuron': mesh_resolution['neuron'],
                   'probe': mesh_resolution['probe'],
                   'ext': mesh_resolution['ext']}
 
