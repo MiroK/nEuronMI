@@ -16,39 +16,10 @@ class EmbeddedMesh(df.Mesh):
     '''
     def __init__(self, marking_function, markers):
         if not isinstance(markers, (list, tuple)): markers = [markers]
-        
-        # Convenience option to specify only subdomains
-        is_number = lambda m: isinstance(m, int)
-        new_markers = []
-        # Build a new list int list with facet_function marked
-        if not all(map(is_number, markers)):
-            
-            numbers = filter(is_number, markers)
-            next_int_marker = max(numbers) if numbers else 0
-            for marker in markers:
-                if is_number(marker):
-                    new_markers.append(marker)
-                else:
-                    next_int_marker += 1
-                    # SubDomain
-                    try:
-                        marker.mark(marking_function, next_int_marker)
-                    except AttributeError:
-                        # A string
-                        try:
-                            df.CompiledSubDomain(marker).mark(marking_function, next_int_marker)
-                        # A lambda
-                        except TypeError:
-                            df.CompiledSubDomain(*marker()).mark(marking_function, next_int_marker)
 
-                    new_markers.append(next_int_marker)
-            
-            markers = new_markers
-            
         base_mesh = marking_function.mesh()
 
         assert base_mesh.topology().dim() >= marking_function.dim()
-
         # Work in serial only (much like submesh)
         assert df.MPI.size(base_mesh.mpi_comm()) == 1
 
@@ -101,6 +72,7 @@ class EmbeddedMesh(df.Mesh):
 
         # Otherwise the mesh needs to by build from scratch
         base_mesh.init(tdim, 0)
+        e2v = base_mesh.topology()(tdim, 0)
         # Collect unique vertices based on their new-mesh indexing, the cells
         # of the embedded mesh are defined in terms of their embedded-numbering
         new_vertices, new_cells = [], []
@@ -109,10 +81,12 @@ class EmbeddedMesh(df.Mesh):
         cell_map = []
         cell_colors = defaultdict(list)  # Preserve the markers
 
+        marking_function_arr = marking_function.array()
+        
         new_cell_index, new_vertex_index = 0, 0
         for marker in markers:
-            for entity in df.SubsetIterator(marking_function, marker):
-                vs = entity.entities(0)
+            for entity in np.where(marking_function_arr == marker)[0]:
+                vs = list(e2v(entity))
                 cell = []
                 # Vertex lookup
                 for v in vs:
@@ -127,14 +101,13 @@ class EmbeddedMesh(df.Mesh):
                 # The cell
                 new_cells.append(cell)
                 # Into map
-                cell_map.append(entity.index())
+                cell_map.append(entity)
                 # Colors
                 cell_colors[marker].append(new_cell_index)
 
                 new_cell_index += 1
         vertex_coordinates = base_mesh.coordinates()[new_vertices]
         new_cells = np.array(new_cells, dtype='uintp')
-        
         # With acquired data build the mesh
         df.Mesh.__init__(self)
         # Fill
@@ -145,7 +118,6 @@ class EmbeddedMesh(df.Mesh):
         mesh_key = marking_function.mesh().id()
         self.parent_entity_map = {mesh_key: {0: dict(enumerate(new_vertices)),
                                              tdim: dict(enumerate(cell_map))}}
-
         f = df.MeshFunction('size_t', self, tdim, 0)
         f_ = f.array()
         # Finally the inherited marking function
@@ -158,7 +130,6 @@ class EmbeddedMesh(df.Mesh):
         self.marking_function = f
         # Declare which tagged cells are found
         self.tagged_cells = set(markers)
-
         
 # --------------------------------------------------------------------
 

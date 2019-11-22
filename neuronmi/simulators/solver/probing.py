@@ -1,145 +1,49 @@
-from dolfin import SubsetIterator, Point, Cell, MPI
 from .embedding import EmbeddedMesh
-from .aux import load_mesh
 
-
-import matplotlib
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-import matplotlib.pyplot as plt
-import operator
-
-import networkx as nx
+from dolfin import Point, Cell, MPI
 import numpy as np
 import os
 
+from dolfin import File
 
-def probe_contact_map(path, contacts):
-    '''A tag (contact) to center-point map'''
-    return dict(zip(contacts, probing_locations(path, contacts)))
-
-                    
-def plot_contacts(surfaces, contacts, project=lambda x: x[1:], ax=None):
-    '''
-    Plot where the contacts are on the probes. Project is mapping which 
-    collapsed 3d coordinates to 2d (assuming that the probe is flat). Default
-    is that the probe is in plane x=value
-    '''
-    # Collect first triangles of contacts defined in terms of their
-    # vertex index
-    mesh = surfaces.mesh()
-    mesh.init(surfaces.dim(), 0)
-    f2v = mesh.topology()(surfaces.dim(), 0)
-    
-    contacts_cells = [map(f2v, map(lambda f: f.index(), SubsetIterator(surfaces, contact)))
-                      for contact in contacts]
-    
-    x = surfaces.mesh().coordinates()
-    patches = []
-    centers = []
-    for contact, contact_cells in zip(contacts, contacts_cells):
-
-        patches.extend([Polygon(np.array([project(x[v]) for v in cell]))
-                        for cell in contact_cells])
-        # Vertices of the patch
-        vertices = list(reduce(operator.or_, map(set, contact_cells)))
-        centers.append(project(np.mean(x[vertices], axis=0)))
-    centers = np.array(centers)
-
-    # Heuristic for min/max coords of the plot
-    xmin, ymin = np.min(centers, axis=0)
-    xmax, ymax = np.max(centers, axis=0)
-
-    xmin = xmin - (xmax-xmin)/10
-    xmax = xmax + (xmax-xmin)/10
-
-    ymin = ymin - (xmax-xmin)/10
-    ymax = ymax + (xmax-xmin)/10
-
-    if ax is None:
-        fig, ax = plt.subplots()
-
-    p = PatchCollection(patches, alpha=0.4)
-    p.set_array(20*np.ones(len(patches)))
-    
-    ax.add_collection(p)
-    
-    for contact, center in zip(contacts, centers):
-        ax.text(center[0], center[1], str(contact))
-
-    ax.set_xlim((xmin, xmax))
-    ax.set_ylim((ymin, ymax))
-    ax.axis('equal')
-
-    return ax
-    
-
-def probing_locations(path, tag):
-    '''Extract probing locations of the mesh on path'''
-    surfaces = load_mesh(path)[1]
-
-    submesh, surfaces = EmbeddedMesh(surfaces, tag)  
-    centers = probing_locations_for_surfaces(surfaces, tag)
-    return centers
-
-
-def probing_locations_for_surfaces(surfaces, tag):
+def get_geom_centers(surfaces, tag):
     '''
     Extract probe locations as centers of tagged regions. Note that 
     if the contact surface is not flat/convex w.r.t to the domain then 
     the points might end up outside of the mesh.
     '''
+    if isinstance(tag, (int, np.uint, np.uint32, np.uint64)):
+        tag = [tag]
     # If more
-    try:
-        return sum(map(lambda t: probing_locations_for_surfaces(surfaces, t),
-                       tag), [])
-    except TypeError:
-        pass
+
     mesh = surfaces.mesh()
-    # The actual computations
-    assert isinstance(tag, (int, np.uint, np.uint32, np.uint64))
     # For we do this only from the cell function
-    assert surfaces.dim() == mesh.topology().dim()
-    # which represent a manifol
+    if surfaces.dim() == mesh.topology().dim() - 1:
+        mesh = EmbeddedMesh(surfaces, tag)
+        surfaces = mesh.marking_function
+    # This should be probe surface so 2d in 3d
     assert mesh.topology().dim() == mesh.geometry().dim() - 1
 
+    # The assumption here is that each probe has a unique tag so collecting
+    # cells of same tag(color) getting their unique vertices is the way to
+    # get the center of masss
     tdim = mesh.topology().dim()
     mesh.init(tdim, tdim-1)
     mesh.init(tdim-1, tdim)
 
-    c2f, f2c = mesh.topology()(tdim, tdim-1), mesh.topology()(tdim-1, tdim)
-    # The cells shall be vertices in graph with edges representing
-    # facet connectivities. The we are afer connected components ...
-    nodes = set(int(cell.index()) for cell in SubsetIterator(surfaces, tag))
-
-    edges = set()
-    for cell in nodes:
-        # Only fully in are of interest
-        for f in c2f(cell):  # At most 2
-            connected_cells = set(f2c(f))
-            assert len(connected_cells) in (1, 2), 'This is not a non-selfintersecting manifold'
-            if len(connected_cells & nodes) == 2:  # All are in
-                connected_cells.remove(cell)
-                other_cell = connected_cells.pop()
-                edges.add((cell, other_cell) if cell < other_cell else (other_cell, cell))
-                
-    graph = nx.Graph()
-    graph.add_edges_from(edges)
-    
-    mesh.init(tdim, 0)
     c2v = mesh.topology()(tdim, 0)
     x = mesh.coordinates()
-    # The idea is that connected components represent individual contact
-    # surfaces. For each we grab the center of gravity
+    surfaces_arr = surfaces.array()
+
     centers = []
-    for cells in nx.connected_components(graph):
-        vertices = list(set(v for cell in cells for v in c2v(cell)))
-        center = np.mean(x[vertices], axis=0)
+    for tag_ in tag:
+        tagged_cells, = np.where(surfaces_arr == tag_)
+        patch_vertices = set(sum((list(c2v(c)) for c in tagged_cells), []))
+        center = np.mean(x[list(patch_vertices)], axis=0)
+
         centers.append(center)
-        
     return centers
-
-
+                    
 class Probe(object):
     '''Perform efficient evaluation of scalar function u at fixed points'''
     def __init__(self, u, locations, t0=0.0, record=''):
@@ -148,7 +52,7 @@ class Probe(object):
         # the coef vector of u to the cell. Of these 3 steps the first
         # two don't change. So we cache them
         # Check the scalar assumption
-        assert u.value_rank() == 0 and u.value_size() == 1
+        assert u.value_rank() == 0 and u.value_shape() == []
 
         # Locate each point
         mesh = u.function_space().mesh()
@@ -160,9 +64,10 @@ class Probe(object):
             cell = bbox_tree.compute_first_entity_collision(Point(*x))
             if -1 < cell < limit:
                 cells_for_x[i] = cell
+
         # Ignore the cells that are not in the mesh. Note that we don't
         # care if a node is found in several cells -l think CPU interface
-        xs_cells = filter(lambda xi, c : c is not None, zip(locations, cells_for_x))
+        xs_cells = filter(lambda xi_c : xi_c[1] is not None, zip(locations, cells_for_x))
 
         V = u.function_space()
         element = V.dolfin_element()
@@ -177,11 +82,11 @@ class Probe(object):
             cell = Cell(mesh, ci)
             vertex_coords, orientation = cell.get_vertex_coordinates(), cell.orientation()
             # Eval the basis once
-            element.evaluate_basis_all(basis_matrix, x, vertex_coords, orientation)
+            basis_matrix[:] = element.evaluate_basis_all(x, vertex_coords, orientation)
 
             def foo(A=basis_matrix, cell=cell, vc=vertex_coords):
                 # Restrict for each call using the bound cell, vc ...
-                u.restrict(coefficients, element, cell, vc, cell)
+                coefficients = u.restrict(element, cell)
                 # A here is bound to the right basis_matri
                 return np.dot(A, coefficients)
             
