@@ -3,7 +3,7 @@ from .shapes.baseneuron import Neuron
 from itertools import count, chain
 from collections import deque
 from dolfin import info
-from dolfin import Mesh, MeshFunction, HDF5File #, mpi_comm_world
+from dolfin import Mesh, MeshFunction, HDF5File, MPI
 from .meshconvert import convert2xml
 from itertools import count, chain, repeat
 import numpy as np
@@ -11,11 +11,15 @@ import json
 import os
 
 
-def msh_to_h5(msh_file, h5_file, clean_xml=True):
+def msh_to_h5(msh_file, h5_file=None, clean_xml=True):
     '''Convert from msh to h5'''
     root, _ = os.path.splitext(msh_file)
     assert os.path.splitext(msh_file)[1] == '.msh'
 
+    if h5_file is None:
+        h5_file = '.'.join([root, 'h5'])
+    
+    
     # Get the xml mesh
     xml_file = '.'.join([root, 'xml'])
 
@@ -47,7 +51,7 @@ def msh_to_h5(msh_file, h5_file, clean_xml=True):
 def load_h5_mesh(h5_file):
     '''Unpack to mesh, volumes and surfaces'''
 
-    comm = mpi_comm_world()
+    comm = MPI.comm_world
     h5 = HDF5File(comm, h5_file, 'r')
     mesh = Mesh()
     h5.read(mesh, 'mesh', False)
@@ -66,6 +70,9 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
     Define geometry for EMI simulations (fill the model). Return model
     and mapping of external surfaces [EMIEntityMap]
     '''
+    # You don't want to have just a boring box do you?
+    assert neurons is not None or probe is not None
+    
     if isinstance(neurons, Neuron): neurons = [neurons]
 
     # Neurons are contained
@@ -97,7 +104,8 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
         probe_tags = probe.as_gmsh(model)
         # Box - probe; cur returns volumes and sufs. volume is pair (3, tag)
         [(_, box_tag)] = first(model.occ.cut([(3, box_tag)], list(zip(repeat(3), probe_tags))))
-
+        volumes = [(3, box_tag)]
+        
     # There is neuron in any case; so we add them to medel as volumes with
     # neuron_tags. The surfaces are only auxiliary as they will change during cut
     if neurons is not None:
