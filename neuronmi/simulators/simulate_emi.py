@@ -5,7 +5,7 @@ import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
 from pathlib import Path
 import numpy as np
-import yaml
+# import yaml
 
 import subprocess, os, time, sys
 from os.path import join
