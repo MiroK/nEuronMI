@@ -57,6 +57,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # Orient normal so that it is outer normal of neurons
     n = FacetNormal(mesh)('+')
 
+    print('OK')
     # Everything is driven by membrane response. This will be updated
     # by the ode solver. The ode solver will work on proper space defined
     # only on the neuron. The solution shall then be taked to a facet
@@ -136,7 +137,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
             # From the system they are the same
             bc_insulated.extend(bc_stimulated)
 
-
+    print('At')
     all_neuron_surfaces = set(sum(n_Stags, []))
     not_neuron_surfaces = set(facet_marking_f.array()) - all_neuron_surfaces
     # A specific of the setup is that the facet space is too large. It
@@ -168,7 +169,8 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
 
     Q = FunctionSpace(mesh, Qel)  # Everywhere
     p0 = Function(Q)              # Previous transm potential now 0
-
+    print('Before')
+    
     transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
     # The ODE solver talks to the worlk via chain: Q_neuron <-> Q <- W
     p0_neuron = Function(Q_neuron)
@@ -177,7 +179,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     assign_toQ_fromQ_neuron = transfer.compute_map(Q, Q_neuron, strict=False)
     # From component to DLT on mesh
     toQ_fromW2 = FunctionAssigner(Q, W.sub(2))
-
+    print('After')
     toQin_fromQns, toQn_fromQins, p0is = [], [], []
     # p0i \in Qi <-> Q_neuron \ni p0_neuron
     neuron_solutions = []
@@ -185,9 +187,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         # Pick the nueuron from neuron collection
         ni_mesh = EmbeddedMesh(neurons_subdomains, neuron_surfaces)
         ni_subdomains = ni_mesh.marking_function
-        
+        print('>>>', i)
         map_ =  emi_map.surface_physical_tags('neuron_%d' % i)
-
+        print(map_)
         soma = tuple(map_[k] for k in map_ if 'soma' in k)
         dendrite = tuple(map_[k] for k in map_ if 'dend' in k)
         axon = tuple(map_[k] for k in map_ if 'axon' in k)
@@ -195,7 +197,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         ode_solver = ODESolver(ni_subdomains,
                                soma=soma, axon=axon, dendrite=dendrite,
                                problem_parameters=problem_parameters['neuron_%d' % i])
-
+        print('>>>', i, i)
         Tstop = solver_parameters['Tstop']; assert Tstop > 0.0
         interval = (0.0, Tstop)
     
@@ -203,6 +205,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         ode_solutions = ode_solver.solve(interval, dt_ode)  # Potentials only
         neuron_solutions.append(ode_solutions)
 
+        File('xxx.pvd') << neuron_surf_mesh
         transfer = SubMeshTransfer(neuron_surf_mesh, ni_mesh)
         # Communication between neuron and the collection
         Qi_neuron = ode_solver.V
@@ -215,7 +218,8 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         toQin_fromQns.append(assign_toQin_fromQn)
         toQn_fromQins.append(assign_toQn_fromQin)
         p0is.append(p0i_neuron)
-
+        print('leaving')
+        
     w = Function(W)
     # Finally for postprocessing we return the current time, potential
     # and membrane current
@@ -237,18 +241,19 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     w_aux.vector()[:] = assemble(current_form)
     toQ_fromW2.assign(current_aux, w_aux.sub(2))
     assign_toQ_neuron_fromQ(current_out, current_aux)
-    
+    print('hhhh')
     # To get initial state
     yield 0, u_out, current_out
 
     neuron_solutions = zip(*neuron_solutions)
-
+    print('Not even')
     step_count = 0
     for odes in neuron_solutions:
+        print('<<<<', 'whyyyyy')
         step_count += 1
-
+        print('step', step_count)
         (t0, t1) = odes[0][0]
-        info('Time is (%g, %g)' % (t0, t1))
+        print('Time is (%g, %g)' % (t0, t1))
         if step_count == fem_ode_sync:
             step_count = 0
             # From individual neuron to collection
@@ -266,7 +271,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
             assembler.assemble(b)  # Also applies bcs
       
             # New (sigma, u, p) ...
-            info('\tSolving linear system of size %d' % A.size(0))
+            print('\tSolving linear system of size %d' % A.size(0))
             la_solver.solve(w.vector(), b)
 
             # Update u_out and current_out for output

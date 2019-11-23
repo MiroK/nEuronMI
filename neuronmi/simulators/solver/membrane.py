@@ -4,7 +4,7 @@ from .transferring import SubMeshTransfer
 from .aux import subdomain_bbox, closest_entity, as_tuple
 from .embedding import EmbeddedMesh
 from .Passive import Passive
-from dolfin import (FunctionAssigner, Constant, info, Expression,
+from dolfin import (FunctionAssigner, Constant, Expression,
                     FunctionSpace, Function)
 import numpy as np
 
@@ -36,6 +36,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     dendrite_params["v_eq"] = 0.0   # (mV)
     dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
 
+    print('ode ode')
     # ^z
     # | x + length [END]                   
     # | 
@@ -52,7 +53,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     # will act as a point stimulus. Otherwise dendrite points X such that
     # their abs(X[2] - P[2]) < stim_length/2 are stimulated - 
     if isinstance(problem_parameters['stim_pos'], (int, float)):
-        info('Using stimulus based on soma location')
+        print('Using stimulus based on soma location')
         # Extract the bounds of the z coordinate to localize stimulation
         zmin, zmax = subdomain_bbox(subdomains)[-1]
     
@@ -61,7 +62,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     
         # Or just for the soma part
         zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
-
+        print('ode ode ode')
         # Select start and end of the synaptic input area
         stim_start_z = zmax_soma + problem_parameters["stim_pos"]
         stim_end_z = stim_start_z + problem_parameters["stim_length"]
@@ -72,6 +73,8 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
                               stim_end_z = stim_end_z,
                               degree=1)
     else:
+        print('<<<<<<<<< ode ode ode')
+
         assert len(problem_parameters['stim_pos']) == 3
 
         P0 = problem_parameters['stim_pos']
@@ -84,7 +87,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
             X = np.array([X[i] for i in range(3)])
 
         if 'stim_length' in problem_parameters:
-            info('Using ring stimulus based on %r' % list(X))
+            print('Using ring stimulus based on %r' % list(X))
 
             stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
                                   stim_strength=problem_parameters["stim_strength"],
@@ -92,7 +95,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
                                   stim_end_z=X[2]+problem_parameters['stim_length']/2,
                                   degree=1)
         else:
-            info('Using point stimulus at %r' % list(X))
+            print('Using point stimulus at %r' % list(X))
 
             norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
             norm_code = 'sqrt(%s)' % norm_code
@@ -102,7 +105,7 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
             params_.update({('x%d' % i): X[i] for i in range(3)})
 
             stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
-    
+    print('__________')
     dendrite_params["g_s"] = stimul_f
     # Update dendrite parameters
     dendrite_model = Passive(dendrite_params)
@@ -179,10 +182,11 @@ class SubDomainCardiacODESolver(object):
 
         # Init all the ODE solver
         generators = [solver.solve(interval, dt) for solver in self.solvers]
-
+        print('Stepped?')
         v_whole = Function(self.V)
         solutions = []
 
+        print('>>>>', next(generators[0]))
         stopped = [False]*len(generators)
         while True: 
             # Step all
@@ -195,7 +199,7 @@ class SubDomainCardiacODESolver(object):
                 solutions.append(uj)
 
             if all(stopped): return    
-
+            print('Got it')
             # Glue
             for j, uj in enumerate(solutions):
                 toSub_fromMixed_map[j].assign(adapters[j], uj.sub(0))

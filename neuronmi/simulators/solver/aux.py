@@ -24,8 +24,11 @@ def subdomain_bbox(subdomains, label=None):
     if label is None:
         coords = mesh.coordinates()
     else:
+        arr = subdomains.array()
+        
         mesh.init(mesh.topology().dim(), 0)
-        vertices = set(v for cell in df.SubsetIterator(subdomains, label) for v in cell.entities(0))
+        c2v = mesh.topology()(mesh.topology().dim(), 0)
+        vertices = set(np.concatenate(list(map(c2v, np.where(arr == label)[0]))))
         coords = mesh.coordinates()[list(vertices)]
     return list(zip(coords.min(axis=0), coords.max(axis=0)))
 
@@ -142,78 +145,3 @@ def surface_normal(tag, facet_f, point):
 
     return n.array() if n.dot(mid-point) > 0 else -1*n.array()
 
-# -------------------------------------------------------------------
-
-if __name__ == '__main__':
-    import dolfin as df 
-
-    mesh = df.UnitCubeMesh(10, 10, 10)
-    mesh = df.BoundaryMesh(mesh, 'exterior')
-    V = df.FunctionSpace(mesh, 'CG', 2)
-    f = df.interpolate(df.Expression('sin(x[0]+x[1]+x[2])', degree=2), V)
-
-    # A proxy expression whose action at x eval f at closest point dof to x
-    f_ = snap_to_nearest(f)
-    assert abs(f_(1., 1., 1.) - f(1., 1., 1.)) < 1E-13
-    assert abs(f_(1.1, 1.1, 1.1) - f(1., 1., 1.)) < 1E-13
-
-    # Test 2d
-    mesh = df.UnitSquareMesh(10, 10)
-    cell_f = df.MeshFunction('size_t', mesh, 2, 0)
-    df.CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
-
-    assert subdomain_bbox(cell_f, 1) == [(0.5, 1.0), (0.5, 1.0)]
-
-    # Test 3d
-    mesh = df.UnitCubeMesh(10, 10, 10)
-    cell_f = df.MeshFunction('size_t', mesh, 3, 0)
-    df.CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
-
-    assert subdomain_bbox(cell_f, 1) == [(0.5, 1.0), (0.5, 1.0), (0.0, 1.0)]
-
-    # Multi marker tests
-    mesh = df.UnitSquareMesh(10, 10)
-    cell_f = df.MeshFunction('size_t', mesh, 2, 0)
-    df.CompiledSubDomain('x[0] > 0.5 - DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 1)
-    df.CompiledSubDomain('x[0] < 0.5 + DOLFIN_EPS && x[1] > 0.5 - DOLFIN_EPS').mark(cell_f, 2)
-    df.CompiledSubDomain('x[0] < 0.5 + DOLFIN_EPS && x[1] < 0.5 + DOLFIN_EPS').mark(cell_f, 3)
-
-    assert subdomain_bbox(cell_f) == [(0.0, 1.0), (0.0, 1.0)]
-    assert subdomain_bbox(cell_f, (1, 2)) == [(0.0, 1.0), (0.5, 1.0)]
-    assert subdomain_bbox(cell_f, (3, 2)) == [(0.0, 0.5), (0.0, 1.0)]
-    assert subdomain_bbox(cell_f, (1, 0)) == [(0.5, 1.0), (0.0, 1.0)]
-    assert subdomain_bbox(cell_f, (1, 3)) == [(0.0, 1.0), (0.0, 1.0)]
-
-    # Closest point
-    from embedding import EmbeddedMesh
-    import numpy as np
-    
-    mesh = df.UnitCubeMesh(10, 10, 10)
-    facet_f = df.MeshFunction('size_t', mesh, 2, 0)
-    df.CompiledSubDomain('near(x[0], 0)').mark(facet_f, 1)
-    df.CompiledSubDomain('near(x[2], 0.5)').mark(facet_f, 2)
-
-    bmesh = EmbeddedMesh(facet_f, [1, 2])
-    subdomains = bmesh.marking_function
-
-    x = np.array([1, 1., 1.])
-    entity = closest_entity(x, subdomains, (1, 2))
-    x0 = entity.midpoint().array()[:3]
-    
-    f = point_source(entity, A=df.Expression('3', degree=1))
-    assert abs(f(x0) - 3) < 1E-15, abs(f(x0 + 1E-9*np.ones(3))) < 1E-15
-
-    n = np.array([1, 2, 3])
-    I = df.Expression('t', degree=0, t=0)
-    i = SiteCurrent(n=n, I=I, degree=0)
-
-    for t in range(10):
-        i.t = t
-        assert np.linalg.norm(i(0.5, 0.5, 0.5)- n*t) < 1E-14
-
-    mesh = df.UnitCubeMesh(3, 3, 3)
-    facet_f = df.MeshFunction('size_t', mesh, 2, 0)
-    df.CompiledSubDomain('near(x[1], 0)').mark(facet_f, 1)
-
-    n = surface_normal(1, facet_f, point=np.array([0.5, 0.5, 0.5]))
-    assert np.linalg.norm(n - np.array([0, -1, 0])) < 1E-13
