@@ -13,3 +13,5 @@
 
 results/
 neuronmi.egg-info/
+
+*.geo_unrolled
