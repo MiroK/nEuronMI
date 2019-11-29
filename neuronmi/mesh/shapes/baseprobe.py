@@ -1,4 +1,4 @@
-from .baseshape import BaseShape
+from neuronmi.mesh.shapes.baseshape import BaseShape
 
 
 class Probe(BaseShape):

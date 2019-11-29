@@ -1,5 +1,5 @@
-from .utils import circle_points, unit_vector, link_surfaces
-from .baseshape import BaseShape
+from neuronmi.mesh.shapes.utils import circle_points, unit_vector, link_surfaces
+from neuronmi.mesh.shapes.baseshape import BaseShape
 from math import sqrt
 import numpy as np
 
@@ -30,7 +30,7 @@ class Box(BaseShape):
         d = minlim + np.r_[0, dx[1], 0]
         A, B, C, D = (x + np.array([0, 0, dx[2]]) for x in (a, b, c, d))
 
-        self._center_of_mass = c
+        self._center_of_mass = 0.25*(a+b+c+d)+0.5*np.array([0, 0, dx[2]])
         # Centers of 6 faces
         self._surfaces = {'min_x': np.mean((a, A, d, D), axis=0),
                           'max_x': np.mean((c, C, b, B), axis=0),
@@ -192,51 +192,3 @@ class Cone(BaseShape):
         '''Return volume tag under which shape has been added'''
         args = np.r_[self.A, self.B - self.A, self.rA, self.rB]
         return model.occ.addCone(*args, tag=tag)
-
-
-# --------------------------------------------------------------------
-
-if __name__ == '__main__':
-    box = Box(np.array([0, 0, 0]), np.array([1, 1, 1]))
-    print(box.contains(np.array([0.5, 0.5, 0.5]), 1E-13))
-
-    sphere = Sphere(np.array([0, 0, 0]), 1)
-    print(sphere.contains(np.array([0.5, 0.5, 0.5]), 1E-10))
-    print(sphere.contains(np.array([1.5, 0.5, 0.5]), 1E-10))
-
-    cyl = Cylinder(np.array([0, 0, 0]), np.array([1, 1, 1]), 1)
-    print(cyl.contains(np.array([1.5, 1.5, 1.5]), 1E-10))
-    print(cyl.contains(np.array([0.5, 0.5, 0.5]), 1E-10))
-
-    cyl = Cone(np.array([0, 0, 0]), np.array([1, 1, 1]), 1, 2)
-    print(cyl.contains(np.array([1.5, 1.5, 1.5]), 1E-10))
-    print(cyl.contains(np.array([0.5, 0.5, 0.5]), 1E-10))
-
-    # print(box.bbox_contains(np.array([0.5, 0.5, 0.5]), 1E-13)
-
-    import gmsh
-    import sys
-
-    model = gmsh.model
-    factory = model.occ
-
-    gmsh.initialize(sys.argv)
-    gmsh.option.setNumber("General.Terminal", 1)
-
-    c = Cone(np.array([0, 0, 0]),
-             np.array([1, 1, 2]),
-             0.2,
-             0.5)
-    tag = c.as_gmsh(model)
-    factory.synchronize();
-
-    print(model.occ.getCenterOfMass(3, tag))
-    print(c.center_of_mass)
-    # model.mesh.generate(3)
-    # #model.mesh.refine()
-    # #model.mesh.setOrder(2)
-    # #model.mesh.partition(4)
-
-    # gmsh.write("boolean.msh")
-
-    gmsh.finalize()

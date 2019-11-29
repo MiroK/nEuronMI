@@ -1,6 +1,6 @@
-from .utils import as_namedtuple, has_positive_values
-from .gmsh_primitives import Sphere, Cylinder, Cone, Box
-from .baseneuron import Neuron
+from neuronmi.mesh.shapes.utils import as_namedtuple, has_positive_values
+from neuronmi.mesh.shapes.gmsh_primitives import Sphere, Cylinder, Cone, Box
+from neuronmi.mesh.shapes.baseneuron import Neuron
 from collections import OrderedDict
 from math import sqrt
 import numpy as np
@@ -106,35 +106,3 @@ class TaperedNeuron(Neuron):
 
         # Volume tag, surfaces tag
         return neuron_tags[0][1], [s[1] for s in surfs]
-        
-# --------------------------------------------------------------------
-
-if __name__ == '__main__':
-
-    neuron = TaperedNeuron({'dend_rad': 0.2, 'axon_rad': 0.3})
-
-    import gmsh
-    import sys
-
-    model = gmsh.model
-    factory = model.occ
-
-    gmsh.initialize(sys.argv)
-    gmsh.fltk.initialize()
-    gmsh.option.setNumber("General.Terminal", 1)
-
-
-    cone = neuron.pieces['dendh']
-    v = cone.as_gmsh(model)
-    
-    # neuron.as_gmsh(model)
-    factory.synchronize();
-
-    model.mesh.generate(3)
-    #model.mesh.refine()
-    #model.mesh.setOrder(2)
-    #model.mesh.partition(4)
-    
-    gmsh.write("neuron.msh")
-    gmsh.fltk.run()
-    gmsh.finalize()

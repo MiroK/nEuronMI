@@ -41,6 +41,7 @@ def first(iterable):
     '''A better [0]'''
     return next(iter(iterable))
 
+
 def second(iterable):
     '''A better [1]'''
     it = iter(iterable)
@@ -48,7 +49,7 @@ def second(iterable):
     return first(it)
 
 
-def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
+def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None, claim_last=True):
     '''
     Let tags be surfaces of the model. For every surface of the shape 
     we try to pair it with one of the tagged surfaces based on metric(x, y)
@@ -87,7 +88,7 @@ def link_surfaces(model, tags, shape, links, tol=1E-5, metric=None):
             del tags_[i]
 
     # If there is just one remainig we claim it with warning
-    if len(tags_) == 1:
+    if len(tags_) == 1 and claim_last:
         name, = set(shape.surfaces.keys()) - set(links.keys())
         link = tags_.pop()
         links[name] = link
@@ -109,26 +110,3 @@ def entity_dim(arr, dim):
         return list(filter(lambda item: item[0] == dim, arr))
 
     return sum([entity_dim(a, dim) for a in arr], [])
-
-# --------------------------------------------------------------------
-
-if __name__ == '__main__':
-
-    print(find_first(4, range(19)))
-    print(list(range(19)).index(4), list(range(19)))
-    
-    d = {'a': 1, 'b': 2}
-    print(as_namedtuple(d))
-
-    n = np.array([1, 1, 1])
-    n = n/np.linalg.norm(n)
-    c = np.array([0, 0, 0])
-    r = 0.24
-    pts = circle_points(c, r, a=n)
-    # point - center is perp to axis; distance is correct
-    for p in pts:
-        print(np.dot(p-c, n))
-        print('  ', np.linalg.norm(p-c))
-
-    print(first((0, 1, 2)))
-    print(second((1, 2)))

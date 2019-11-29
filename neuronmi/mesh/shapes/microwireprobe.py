@@ -1,6 +1,6 @@
-from .utils import as_namedtuple, has_positive_values, link_surfaces
-from .gmsh_primitives import Cylinder
-from .baseprobe import Probe
+from neuronmi.mesh.shapes.utils import as_namedtuple, has_positive_values, link_surfaces
+from neuronmi.mesh.shapes.gmsh_primitives import Cylinder
+from neuronmi.mesh.shapes.baseprobe import Probe
 import numpy as np
 
 

@@ -1,6 +1,6 @@
-from .utils import as_namedtuple, has_positive_values
-from .gmsh_primitives import Sphere, Cylinder, Cone, Box
-from .baseneuron import Neuron
+from neuronmi.mesh.shapes.utils import as_namedtuple, has_positive_values
+from neuronmi.mesh.shapes.gmsh_primitives import Sphere, Cylinder, Cone, Box
+from neuronmi.mesh.shapes.baseneuron import Neuron
 from collections import OrderedDict
 from math import sqrt
 import numpy as np
@@ -58,7 +58,6 @@ class BallStickNeuron(Neuron):
         self._surfaces['axon_base'] = A1
         self._surfaces['dend_base'] = D1
 
-        
     def check_geometry_parameters(self, params):
         assert set(params.keys()) == set(BallStickNeuron._defaults.keys())
         # Ignore center
@@ -88,5 +87,3 @@ class BallStickNeuron(Neuron):
         
         # Volume tag, surfaces tag
         return neuron_tags[0][1], [s[1] for s in surfs]
-        
-# --------------------------------------------------------------------

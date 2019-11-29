@@ -1,6 +1,7 @@
-from .utils import as_namedtuple, has_positive_values, link_surfaces, entity_dim, second
-from .gmsh_primitives import Box
-from .baseprobe import Probe
+from neuronmi.mesh.shapes.utils import (as_namedtuple, has_positive_values, link_surfaces,
+                                        entity_dim, second)
+from neuronmi.mesh.shapes.gmsh_primitives import Box
+from neuronmi.mesh.shapes.baseprobe import Probe
 import numpy as np
 
 
@@ -156,5 +157,3 @@ class Neuropixels24Probe(Probe):
         links = link_surfaces(model, tags, self, links=links, metric=metric, tol=tol)
 
         return links
-
-# --------------------------------------------------------------------

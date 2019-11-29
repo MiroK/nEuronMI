@@ -1,5 +1,5 @@
-from .baseshape import BaseShape
-from .utils import link_surfaces
+from neuronmi.mesh.shapes.baseshape import BaseShape
+from neuronmi.mesh.shapes.utils import link_surfaces
 
 
 class Neuron(BaseShape):
