@@ -47,6 +47,8 @@ def msh_to_h5(msh_file, h5_file=None, clean_xml=True):
             clean_xml and os.remove(r_xml_file)
     clean_xml and os.remove(xml_file)
 
+    return h5_file
+
 
 def load_h5_mesh(h5_file):
     '''Unpack to mesh, volumes and surfaces'''

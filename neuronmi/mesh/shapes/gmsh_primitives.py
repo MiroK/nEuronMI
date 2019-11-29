@@ -98,7 +98,8 @@ class Cylinder(BaseShape):
         super(BaseShape, self).__init__()  
         assert r > 0
         assert len(A) == len(B) == 3
-
+        assert np.linalg.norm(B - A) > 0
+        
         axis = unit_vector(B - A)
 
         self._control_points = np.vstack([circle_points(A, r, axis),  # in x-y plane
@@ -145,6 +146,7 @@ class Cone(BaseShape):
         super(BaseShape, self).__init__()        
         assert rA > 0 and rB > 0
         assert len(A) == len(B) == 3
+        assert np.linalg.norm(B - A) > 0
 
         axis = unit_vector(B - A)
 

@@ -23,11 +23,12 @@ def unit_vector(n):
     return n/np.linalg.norm(n)
 
 
-def circle_points(c, r, a=np.array([0, 0, 1])):
+def circle_points(c, r, a=np.array([0, 0, 1.])):
     '''Four points on radius r circle in plane containing c with normal a'''
     assert len(c) == len(a) == 3
-    
+
     n = unit_vector(a)
+
     lmbda, U = np.linalg.eigh(np.eye(3) - np.outer(n, n))
     assert abs(lmbda[0]) < 1E-14, 'This is not projection'
 
