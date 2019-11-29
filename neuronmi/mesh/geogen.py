@@ -3,7 +3,6 @@ import os, sys
 import numpy as np
 import gmsh
 import time
-from pathlib import Path
 from .shapes import Box, BallStickNeuron, TaperedNeuron
 from .shapes import MicrowireProbe #, NeuronexusProbe, Neuropixels24Probe
 from .shapes import neuron_list, probe_list
@@ -32,7 +31,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         If the 'neuron_type' is 'tapered', also 'rad_dend_base' and 'rad_axon_base'
     probe_params: dict
         Dictionary with probe params, including probe_tip and probe specific params (if any)
-    save_mesh_folder: str or Path
+    save_mesh_folder: str
         The output path. If None, a 'mesh' folder is created in the current working directory.
     Returns
     -------
@@ -92,10 +91,10 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
 
     if save_mesh_folder is None:
         mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
-        save_mesh_folder = Path(mesh_name)
+        save_mesh_folder = mesh_name
     else:
         mesh_name = str(save_mesh_folder)
-        save_mesh_folder = Path(save_mesh_folder)
+        save_mesh_folder = save_mesh_folder
 
     if not save_mesh_folder.is_dir():
         os.makedirs(str(save_mesh_folder), exist_ok=True)
@@ -114,13 +113,13 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     model, mapping = build_EMI_geometry(model, box, neuron, probe) #, mapping
     # # Config fields and dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
-    json_file = save_mesh_folder / f'{mesh_name}.json'
+    json_file = os.path.join(save_mesh_folder, '%s.json' % mesh_name)
     with json_file.open('w') as out:
         mapping.dump(out)
 
     factory.synchronize()
     # This is a way to store the geometry as geo file
-    geo_unrolled_file = save_mesh_folder / f'{mesh_name}.geo_unrolled'
+    geo_unrolled_file = os.path.join(save_mesh_folder, '%s.geo_unrolled' % mesh_name)
     gmsh.write(str(geo_unrolled_file))
     # gmsh.fltk.initialize()
     # gmsh.fltk.run()
@@ -128,12 +127,12 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     model.mesh.generate(3)
     # Native optimization
     model.mesh.optimize('')
-    msh_file = save_mesh_folder / f'{mesh_name}.msh'
+    msh_file = os.path.join(save_mesh_folder, '%s.msh' % mesh_name)
     gmsh.write(str(msh_file))
     gmsh.finalize()
 
     # Convert
-    h5_file = save_mesh_folder / f'{mesh_name}.h5'
+    h5_file = os.path.join(save_mesh_folder, '%s.h5' % mesh_name)
     msh_to_h5(msh_file, str(h5_file))
 
     return save_mesh_folder

@@ -26,20 +26,20 @@ class Hodgkin_Huxley_1952(CardiacCellModel):
     @staticmethod
     def default_parameters():
         "Set-up and return default parameters."
-        params = OrderedDict([("g_Na", 120.0),
-                              ("g_K", 36.0),
+        params = OrderedDict([("g_Na", 120),
+                              ("g_K", 36),
                               ("g_L", 0.3),
-                              ("Cm", 1.0),
-                              ("E_R", -75.0)])
+                              ("Cm", 1),
+                              ("E_R", 0)])
         return params
 
     @staticmethod
     def default_initial_conditions():
         "Set-up and return default initial conditions."
-        ic = OrderedDict([("V", -75.0),
-                          ("m", 0.052955),
-                          ("h", 0.595994),
-                          ("n", 0.317732)])
+        ic = OrderedDict([("V", 0),
+                          ("m", 0.05),
+                          ("h", 0.6),
+                          ("n", 0.325)])
         return ic
 
     def _I(self, v, s, time):
@@ -64,19 +64,20 @@ class Hodgkin_Huxley_1952(CardiacCellModel):
         current = [ufl.zero()]*1
 
         # Expressions for the Sodium channel component
-        E_Na = 115.0 + E_R
+        E_Na = -115 + E_R
         i_Na = g_Na*(m*m*m)*(-E_Na + V)*h
 
         # Expressions for the Potassium channel component
-        E_K = -12.0 + E_R
+        E_K = 12 + E_R
         i_K = g_K*ufl.elem_pow(n, 4)*(-E_K + V)
 
         # Expressions for the Leakage current component
-        E_L = 10.613 + E_R
+        E_L = -10.613 + E_R
         i_L = g_L*(-E_L + V)
 
         # Expressions for the Membrane component
-        i_Stim = 0.0
+        i_Stim = ufl.conditional(ufl.And(ufl.ge(time, 10), ufl.le(time,\
+            10.5)), -20, 0)
         current[0] = (-i_K - i_L - i_Na + i_Stim)/Cm
 
         # Return results
@@ -108,18 +109,18 @@ class Hodgkin_Huxley_1952(CardiacCellModel):
         F_expressions = [ufl.zero()]*3
 
         # Expressions for the m gate component
-        alpha_m = (-5.0 - 0.1*V)/(-1.0 + ufl.exp(-5.0 - V/10.0))
-        beta_m = 4*ufl.exp(-25.0/6.0 - V/18.0)
+        alpha_m = (2.5 + 0.1*V)/(-1 + ufl.exp(5/2 + V/10))
+        beta_m = 4*ufl.exp(V/18)
         F_expressions[0] = (1 - m)*alpha_m - beta_m*m
 
         # Expressions for the h gate component
-        alpha_h = 0.07*ufl.exp(-15.0/4.0 - V/20.0)
-        beta_h = 1.0/(1 + ufl.exp(-9.0/2.0 - V/10.0))
+        alpha_h = 0.07*ufl.exp(V/20)
+        beta_h = 1.0/(1 + ufl.exp(3 + V/10))
         F_expressions[1] = (1 - h)*alpha_h - beta_h*h
 
         # Expressions for the n gate component
-        alpha_n = (-0.65 - 0.01*V)/(-1.0 + ufl.exp(-13.0/2.0 - V/10.0))
-        beta_n = 0.125*ufl.exp(-15.0/16.0 - V/80.0)
+        alpha_n = (0.1 + 0.01*V)/(-1 + ufl.exp(1 + V/10))
+        beta_n = 0.125*ufl.exp(V/80)
         F_expressions[2] = (1 - n)*alpha_n - beta_n*n
 
         # Return results
@@ -129,4 +130,4 @@ class Hodgkin_Huxley_1952(CardiacCellModel):
         return 3
 
     def __str__(self):
-        return 'Hodgkin_Huxley_1952 cell model'
+        return 'Hodgkin_Huxley_1952 cardiac cell model'

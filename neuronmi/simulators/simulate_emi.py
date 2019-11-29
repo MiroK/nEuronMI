@@ -3,7 +3,6 @@ from .solver.aux import snap_to_nearest
 # from .solver.probing import probing_locations
 import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
-from pathlib import Path
 import numpy as np
 # import yaml
 
@@ -17,12 +16,12 @@ def simulate_emi(mesh_folder):
     mesh_json = [f for f in mesh_folder.iterdir() if f.suffix == '.json']
 
     if len(mesh_h5) != 1:
-        raise ValueError(f"No or more than one .h5 mesh file found in {mesh_folder}")
+        raise ValueError('No or more than one .h5 mesh file found in %s' % mesh_folder)
     else:
         mesh_h5_path = mesh_h5[0]
 
     if len(mesh_json) != 1:
-        raise ValueError(f"No or more than one .json mesh file found in {mesh_folder}")
+        raise ValueError('No or more than one .json mesh file found in %s' % mesh_folder)
     else:
         mesh_json_path = mesh_json[0]
 

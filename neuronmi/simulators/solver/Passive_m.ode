@@ -1,0 +1,24 @@
+# Passive membrane model
+
+parameters("Membrane",
+           E_leak = ScalarParam(-75, unit="mV"),
+           g_leak = ScalarParam(0.06, unit="mS*cm**-2"),
+           Cm = ScalarParam(1, unit="uF*cm**-2"),
+           g_s = ScalarParam(0.0, unit="ms/cm**-2"),
+           alpha = ScalarParam(2.0, unit="ms"),
+           v_eq = ScalarParam(0.0, unit="mV"), 
+           t0 = ScalarParam(0.0, unit="ms"))
+
+states("Membrane",
+       V = ScalarParam(-75, unit="mV"),
+       s = 1,
+       m = 1,
+       mm = 1)
+
+expressions("Membrane")
+i_stim = g_s*exp(-(t-t0)/alpha)*(V-v_eq)*Conditional(Ge(t, t0), 1, 0)
+i_leak = g_leak*(V-E_leak)  # uA*cm**-2
+dV_dt = -(i_leak+i_stim)/Cm
+dm_dt = -s
+ds_dt = m
+dmm_dt = -1

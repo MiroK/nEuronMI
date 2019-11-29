@@ -1,12 +1,12 @@
-from .aux import SiteCurrent, surface_normal
+from neuronmi.simulators.solver.aux import SiteCurrent, surface_normal
 
-from .linear_algebra import LinearSystemSolver
-from .transferring import SubMeshTransfer
-from .embedding import EmbeddedMesh
-from .membrane import ODESolver
+from neuronmi.simulators.solver.linear_algebra import LinearSystemSolver
+from neuronmi.simulators.solver.transferring import SubMeshTransfer
+from neuronmi.simulators.solver.embedding import EmbeddedMesh
+from neuronmi.simulators.solver.membrane import ODESolver
 from dolfin import *
 
-from neuronmi.mesh.emi_mesh import load_h5_mesh
+# from neuronmi.mesh.emi_mesh import load_h5_mesh
 
 
 # Optimizations

@@ -2,7 +2,6 @@ from neuronmi.mesh.shapes.utils import first, second
 from neuronmi.mesh.shapes.baseneuron import Neuron
 from itertools import count, chain, repeat
 from collections import deque
-from dolfin import info
 from emi_map import EMIEntityMap
 
 

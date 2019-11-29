@@ -69,9 +69,8 @@ def point_source(e, A, h=1E-10):
 def snap_to_nearest(f):
     '''An expression which evaluates f[function] at dof closest to f'''
  
-    class ProxyExpression(df.UserExpression):
+    class ProxyExpression(df.Expression):
         def __init__(self, f, **kwargs):
-            super().__init__(**kwargs)
             self.f = f
             V = f.function_space()
             self.y = V.tabulate_dof_coordinates().reshape((V.dim(), -1))
@@ -96,13 +95,12 @@ def snap_to_nearest(f):
                 
             return out
 
-    return ProxyExpression(f)
+    return ProxyExpression(f, degree=f.function_space().ufl_element().degree())
 
 
-class SiteCurrent(df.UserExpression):
+class SiteCurrent(df.Expression):
     '''normal*I where I can vary in time and normal is fixed'''
     def __init__(self, I, n, **kwargs):
-        super().__init__(**kwargs)
         self.n = n
         self.I = I
         self._time = 0
@@ -133,13 +131,13 @@ def surface_normal(tag, facet_f, point):
     assert mesh.geometry().dim() == 3
 
     point = df.Point(*point)
+    facets,  = np.where(facet_f.array() == tag)
+    facets = iter(facets)
     
-    facets = df.SubsetIterator(facet_f, tag)
-    first = df.Facet(mesh, next(facets).index())
+    first = df.Facet(mesh, next(facets))
     n = first.normal()
     # Is this a flat surface
-    assert all(abs(abs(df.Facet(mesh, f.index()).normal().dot(n))-1) < 1E-10
-               for f in facets)
+    assert all(abs(abs(df.Facet(mesh, f).normal().dot(n))-1) < 1E-10 for f in facets)
 
     mid = first.midpoint()
 

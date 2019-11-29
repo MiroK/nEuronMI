@@ -2,9 +2,9 @@ from .shapes.utils import first, second
 from .shapes.baseneuron import Neuron
 from itertools import count, chain
 from collections import deque
-from dolfin import info
 from dolfin import Mesh, MeshFunction, HDF5File, MPI
 from .meshconvert import convert2xml
+import neuronmi.dolfin_compat as compat
 from itertools import count, chain, repeat
 import numpy as np
 import json
@@ -51,7 +51,7 @@ def msh_to_h5(msh_file, h5_file=None, clean_xml=True):
 def load_h5_mesh(h5_file):
     '''Unpack to mesh, volumes and surfaces'''
 
-    comm = MPI.comm_world
+    comm = compat.mpi_comm()
     h5 = HDF5File(comm, h5_file, 'r')
     mesh = Mesh()
     h5.read(mesh, 'mesh', False)
