@@ -25,7 +25,6 @@ class SubMeshTransfer(object):
         except AttributeError:
             self.cell_map = submesh.data().array('parent_cell_indices',
                                                  submesh.topology().dim())
-
         self.cache = []
 
     def compute_map(self, toSpace, fromSpace, strict=True):
@@ -60,7 +59,7 @@ class SubMeshTransfer(object):
             if not len(self.cache):
                 self.cache = self.__compute_map(submSpace=toSpace, mSpace=fromSpace)
             mapping = self.cache
-
+            
             def foo(f, g):
                 assert f.function_space() == toSpace
                 assert g.function_space() == fromSpace

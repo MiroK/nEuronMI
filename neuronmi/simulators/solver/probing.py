@@ -1,10 +1,11 @@
-from .embedding import EmbeddedMesh
+from neuronmi.simulators.solver.embedding import EmbeddedMesh
 
 from dolfin import Point, Cell, MPI
 import numpy as np
 import os
 
 from dolfin import File
+
 
 def get_geom_centers(surfaces, tag):
     '''
@@ -43,7 +44,8 @@ def get_geom_centers(surfaces, tag):
 
         centers.append(center)
     return centers
-                    
+
+
 class Probe(object):
     '''Perform efficient evaluation of scalar function u at fixed points'''
     def __init__(self, u, locations, t0=0.0, record=''):
@@ -52,7 +54,7 @@ class Probe(object):
         # the coef vector of u to the cell. Of these 3 steps the first
         # two don't change. So we cache them
         # Check the scalar assumption
-        assert u.value_rank() == 0 and u.value_shape() == []
+        assert u.value_rank() == 0 and u.value_size() == 1
 
         # Locate each point
         mesh = u.function_space().mesh()
@@ -64,10 +66,9 @@ class Probe(object):
             cell = bbox_tree.compute_first_entity_collision(Point(*x))
             if -1 < cell < limit:
                 cells_for_x[i] = cell
-
         # Ignore the cells that are not in the mesh. Note that we don't
         # care if a node is found in several cells -l think CPU interface
-        xs_cells = filter(lambda xi_c : xi_c[1] is not None, zip(locations, cells_for_x))
+        xs_cells = filter(lambda (xi, c): c is not None, zip(locations, cells_for_x))
 
         V = u.function_space()
         element = V.dolfin_element()
@@ -82,11 +83,11 @@ class Probe(object):
             cell = Cell(mesh, ci)
             vertex_coords, orientation = cell.get_vertex_coordinates(), cell.orientation()
             # Eval the basis once
-            basis_matrix[:] = element.evaluate_basis_all(x, vertex_coords, orientation)
+            element.evaluate_basis_all(basis_matrix, x, vertex_coords, orientation)
 
             def foo(A=basis_matrix, cell=cell, vc=vertex_coords):
                 # Restrict for each call using the bound cell, vc ...
-                coefficients = u.restrict(element, cell)
+                u.restrict(coefficients, element, cell, vc, cell)
                 # A here is bound to the right basis_matri
                 return np.dot(A, coefficients)
             
@@ -116,48 +117,3 @@ class Probe(object):
         path = '_'.join([root, str(self.rank)]) + ext
         header = '\n'.join(['time'] + ['%r' % xi for xi in self.locations])
         np.savetxt(path, self.data, header=header)
-
-        
-# --------------------------------------------------------------------
-#
-#
-# if __name__ == '__main__':
-#     from dolfin import *
-#     mesh = UnitCubeMesh(10, 10, 10)
-#
-#     if False:
-#         surfaces = FacetFunction('size_t', mesh, 0)
-#         DomainBoundary().mark(surfaces, 1)
-#         CompiledSubDomain('near(x[2], 1.0)').mark(surfaces, 2)
-#         CompiledSubDomain('near(x[2], 0.0)').mark(surfaces, 3)
-#
-#         submesh, surfaces = EmbeddedMesh(surfaces, [1, 2, 3])  # To make life more difficult
-#
-#         centers = probing_locations_for_surfaces(surfaces, tag=[2, 3])
-#         print centers
-#
-#         print probing_locations('../test.h5', 41)
-#
-#     V = FunctionSpace(mesh, 'CG', 1)
-#     f = Expression('t*(x[0]+x[1]+x[2])', t=0, degree=1)
-#
-#     u = interpolate(f, V)
-#     locations = [np.array([0.2, 0.2, 0.4]),
-#                  np.array([0.8, 0.8, 0.2]),
-#                  np.array([2.0, 2.0, 2.0]),
-#                  np.array([0.5, 0.5, 0.1])]
-#
-#     probes = Probe(u, locations, t0=0.0, record='test_record.txt')
-#
-#     for t in [0.1, 0.2, 0.3, 0.4]:
-#         f.t = t
-#         u.assign(interpolate(f, V))
-#         probes.probe(t)
-#
-#     for record in probes.data:
-#         t, values_x = record[0], record[1:]
-#         f.t = t
-#         for x, value_x in zip(probes.locations, values_x):
-#             assert abs(value_x - f(x)) < 1E-15
-#
-#     probes.save('test.txt')

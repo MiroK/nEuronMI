@@ -1,4 +1,4 @@
-from .make_mesh_cpp import make_mesh
+from neuronmi.simulators.solver.make_mesh_cpp import make_mesh
 from collections import defaultdict
 from itertools import chain
 import dolfin as df
@@ -130,21 +130,3 @@ class EmbeddedMesh(df.Mesh):
         self.marking_function = f
         # Declare which tagged cells are found
         self.tagged_cells = set(markers)
-        
-# --------------------------------------------------------------------
-
-
-if __name__ == '__main__':
-    import dolfin as df 
-    mesh = df.UnitCubeMesh(10, 10, 10)
-
-    f = df.MeshFunction('size_t', mesh, mesh.topology().dim()-1, 0)
-    chi = df.CompiledSubDomain('near(x[i], 0.5)', i=0) 
-
-    for i in range(3):
-        chi.set_property('i', i)
-        chi.mark(f, i+1)
-
-    mesh = EmbeddedMesh(f, [1, 2, 3])
-    
-    df.File('f.pvd') << mesh.marking_function
