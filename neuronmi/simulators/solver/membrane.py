@@ -1,11 +1,12 @@
+from neuronmi.simulators.solver.Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
+from neuronmi.simulators.solver.transferring import SubMeshTransfer
+from neuronmi.simulators.solver.aux import subdomain_bbox, closest_entity, as_tuple
+from neuronmi.simulators.solver.embedding import EmbeddedMesh
+from neuronmi.simulators.solver.Passive import Passive
+
 import cbcbeat as beat
-from .Hodgkin_Huxley_1952 import Hodgkin_Huxley_1952
-from .transferring import SubMeshTransfer
-from .aux import subdomain_bbox, closest_entity, as_tuple
-from .embedding import EmbeddedMesh
-from .Passive_m import Passive_m
-from dolfin import (FunctionAssigner, Constant, Expression,
-                    FunctionSpace, Function)
+
+from dolfin import FunctionAssigner, Constant, Expression, FunctionSpace, Function
 import numpy as np
 
 
@@ -20,23 +21,22 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     # Assign membrane models to soma, axon and dendirite
     soma_model = Hodgkin_Huxley_1952()
     axon_model = Hodgkin_Huxley_1952()
-    dendrite_model = Passive_m()
+    dendrite_model = Passive()
     
     # Adjust parameters of the dendrite model
     # Note: similar adjustments may be done for the soma and axon models in the same manner
-    # dendrite_params = dendrite_model.default_parameters()
-    # dendrite_params["g_leak"] = 0.06    #  passive membrane conductance (in mS/cm**2)
-    # dendrite_params["E_leak"] = -75.0   #  passive resting membrane potential (in mV)
-    # dendrite_params["Cm"] = 1.0         #  membrane capacitance (in uF/cm**2)
+    dendrite_params = dendrite_model.default_parameters()
+    dendrite_params["g_leak"] = 0.06    #  passive membrane conductance (in mS/cm**2)
+    dendrite_params["E_leak"] = -75.0   #  passive resting membrane potential (in mV)
+    dendrite_params["Cm"] = 1.0         #  membrane capacitance (in uF/cm**2)
 
-    # # Adjust stimulus current
-    # # Note: Stimulation is currently implemented as a part of the passive membrane model
-    # # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
-    # dendrite_params["alpha"] = 2.0  # (ms)
-    # dendrite_params["v_eq"] = 0.0   # (mV)
-    # dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
+    # Adjust stimulus current
+    # Note: Stimulation is currently implemented as a part of the passive membrane model
+    # and given on the form: I_s = g_s(x)*exp(-t/alpha)(v-v_eq)
+    dendrite_params["alpha"] = 2.0  # (ms)
+    dendrite_params["v_eq"] = 0.0   # (mV)
+    dendrite_params["t0"] =  problem_parameters["stim_start"]  # (ms)
 
-    print('ode ode')
     # ^z
     # | x + length [END]                   
     # | 
@@ -62,7 +62,6 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     
         # Or just for the soma part
         zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
-        print('ode ode ode')
         # Select start and end of the synaptic input area
         stim_start_z = zmax_soma + problem_parameters["stim_pos"]
         stim_end_z = stim_start_z + problem_parameters["stim_length"]
@@ -73,8 +72,6 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
                               stim_end_z = stim_end_z,
                               degree=1)
     else:
-        print('<<<<<<<<< ode ode ode')
-
         assert len(problem_parameters['stim_pos']) == 3
 
         P0 = problem_parameters['stim_pos']
@@ -105,10 +102,10 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
             params_.update({('x%d' % i): X[i] for i in range(3)})
 
             stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
-    print('__________')
-    # dendrite_params["g_s"] = stimul_f
+
+    dendrite_params["g_s"] = stimul_f
     # Update dendrite parameters
-    dendrite_model = Hodgkin_Huxley_1952()#Hod#Passive_m()#dendrite_params)
+    dendrite_model = Passive(dendrite_params)
 
     # Set up ode solver parameters - to be used for all the subdomain
     Solver = beat.BasicCardiacODESolver
@@ -139,11 +136,10 @@ class SubDomainCardiacODESolver(object):
         # The subdomain solver instances
         tags, models = zip(*models.items())
 
-        mesh = subdomains.mesh()
         submeshes = [EmbeddedMesh(subdomains, tag) for tag in tags]
         solvers = [ode_solver(submesh, time, model, params=params)
                    for submesh, model in zip(submeshes, models)]
-        print('ot', [mesh.num_cells() for mesh in submeshes])
+
         # Set up initial conditions
         for solver, model in zip(solvers, models):
             (ode_solution0, _) = solver.solution_fields()
@@ -155,8 +151,8 @@ class SubDomainCardiacODESolver(object):
         V_elm = V_elm.pop()
 
         # What we will show to the world
+        mesh = subdomains.mesh()        
         V = FunctionSpace(mesh, V_elm)
-
         transfers = [SubMeshTransfer(mesh, submesh) for submesh in submeshes]
 
         self.V = V
@@ -182,7 +178,6 @@ class SubDomainCardiacODESolver(object):
 
         # Init all the ODE solver
         generators = [solver.solve(interval, dt) for solver in self.solvers]
-        print('Stepped?')
         v_whole = Function(self.V)
         solutions = []
 
@@ -191,7 +186,6 @@ class SubDomainCardiacODESolver(object):
             # Step all
             solutions = []
             for j, gen in enumerate(generators):
-                print('Try', j)
                 try:
                     (t0, t1), uj = next(gen)
                 except StopIteration:
@@ -199,7 +193,7 @@ class SubDomainCardiacODESolver(object):
                 solutions.append(uj)
 
             if all(stopped): return    
-            print('Got it')
+
             # Glue
             for j, uj in enumerate(solutions):
                 toSub_fromMixed_map[j].assign(adapters[j], uj.sub(0))

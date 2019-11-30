@@ -1,13 +1,11 @@
 from neuronmi.simulators.solver.aux import SiteCurrent, surface_normal
-
 from neuronmi.simulators.solver.linear_algebra import LinearSystemSolver
 from neuronmi.simulators.solver.transferring import SubMeshTransfer
 from neuronmi.simulators.solver.embedding import EmbeddedMesh
 from neuronmi.simulators.solver.membrane import ODESolver
+from neuronmi.mesh.mesh_utils import load_h5_mesh
+
 from dolfin import *
-
-# from neuronmi.mesh.emi_mesh import load_h5_mesh
-
 
 # Optimizations
 parameters['form_compiler']['representation'] = 'uflacs'
@@ -96,7 +94,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         a += sum(inner(q('+'), dot(sigma('+'), n))*dS(i) for i in n_Stag)
         a += -sum(Constant(n_props['C_m']/dt_fem)*inner(q('+'), p('+'))*dS(i) for i in n_Stag)
 
-    iterator = zip(n_Stags, neuron_props)
+    iterator = iter(zip(n_Stags, neuron_props))
     # Rhs contributions
     n_Stag, n_props = next(iterator)
     L = sum(inner(q('+'), n_props['I_ion']-Constant(n_props['C_m']/dt_fem)*p0('+'))*dS(i)
@@ -294,10 +292,10 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
 # --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from neuronmi.mesh.emi_map import EMIEntityMap
-    mesh_path = '../../mesh/test_neuron.h5'
+    from neuronmi.mesh.mesh_utils import EMIEntityMap
+    mesh_path = '../../../sandbox/test_2neuron.h5'
 
-    emi_map = '../../mesh/test_neuron.json'
+    emi_map = '../../../sandbox/test_2neuron.json'
     with open(emi_map) as json_fp:
         emi_map = EMIEntityMap(json_fp=json_fp)
 
