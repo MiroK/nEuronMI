@@ -48,5 +48,3 @@ gmsh.fltk.initialize()
 gmsh.fltk.run()
 
 # From gui you cam make mesh etc ...
-
-gmsh.finalize()

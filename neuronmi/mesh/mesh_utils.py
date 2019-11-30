@@ -1,9 +1,9 @@
-from .shapes.utils import first, second
-from .shapes.baseneuron import Neuron
+from neuronmi.mesh.shapes.utils import first, second
+from neuronmi.mesh.shapes.baseneuron import Neuron
 from itertools import count, chain
 from collections import deque
 from dolfin import Mesh, MeshFunction, HDF5File, MPI
-from .meshconvert import convert2xml
+from neuronmi.mesh.meshconvert import convert2xml
 import neuronmi.dolfin_compat as compat
 from itertools import count, chain, repeat
 import numpy as np
@@ -24,11 +24,11 @@ def msh_to_h5(msh_file, h5_file=None, clean_xml=True):
     xml_file = '.'.join([root, 'xml'])
 
     # Convert to XML
-    convert2xml(msh_file, xml_file, iformat='gmsh')
+    convert2xml(msh_file, xml_file)
 
     # Success?
     assert os.path.exists(xml_file)
-
+    
     mesh = Mesh(xml_file)
     out = HDF5File(mesh.mpi_comm(), h5_file, 'w')
     out.write(mesh, 'mesh')
@@ -52,10 +52,8 @@ def msh_to_h5(msh_file, h5_file=None, clean_xml=True):
 
 def load_h5_mesh(h5_file):
     '''Unpack to mesh, volumes and surfaces'''
-
-    comm = compat.mpi_comm()
-    h5 = HDF5File(comm, h5_file, 'r')
-    mesh = Mesh()
+    mesh = Mesh()    
+    h5 = HDF5File(mesh.mpi_comm(), h5_file, 'r')
     h5.read(mesh, 'mesh', False)
 
     surfaces = MeshFunction('size_t', mesh, mesh.topology().dim() - 1)

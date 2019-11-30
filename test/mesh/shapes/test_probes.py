@@ -41,10 +41,10 @@ class TestMeshUtils(unittest.TestCase):
             want = set(filter(is_contact, probe._surfaces))
             have = set(filter(is_contact, probe_surfaces))
 
-            self.assertTrue(want == have)
             # And we can make the mesh
             # model.mesh.generate(3)
             # vtx_order, vtices, _ = model.mesh.getNodes()
-            # self.assertTrue(len(vtx_order))
-        
             gmsh.finalize()
+            
+            self.assertTrue(want == have)
+            # self.assertTrue(len(vtx_order))            

@@ -4,7 +4,7 @@ import unittest
 import gmsh
 
 
-class TestMeshUtils(unittest.TestCase):
+class TestGmshPrimitives(unittest.TestCase):
 
     def test_inside(self):
         box = Box(np.array([0, 0, 0]), np.array([1, 1, 1]))
@@ -27,13 +27,13 @@ class TestMeshUtils(unittest.TestCase):
                   Sphere(np.array([0, 0, 0]), 1),
                   Cylinder(np.array([0, 0, 0]), np.array([1, 1, 1]), 1),
                   Cone(np.array([0, 0, 0]), np.array([1, 1, 1]), 1, 2)]
-        
-        for shape in shapes:
-            gmsh.initialize()
-            
-            model = gmsh.model
-            factory = model.occ
 
+        gmsh.initialize()
+        model = gmsh.model
+        factory = model.occ
+
+        for i, shape in enumerate(shapes):
+            model.add(str(i))
             tag = shape.as_gmsh(model)
             factory.synchronize()
 
@@ -44,5 +44,6 @@ class TestMeshUtils(unittest.TestCase):
             model.mesh.generate(3)
             vtx_order, vtices, _ = model.mesh.getNodes()
             self.assertTrue(len(vtx_order))
-
-            gmsh.finalize()
+            model.remove()
+            
+        gmsh.finalize()

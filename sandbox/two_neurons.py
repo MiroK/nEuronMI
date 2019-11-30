@@ -1,13 +1,14 @@
 from neuronmi.mesh.shapes import *
 from neuronmi.mesh.mesh_utils import *
-import gmsh, sys, json
+import gmsh, sys, json, os
 import numpy as np
 from dolfin import File, FunctionSpace, FiniteElement, MixedElement
 
 
 root = 'test_2neuron'
 msh_file = '%s.msh' % root
-        
+json_file = '%s.json' % root
+
 # This gives course enough mesh that the solver runs fast
 box = Box(np.array([-60, -60, -100]), np.array([60, 60, 100]))
 
@@ -36,7 +37,7 @@ gmsh.option.setNumber("General.Terminal", 1)
 # Add components to model
 model, mapping = build_EMI_geometry(model, box, neurons, probe=probe)
 
-with open('%s.json' % root, 'w') as out:
+with open(json_file, 'w') as out:
     mapping.dump(out)
 
 # Dump the mapping as json
@@ -63,7 +64,23 @@ mesh, volumes, surfaces = load_h5_mesh(h5_file)
 File('%s_surfaces.pvd' % root) << surfaces
 File('%s_volumes.pvd' % root) << volumes
 
+# Sanity checks
+h5_file = msh_to_h5(msh_file)
+assert os.path.exists(h5_file)
 
+mesh, volumes, surfces = load_h5_mesh(h5_file)
+
+volumes = set(volumes.array())
+# We have three volumes: inside1, inside2 and outside neuron
+assert volumes == set((1, 2, 3))
+
+surfaces0 = set(surfaces.array())
+
+objects = ('box', 'probe', 'neuron_0', 'neuron_1')
+surfaces = set(sum((mapping.surface_physical_tags(k).values() for k in objects), []))
+# The remaing unmarked facets are interior 0 
+assert (surfaces0 - surfaces) == set((0, ))
+        
 # Space size for PDE?
 cell = mesh.ufl_cell()
 Welm = MixedElement([FiniteElement('Raviart-Thomas', cell, 1),
