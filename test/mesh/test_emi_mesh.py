@@ -1,4 +1,4 @@
-import unittest, gmsh, subprocess, gmsh, json, os, time
+import unittest, gmsh, subprocess, gmsh, json, os, time, glob
 import numpy as np
 
 from neuronmi.mesh.mesh_utils import *
@@ -9,7 +9,8 @@ class TestEmiMesh(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-       subprocess.call(['rm *.msh *.json *.geo_unrolled'], shell=True)
+        trash = ('h5', 'json', 'pvd', 'vtu', 'msh', 'geo_unrolled')
+        map(os.remove, sum((glob.glob('*.%s' % ext) for ext in trash), []))
     
     # Saniyt checks for mesh
     def test_emi_mesh(self):
@@ -63,3 +64,9 @@ class TestEmiMesh(unittest.TestCase):
         gmsh.write(msh_file)
         model.remove()        
         gmsh.finalize()
+
+    def test_sandbox(self):
+        # NOTE: load_mesh, msh_to_h5 or things to do with HDF5File cause
+        # gmsh to fail on later tests. So these tests are isolated into
+        # their own process 
+        self.assertTrue(subprocess.call(['python ./sandbox/two_neurons.py'], shell=True))
