@@ -243,7 +243,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     # To get initial state
     yield 0, u_out, current_out
 
-    neuron_solutions = zip(*neuron_solutions)
+    neuron_solutions = itertools.izip(*neuron_solutions)
     print('Not even')
     step_count = 0
     for odes in neuron_solutions:
