@@ -13,8 +13,7 @@ class TestMembrane(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        print('Getting mesh')
-        subprocess.call(['python two_neurons.py'], cwd='./sandbox', shell=True)
+        not os.path.exists(TestMembrane.mesh_path) subprocess.call(['python two_neurons.py'], cwd='./sandbox', shell=True)
 
     problem_parameters = {'neuron_0': {'I_ion': Constant(0),
                                        'cond': 1,
