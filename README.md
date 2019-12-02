@@ -4,7 +4,7 @@
 
 Run from current directory
 ```python
-python3 -m unittest discover ./test
+python -m unittest discover ./test
 ```
 
 ### Dependencies
@@ -21,9 +21,9 @@ export PYTHONPATH=`pwd`:"$PYTHONPATH"
 in the directory where **gmsh.py** resides (e.g. /usr/local/lib/).
 
 #### 2. Partial differential equation part of EMI
-The solver requires [FEniCS](https://fenicsproject.org/download/) version 2019.1.0. In our 
+The solver requires [FEniCS](https://fenicsproject.org/download/) version 2017.2.0. In our 
 experience the simplest way of installation that also plays along nicely with Gmsh is by 
-conda.
+using the dedicated Ubuntu [package](https://packages.ubuntu.com/bionic/math/fenics)
 
 #### 3. Ordinary differential equation part of EMI
 Membrane physics is solved for using [cbc.beat](https://bitbucket.org/meg/cbcbeat)
