@@ -1,1 +1,1 @@
-#from .geogen import generate_mesh
+from neuronmi.mesh.geogen import generate_mesh

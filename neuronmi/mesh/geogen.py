@@ -93,11 +93,11 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
         save_mesh_folder = mesh_name
     else:
-        mesh_name = str(save_mesh_folder)
+        mesh_name = save_mesh_folder
         save_mesh_folder = save_mesh_folder
 
-    if not save_mesh_folder.is_dir():
-        os.makedirs(str(save_mesh_folder), exist_ok=True)
+    if not os.path.isdir(save_mesh_folder):
+        os.makedirs(save_mesh_folder)  # FIXME: , exist_ok=True)
 
     # Components
     model = gmsh.model
@@ -114,7 +114,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     # # Config fields and dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
     json_file = os.path.join(save_mesh_folder, '%s.json' % mesh_name)
-    with json_file.open('w') as out:
+    with open(json_file, 'w') as out:
         mapping.dump(out)
 
     factory.synchronize()
