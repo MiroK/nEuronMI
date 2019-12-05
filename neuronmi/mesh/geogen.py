@@ -1,7 +1,7 @@
 from neuronmi.mesh.shapes import (Box, BallStickNeuron, TaperedNeuron,
                                   MicrowireProbe, #, NeuronexusProbe, Neuropixels24Probe
                                   neuron_list, probe_list)
-from neuronmi.mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
+from neuronmi.mesh.mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
 import subprocess, os, sys, time
 import numpy as np
 import gmsh

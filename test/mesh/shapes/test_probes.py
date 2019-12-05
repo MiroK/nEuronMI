@@ -23,7 +23,7 @@ class TestMeshUtils(unittest.TestCase):
             volumes = list(zip(repeat(3), volumes))
             factory.synchronize()
             # Their bounding surface
-            volumes_surfs = list(map(model.getBoundary, volumes))
+            volumes_surfs = [model.getBoundary([vp]) for vp in volumes]
             # A boundary can also contain curves - we ignore those; only keep 2d
             volumes_surfs = sum(([s[1] for s in ss if s[0] == 2] for ss in volumes_surfs), [])
             volumes_surfs = list(set(volumes_surfs))
