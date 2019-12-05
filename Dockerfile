@@ -1,6 +1,5 @@
 FROM quay.io/fenicsproject/stable:2017.2.0
 
-# install fenics
 ENV FENICS_VERSION="1:2017.2.0.1" 
 ENV GMSH_VERSION="gmsh-4.4.1"
 ENV GMSH_FOLDER=""$GMSH_VERSION"-Linux64-sdk"
@@ -29,13 +28,22 @@ RUN mkdir gmsh && \
 
 ENV PYTHONPATH="/home/fenics/gmsh/$GMSH_FOLDER/lib":"$PYTHONPATH"
 
-# install cbcbeat
+# Install cbcbeat
 RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 --user && \
-    pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user
+    pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user && \
+    pip install git+https://bitbucket.org/finsberg/gotran.git --user
+    
+# Get neuronmi
+RUN git clone https://github.com/MiroK/nEuronMI.git
 
-# install neuronmi
-RUN git clone https://github.com/MiroK/nEuronMI.git && \
-    cd nEuronMI && \
+# Generate cell models
+RUN cd nEuronMI/neuronmi/simulators/solver && \
+    /home/fenics/.local/bin/gotran2beat Hodgkin_Huxley_1952.ode && \
+    /home/fenics/.local/bin/gotran2beat Passive.ode && \    
+    cd
+    
+# Install neuronmi
+RUN cd nEuronMI && \
     python setup.py develop --user && \
     cd ..
 

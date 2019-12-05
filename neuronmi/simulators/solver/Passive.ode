@@ -11,11 +11,13 @@ parameters("Membrane",
 
 states("Membrane",
        V = ScalarParam(-75, unit="mV"),
-       s = 0)
+       s = 0,
+       m = 0)
 
 expressions("Membrane")
 i_stim = g_s*exp(-(t-t0)/alpha)*(V-v_eq)*Conditional(Ge(t, t0), 1, 0)
 i_leak = g_leak*(V-E_leak)  # uA*cm**-2
 dV_dt = -(i_leak+i_stim)/Cm
 ds_dt = 0
+dm_dt = 0
 

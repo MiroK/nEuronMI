@@ -1,13 +1,18 @@
 # FEM simulator for realistic neuron models and probes
 
-### Testing
+## Docker based installation installation
 
-Run from current directory
-```python
-python -m unittest discover ./test
-```
+We recommend using our docker [container](https://hub.docker.com/r/mirok/neuronmi)
+which has all the dependencies preinstalled. The image is used for testing
+the codebase with the
 
-### Dependencies
+Current build status 
+[![CircleCI](https://circleci.com/gh/MiroK/nEuronMI.svg?style=svg)](https://circleci.com/gh/MiroK/nEuronMI)
+
+## Manual installation 
+
+The following are dependencies of `neuronmi` and how they can be obtained
+
 #### 1. Generating meshes for neuron simulations with EMI models
 We rely on [Gmsh](http://gmsh.info/) for both mesh generation and geometry defition.
 All is done via python [API](https://gitlab.onelab.info/gmsh/gmsh/blob/master/api/gmsh.py) of Gmsh.
@@ -31,3 +36,10 @@ Membrane physics is solved for using [cbc.beat](https://bitbucket.org/meg/cbcbea
 
 #### Optional
 An optional dependency for computing the probe for contact surfaces is [networkx](https://networkx.github.io/)
+
+### Testing
+
+Run from current directory
+```python
+python -m unittest discover ./test
+```
