@@ -4,10 +4,7 @@
 
 We recommend using our docker [container](https://hub.docker.com/r/mirok/neuronmi)
 which has all the dependencies preinstalled. The image is used for testing
-the codebase with the
-
-Current build status 
-[![CircleCI](https://circleci.com/gh/MiroK/nEuronMI.svg?style=svg)](https://circleci.com/gh/MiroK/nEuronMI)
+the codebase with the current status [![CircleCI](https://circleci.com/gh/MiroK/nEuronMI.svg?style=svg)](https://circleci.com/gh/MiroK/nEuronMI)
 
 ## Manual installation 
 
