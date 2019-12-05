@@ -36,8 +36,7 @@ RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 
 # install neuronmi
 RUN git clone https://github.com/MiroK/nEuronMI.git && \
     cd nEuronMI && \
-    git checkout debug && \
+    python setup.py develop --user && \
     cd ..
 
 USER root
-
