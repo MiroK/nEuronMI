@@ -1,0 +1,11 @@
+version: 0
+jobs:
+  build:
+    docker:
+      - image: mirok/neuronmi:test
+    working_directory: /home/fenics/nEuronMI
+    steps:
+      - run:
+          name: Run unit tests
+          command: |
+                python -m unittest discover test
