@@ -48,3 +48,9 @@ RUN cd nEuronMI && \
     cd ..
 
 USER root
+
+# Release
+# Might need to do docker login 
+# docker build --no-cache -t neuronmi .
+# docker tag neuronmi:latest mirok/neuronmi
+# docker push mirok/neuronmi
