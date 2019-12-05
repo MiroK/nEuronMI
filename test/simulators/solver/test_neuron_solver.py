@@ -59,3 +59,8 @@ class TestEMI(unittest.TestCase):
             # I just check that nothing blows up
             self.assertTrue(not np.any(np.isnan(u.vector().get_local())))
             self.assertTrue(not np.any(np.isnan(I.vector().get_local())))
+
+# ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()

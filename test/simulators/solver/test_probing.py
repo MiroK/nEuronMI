@@ -36,3 +36,8 @@ class TestCases(unittest.TestCase):
             probe.probe(t)
             values = probe.data[-1][1:]
             self.assertTrue(all(abs(f(loc) - v) < 1E-13 for loc, v in zip(locations, values)))
+
+# ------------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()

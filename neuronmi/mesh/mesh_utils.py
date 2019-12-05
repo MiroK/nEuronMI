@@ -116,7 +116,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
 
     # Now we would like to find in volumes the neurons and extecellular domain
     # The idea is that a neuron is a closed volume whose boundary has neuron surfaces
-    volumes_surfs = list(map(model.getBoundary, volumes))
+    volumes_surfs = [model.getBoundary([vp]) for vp in volumes]
     # A boundary can also contain curves - we ignore those; only keep 2d
     volumes_surfs = [set(s[1] for s in ss if s[0] == 2) for ss in volumes_surfs]
 

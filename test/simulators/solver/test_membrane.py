@@ -169,3 +169,9 @@ def _membrane(mesh_path, emi_map, problem_parameters):
             for i in range(num_neurons):
                 toQin_fromQns[i](p0is[i], p0_neuron)
                 odes[i][1].assign(p0is[i]) 
+
+
+# ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()

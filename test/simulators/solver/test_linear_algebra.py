@@ -48,3 +48,8 @@ class TestCases(unittest.TestCase):
         niter = solver.solve(A, w0.vector(), b)
 
         self.assertTrue(niter == 1)
+
+# ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,12 +1,10 @@
-import subprocess
-import os, sys
+from neuronmi.mesh.shapes import (Box, BallStickNeuron, TaperedNeuron,
+                                  MicrowireProbe, #, NeuronexusProbe, Neuropixels24Probe
+                                  neuron_list, probe_list)
+from neuronmi.mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
+import subprocess, os, sys, time
 import numpy as np
 import gmsh
-import time
-from .shapes import Box, BallStickNeuron, TaperedNeuron
-from .shapes import MicrowireProbe #, NeuronexusProbe, Neuropixels24Probe
-from .shapes import neuron_list, probe_list
-from .mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
 
 
 def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, box_size=2, neuron_params=None,

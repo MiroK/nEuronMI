@@ -139,3 +139,9 @@ class TestCases(unittest.TestCase):
         error = df.sqrt(abs(df.assemble(error)))
 
         self.assertTrue(error < 1E-13)
+
+
+# ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()

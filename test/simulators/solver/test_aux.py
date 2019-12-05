@@ -1,5 +1,5 @@
 from neuronmi.simulators.solver.aux import *
-from neuronmi.simulators.solver.embedding import EmbeddedMesh
+#from neuronmi.simulators.solver.embedding import EmbeddedMesh
 import dolfin as df
 import numpy as np
 import unittest
@@ -84,3 +84,8 @@ class TestCases(unittest.TestCase):
             I.t = t
             self.assertTrue(np.linalg.norm(I(1, 0, 0) - t*n) < 1E-13)
             self.assertTrue(np.linalg.norm(I(0, 0, 0)) < 1E-13)
+
+# ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()

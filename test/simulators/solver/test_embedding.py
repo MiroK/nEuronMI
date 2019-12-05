@@ -26,3 +26,8 @@ class TestCases(unittest.TestCase):
             self.assertTrue(abs(xj) < 1E-13 for j, xj in enumerate(x.min(axis=0)) if j != i)
             self.assertTrue(abs(xj-1) < 1E-13 for j, xj in enumerate(x.min(axis=0)) if j != i)
 
+
+# ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    unittest.main()
