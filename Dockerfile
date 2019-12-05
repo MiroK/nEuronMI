@@ -37,10 +37,10 @@ RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 
 RUN git clone https://github.com/MiroK/nEuronMI.git
 
 # Generate cell models
-RUN cd nEuronMI/neuronmi/simulators/solver && \
-    /home/fenics/.local/bin/gotran2beat Hodgkin_Huxley_1952.ode && \
-    /home/fenics/.local/bin/gotran2beat Passive.ode && \    
-    cd
+#RUN cd nEuronMI/neuronmi/simulators/solver && \
+#    /home/fenics/.local/bin/gotran2beat Hodgkin_Huxley_1952.ode && \
+#    /home/fenics/.local/bin/gotran2beat Passive.ode && \    
+#    cd
     
 # Install neuronmi
 RUN cd nEuronMI && \
