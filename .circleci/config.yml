@@ -2,10 +2,14 @@ version: 0
 jobs:
   build:
     docker:
-      - image: mirok/neuronmi:test
+      - image: mirok/neuronmi:latest
     working_directory: /home/fenics/nEuronMI
     steps:
       - run:
-          name: Run unit tests
+          name: Test mesh
           command: |
-                python -m unittest discover test
+                python -m unittest discover test/mesh
+      - run:
+          name: Test simulators
+          command: |
+                python -m unittest discover test/simulators/solver                
