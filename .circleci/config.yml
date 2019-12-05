@@ -2,7 +2,7 @@ version: 0
 jobs:
   build:
     docker:
-      - image: mirok/neuronmi:test
+      - image: mirok/neuronmi:latest
     working_directory: /home/fenics/nEuronMI
     steps:
       - run:
