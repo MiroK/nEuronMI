@@ -1,14 +1,21 @@
-version: 0
+version: 2.0
 jobs:
   build:
+    machine:
+      image: ubuntu-1604:201903-01
+      docker_layer_caching: true 
     docker:
-      - image: mirok/neuronmi:test
+      - image: mirok/neuronmi:latest
     working_directory: /home/fenics/nEuronMI
     steps:
       - run:
           name: Test mesh
           command: |
                 python -m unittest discover test/mesh
+      - run:
+          name: What is up with beat
+          command: |
+                python -c "from cbcbeat.dolfinimport *" 
       - run:
           name: Test simulators
           command: |
