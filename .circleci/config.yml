@@ -12,7 +12,7 @@ jobs:
       - run:
           name: What is up with beat
           command: |
-                python -c "from cbcbeat.dolfinimport *" 
+                python -c "from cbcbeat.dolfinimport import *" 
       - run:
           name: Test simulators
           command: |
