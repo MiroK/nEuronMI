@@ -4,7 +4,7 @@
 
 We recommend using our docker [container](https://hub.docker.com/r/mirok/neuronmi)
 which has all the dependencies preinstalled. The image is used for testing
-the codebase with the current status [![CircleCI](https://circleci.com/gh/MiroK/nEuronMI.svg?style=svg)](https://circleci.com/gh/MiroK/nEuronMI)
+the codebase with the current status [![CircleCI](https://circleci.com/gh/MiroK/nEuronMI.svg?style=svg)](https://circleci.com/gh/MiroK/nEuronMI).
 
 ## Manual installation 
 
@@ -20,23 +20,21 @@ this can be accomplised by running
 export PYTHONPATH=`pwd`:"$PYTHONPATH"
 ```
 
-in the directory where **gmsh.py** resides (e.g. /usr/local/lib/).
+in the directory where `gmsh.py` resides (e.g. /usr/local/lib/).
 
 #### 2. Partial differential equation part of EMI
 The solver requires [FEniCS](https://fenicsproject.org/download/) version 2017.2.0. In our 
 experience the simplest way of installation that also plays along nicely with Gmsh is by 
-using the dedicated Ubuntu [package](https://packages.ubuntu.com/bionic/math/fenics)
+using the dedicated Ubuntu [package](https://packages.ubuntu.com/bionic/math/fenics).
 
 #### 3. Ordinary differential equation part of EMI
 Membrane physics is solved for using [cbc.beat](https://bitbucket.org/meg/cbcbeat)
-  (which depends on [dolfin-adjoint](http://dolfin-adjoint-doc.readthedocs.io/en/latest/download/index.html))
-
-#### Optional
-An optional dependency for computing the probe for contact surfaces is [networkx](https://networkx.github.io/)
+  (which depends on [dolfin-adjoint](http://dolfin-adjoint-doc.readthedocs.io/en/latest/download/index.html)).
 
 ### Testing
 
 Run from current directory
-```python
-python -m unittest discover ./test
+```bash
+python -m unittest discover ./test/mesh;
+python -m unittest discover ./test/simulators/solver;
 ```
