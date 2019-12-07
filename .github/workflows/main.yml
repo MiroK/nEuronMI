@@ -1,0 +1,14 @@
+
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+      - uses: docker://mirok/neuronmi:latest
+      - run: |
+          cd nEuronMI
+          python -m unittest discover test/mesh
