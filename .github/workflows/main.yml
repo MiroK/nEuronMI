@@ -9,6 +9,3 @@ jobs:
     steps:
       - name: Setup
       - uses: docker://mirok/neuronmi:latest
-      - run: |
-          cd nEuronMI
-          python -m unittest discover test/mesh
