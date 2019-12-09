@@ -1,10 +1,29 @@
+import numpy as np
 from neuronmi.mesh.shapes import (Box, BallStickNeuron, TaperedNeuron,
-                                  MicrowireProbe, #, NeuronexusProbe, Neuropixels24Probe
+                                  MicrowireProbe,  # , NeuronexusProbe, Neuropixels24Probe
                                   neuron_list, probe_list)
 from neuronmi.mesh.mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
 import subprocess, os, sys, time
-import numpy as np
+from copy import copy
 import gmsh
+
+
+def get_available_neurons():
+    return neuron_list.keys()
+
+
+def get_neuron_params(neuron_name):
+    if neuron_name in neuron_list.keys():
+        return copy(neuron_list[neuron_name]._defaults)
+
+
+def get_available_probes():
+    return probe_list.keys()
+
+
+def get_probe_params(probe_name):
+    if probe_name in probe_list.keys():
+        return copy(probe_list[probe_name]._defaults)
 
 
 def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, box_size=2, neuron_params=None,
@@ -12,8 +31,9 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     '''
     Parameters
     ----------
-    neuron_type: str or None
-        The neuron type (['bas' (ball-and-stick) or 'tapered' (tapered dendrite and axon)]
+    neuron_type: str, list, or None
+        The neuron type (['bas' (ball-and-stick) or 'tapered' (tapered dendrite and axon)]).
+        If list, multiple neurons are inserted in the mesh.
         If None, a mesh without neuron is generated.
     probe_type: str or None
         The probe type ('microwire', 'neuronexus', 'neuropixels-24')
@@ -36,7 +56,8 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     save_mesh_folder: str
         Path to the mesh folder, ready for simulation
     '''
-    # todo only generate 1 probe (with or without probe, with or without neuron)
+    import numpy as np
+
     if isinstance(box_size, int):
         xlim, ylim, zlim = return_boxsizes(box_size)
     else:
@@ -65,11 +86,28 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
 
     # load correct neuron and probe
     # todo handle lists of neurons and neuron_params
-    if neuron_type is not None and neuron_type in neuron_list.keys():
-        neuron = neuron_list[neuron_type](neuron_params)
-        neuron_str = neuron_type
-    else:
-        neuron = None
+
+    neuron_str = None
+    if neuron_type is not None:
+        if isinstance(neuron_type, str):
+            if neuron_type in neuron_list.keys():
+                neurons = neuron_list[neuron_type](neuron_params)
+                neuron_str = neuron_type
+        elif isinstance(neuron_type, list):
+            assert neuron_params is not None and len(neuron_params) == len(neuron_type), "For a list of neurons, " \
+                                                                                         "provide a list of neuron_" \
+                                                                                         "params!"
+            neurons = []
+            neuron_str = ''
+            for i, (nt, np) in enumerate(zip(neuron_type, neuron_params)):
+                neurons.append(neuron_list[nt](np))
+                if i == 0:
+                    neuron_str += '%s' % nt
+                else:
+                    neuron_str += '-%s' % nt
+
+    if neuron_str is None:
+        neurons = None
         neuron_str = 'noneuron'
 
     if probe_type is not None and probe_type in probe_list.keys():
@@ -108,7 +146,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     gmsh.option.setNumber("General.Terminal", 1)
 
     # # Add components to model
-    model, mapping = build_EMI_geometry(model, box, neuron, probe) #, mapping
+    model, mapping = build_EMI_geometry(model, box, neurons, probe)  # , mapping
     # # Config fields and dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
     json_file = os.path.join(save_mesh_folder, '%s.json' % mesh_name)
@@ -134,6 +172,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     msh_to_h5(msh_file, str(h5_file))
 
     return save_mesh_folder
+
 
 def return_coarseness(coarse):
     if coarse == 00:
@@ -202,4 +241,3 @@ def return_boxsizes(box):
         raise Exception('boxsize must be 1, 2, 3, 4, 5, or 6')
 
     return np.array([-dx, dx]), np.array([-dy, dy]), np.array([-dz, dz])
-

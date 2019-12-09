@@ -67,8 +67,8 @@ class Sphere(BaseShape):
         assert len(c) == 3
 
         self._control_points = np.vstack([circle_points(c, r),  # in x-y plane
-                                          np.array([0, 0, -r]),
-                                          np.array([0, 0, r])])
+                                          np.array([c[0], c[1], c[2]-r]),
+                                          np.array([c[0], c[1], c[2]+r])])
 
         min_ = np.min(self._control_points, axis=0)
         dx = np.max(self._control_points, axis=0) - min_

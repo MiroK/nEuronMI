@@ -36,21 +36,21 @@ class TaperedNeuron(Neuron):
 
         # Define as Cylinder-Cone-Sphere-Cone-Cylinder
         # axon-axon hill-some-dend hill-dendrite
-        params = as_namedtuple(self.params_cm)
+        params = as_namedtuple(self.params)
         C = np.array([params.soma_x, params.soma_y, params.soma_z])
         # Move up
         shift = sqrt(params.soma_rad**2 - params.dendh_rad**2)
         
         D0 = C + np.array([0, 0, shift])
         D1 = D0 + np.array([0, 0, params.dendh_len])
-        D2 = D1 + np.array([0, 0, params.dend_len])
+        D2 = D1 + np.array([0, 0, params.dend_len - params.dendh_len])
 
         # Move down
         shift = sqrt(params.soma_rad**2 - params.axonh_rad**2)
         
         A0 = C - np.array([0, 0, shift])
         A1 = A0 - np.array([0, 0, params.axonh_len])
-        A2 = A1 - np.array([0, 0, params.axon_len])
+        A2 = A1 - np.array([0, 0, params.axon_len - params.axonh_len])
 
         self.pieces = OrderedDict(axon=Cylinder(A1, A2, params.axon_rad),
                                   axonh=Cone(A0, A1, params.axonh_rad, params.axon_rad),
@@ -60,7 +60,7 @@ class TaperedNeuron(Neuron):
 
         # Now draw circle around them
         self._control_points = np.row_stack([p.control_points for p in self.pieces.values()])
-                               
+
         # Setup bounding box
         min_ = np.min(self._control_points, axis=0)
         max_ = np.max(self._control_points, axis=0)

@@ -91,7 +91,7 @@ def build_EMI_geometry(model, box, neurons, probe=None, tol=1E-10):
             # And neurons themselves
             for i, n0 in enumerate(neurons):
                 for n1 in neurons[i + 1:]:
-                    assert not any(n1.contains(p, tol) for p in n0.control_points)
+                    assert not any(n1.contains(p, tol) for p in n0.control_points), 'Neurons are overlapping'
 
             # Also probe should cut the box
             assert any(not box.contains(p, tol) for p in probe.control_points)

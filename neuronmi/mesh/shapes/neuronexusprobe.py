@@ -23,7 +23,7 @@ class NeuronexusProbe(Probe):
     def __init__(self, params=None):
         Probe.__init__(self, params)
 
-        params = as_namedtuple(self.params_cm)
+        params = as_namedtuple(self.params)
         
         # Control points outline the shape
         # ----
@@ -98,25 +98,25 @@ class NeuronexusProbe(Probe):
     def rotate(self, x, a=None):
         '''Transformation that rotates the probe'''
         if a is None:
-            a = self.params_cm['angle']
+            a = self.params['angle']
             
         R = np.array([[np.cos(a), -np.sin(a), 0],
                       [np.sin(a), np.cos(a), 0],
                       [0, 0, 1.]])
 
-        x0 = np.array([self.params_cm[k] for k in ('tip_x', 'tip_y', 'tip_z')])
+        x0 = np.array([self.params[k] for k in ('tip_x', 'tip_y', 'tip_z')])
 
         return x0 + R.dot(x-x0)
         
     def contains(self, point, tol):
         '''Is point inside shape?'''
-        return self._rbbox.contains(self.rotate(point, -self.params_cm['angle']), tol=tol)
+        return self._rbbox.contains(self.rotate(point, -self.params['angle']), tol=tol)
     
     def as_gmsh(self, model, tag=-1):
         '''Add shape to model in terms of factory(gmsh) primitives'''
         factory = model.occ
 
-        contact_rad, width = self.params_cm['contact_rad'], self.params_cm['width']
+        contact_rad, width = self.params['contact_rad'], self.params['width']
 
         volumes = []
         # Addd a bit shorter boxes will given electrode surfaces
@@ -144,8 +144,8 @@ class NeuronexusProbe(Probe):
         probe_volumes = entity_dim(entities, 3)  # [(3, id), ---]
         
         # To rotate the entire probe
-        angle = self.params_cm['angle']  
-        tip_x, tip_y, tip_z = (self.params_cm[k] for k in ('tip_x', 'tip_y', 'tip_z'))
+        angle = self.params['angle']  
+        tip_x, tip_y, tip_z = (self.params[k] for k in ('tip_x', 'tip_y', 'tip_z'))
         factory.rotate(probe_volumes, tip_x, tip_y, tip_z, 0, 0, 1, angle)
         
         probe_tags = list(map(second, probe_volumes))

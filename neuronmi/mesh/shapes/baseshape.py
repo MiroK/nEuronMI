@@ -1,4 +1,5 @@
 import numpy as np
+from copy import copy
 
 
 class BaseShape(object):
@@ -10,7 +11,7 @@ class BaseShape(object):
             params = self.default_params
 
         self.conversion_factor = 1
-            
+
         try:
             # Let's add the missing keys
             missing = set(self.default_params.keys()) - set(params.keys())
@@ -26,11 +27,11 @@ class BaseShape(object):
 
     @property
     def default_params(self):
-        return type(self)._defaults
+        return self._defaults
 
     @property
-    def params_cm(self):
-        params = self._params
+    def params(self):
+        params = copy(self._params)
         for k in params.keys():
             if isinstance(params[k], (int, np.integer, float, np.float)):
                 params[k] = params[k] * self.conversion_factor
