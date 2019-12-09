@@ -50,11 +50,15 @@ def msh_to_h5(msh_file, h5_file=None, clean_xml=True):
     return h5_file
 
 
-def load_h5_mesh(h5_file):
+def load_h5_mesh(h5_file, scale_factor=None):
     '''Unpack to mesh, volumes and surfaces'''
     mesh = Mesh()    
     h5 = HDF5File(mesh.mpi_comm(), h5_file, 'r')
     h5.read(mesh, 'mesh', False)
+    # Convert units
+    if scale_factor is not None:
+        assert scale_factor > 0
+        mesh.coordinates()[:] *= scale_factor
 
     surfaces = MeshFunction('size_t', mesh, mesh.topology().dim() - 1)
     h5.read(surfaces, 'surfaces')
