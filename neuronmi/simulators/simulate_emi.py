@@ -3,13 +3,16 @@ from .solver.aux import snap_to_nearest
 # from .solver.probing import probing_locations
 import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
+from neuronmi.simulators.solver.probing import get_geom_centers, Probe
 import numpy as np
+from pathlib import Path
 # import yaml
 
 import subprocess, os, time, sys
 from os.path import join
 
 def simulate_emi(mesh_folder):
+    scale_factor = 1e-4
     mesh_folder = Path(mesh_folder)
 
     mesh_h5 = [f for f in mesh_folder.iterdir() if f.suffix == '.h5']
@@ -28,6 +31,14 @@ def simulate_emi(mesh_folder):
     with mesh_json_path.open() as json_fp:
         emi_map = EMIEntityMap(json_fp=json_fp)
 
+    mesh, volumes, surfaces = load_h5_mesh(str(mesh_h5_path))
+
+    probe_surfaces = emi_map.surface_physical_tags('probe')
+    contact_tags = [v for k, v in probe_surfaces.items() if 'contact_' in k]
+
+    contact_centers = get_geom_centers(surfaces, contact_tags)
+    contact_centers = np.array(contact_centers) * scale_factor
+
     # Current magnitude for probe tip
     # TODO add here stimulation expressions for exp, pulse, step
     magnitude = dolfin.Expression('exp(-1E-2*t)', t=0, degree=1)
@@ -36,12 +47,12 @@ def simulate_emi(mesh_folder):
 
     # todo: split problem params in: neurons, external, stimulation
     problem_parameters = {'neuron_0': {'I_ion': dolfin.Constant(0),
-                                       'cond': 1,
-                                       'C_m': 1,
-                                       'stim_strength': 0.0,
-                                       'stim_start': 0.0,
-                                       'stim_pos': 0.0,
-                                       'stim_length': 0.0},
+                                       'cond': 7,
+                                       'C_m': 10,
+                                       'stim_strength': 10.0,
+                                       'stim_start': 0.01,
+                                       'stim_pos': 100*scale_factor,
+                                       'stim_length': 20*scale_factor},
                           #
                           # 'neuron_1': {'I_ion': dolfin.Constant(0),
                           #              'cond': 1,
@@ -51,22 +62,29 @@ def simulate_emi(mesh_folder):
                           #              'stim_pos': 0.0,
                           #              'stim_length': 0.0},
                           #
-                          'external': {'cond': 2,
-                                       'bcs': ('max_x', 'max_y'), },
+                          'external': {'cond': 3,
+                                       'insulated_bcs': ()}, #('max_x', 'max_y'), },
                           #
                           'probe': {} #'stimulated_sites': ('tip',),
                           #           'site_currents': (magnitude,)}
                           }
 
-    solver_parameters = {'dt_fem': 0.1,
+    solver_parameters = {'dt_fem': 0.01,
                          'dt_ode': 0.01,
-                         'Tstop': 1}
+                         'Tstop': 5}
 
     # TODO extract and save v_mem, v_probe, i_mem
     I_out = dolfin.File(str(mesh_folder / 'I.pvd'))
-    for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_parameters, solver_parameters):
-        I_out << I, t
+    v_probe = []
+    v_soma = []
 
+
+    for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_parameters, solver_parameters, scale_factor):
+        I_out << I, t
+        v_probe.append([u(c) for c in contact_centers])
+        v_soma.append(u([0, 0, 0]))
+
+    return v_probe, v_soma
 #
 # if __name__ == '__main__':
 #     if '-mesh' in sys.argv:

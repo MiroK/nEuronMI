@@ -19,6 +19,7 @@ setuptools.setup(
     package_data={},
     install_requires=[
         'numpy',
+        'pathlib'
     ],
     classifiers=[
         "Programming Language :: Python :: 2.7",

@@ -15,7 +15,7 @@ parameters['form_compiler']['cpp_optimize_flags'] = '-O3 -ffast-math -march=nati
 parameters['ghost_mode'] = 'shared_facet'
 
 
-def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
+def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, scale_factor=None):
     '''
     Solver for the Hdiv formulation of the EMI equations
     
@@ -30,7 +30,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
     solver_parameters: time_step, dt (of EMI), dt_ode
     '''
     mesh_path = str(mesh_path)
-    mesh, volume_marking_f, facet_marking_f = load_h5_mesh(mesh_path)
+    mesh, volume_marking_f, facet_marking_f = load_h5_mesh(mesh_path, scale_factor)
 
     num_neurons = emi_map.num_neurons
     # Do we have properties for each one
