@@ -13,7 +13,8 @@ RUN apt-get update && \
     apt install -y mercurial && \
     apt-get install -y wget && \
     apt-get install -y software-properties-common && \
-    apt-get install -y libglu1 libxft2 libxcursor-dev libxinerama-dev 
+    apt-get install -y libglu1 libxft2 libxcursor-dev libxinerama-dev && \
+    apt-get install -y libx11-dev bison flex automake libtool libxext-dev libncurses-dev python3-dev xfonts-100dpi cython3 libopenmpi-dev python3-scipy make zlib1g-dev
     
 USER fenics
 
@@ -27,6 +28,27 @@ RUN mkdir gmsh && \
     rm ""$GMSH_VERSION"-Linux64-sdk.tgz" 
 
 ENV PYTHONPATH="/home/fenics/gmsh/$GMSH_FOLDER/lib":"$PYTHONPATH"
+
+# Get NEURON
+RUN mkdir neuron && \
+    git clone https://github.com/neuronsimulator/nrn.git  && \
+    cd nrn  && \
+    git checkout 7.7.0  && \
+    echo "Installing NEURON:"  && \
+    echo "running sh build.sh"  && \
+    sh build.sh > /dev/null  && \
+    echo "running ./configure"  && \
+    ./configure --prefix=$HOME/.local/nrn --without-iv --with-nrnpython=python --with-mpi --disable-rx3d  && \
+    echo "running make"  && \
+    make -j8  && \
+    echo "running make install" && \
+    make install && \
+    cd src/nrnpython && \
+    echo "installing neuron python module"  && \
+    python setup.py install --user
+
+# install LFPy
+RUN pip install --user LFPy
 
 # Install cbcbeat
 RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 --user && \
