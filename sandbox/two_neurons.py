@@ -100,9 +100,9 @@ def make_coarse_mesh():
 if __name__ == '__main__':
     import sys
 
-
-    success = make_coarse_mesh()
-    #except:
-    #    success = False
+    try:
+        success = make_coarse_mesh()
+    except:
+        success = False
 
     sys.exit(int(success))
