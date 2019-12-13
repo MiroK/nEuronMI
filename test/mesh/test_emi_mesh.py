@@ -26,7 +26,7 @@ class TestEmiMesh(unittest.TestCase):
                                     'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
                                     'dend_rad': 15, 'axon_rad': 10}),
                    TaperedNeuron({'soma_x': 30, 'soma_y': -30, 'soma_z': 0,
-                                  'soma_rad': 20, 'dend_len': 20, 'axon_len': 20, 'axonh_len': 30, 'dendh_len': 20,
+                                  'soma_rad': 20, 'dend_len': 20, 'axon_len': 20, 'axonh_len': 15, 'dendh_len': 15,
                                   'dend_rad': 10, 'axon_rad': 8, 'axonh_rad': 10, 'dendh_rad': 15})]
         
         probe = MicrowireProbe({'tip_x': 30, 'radius': 5, 'length': 800})

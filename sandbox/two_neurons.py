@@ -14,10 +14,10 @@ def make_coarse_mesh():
     box = Box(np.array([-60, -60, -100]), np.array([60, 60, 100]))
 
     neurons = [BallStickNeuron({'soma_x': 0, 'soma_y': 0, 'soma_z': 0,
-                                'soma_rad': 20, 'dend_len': 50, 'axon_len': 50,
+                                'soma_rad': 20, 'dend_len': 50, 'axon_len': 60,
                                 'dend_rad': 15, 'axon_rad': 10}),
                TaperedNeuron({'soma_x': 30, 'soma_y': -30, 'soma_z': 0,
-                              'soma_rad': 20, 'dend_len': 20, 'axon_len': 20, 'axonh_len': 30, 'dendh_len': 20,
+                              'soma_rad': 20, 'dend_len': 20, 'axon_len': 50, 'axonh_len': 40, 'dendh_len': 11,
                               'dend_rad': 10, 'axon_rad': 8, 'axonh_rad': 10, 'dendh_rad': 15})]
 
     probe = MicrowireProbe({'tip_x': 30, 'radius': 5, 'length': 800})
@@ -100,9 +100,9 @@ def make_coarse_mesh():
 if __name__ == '__main__':
     import sys
 
-    try:
-        success = make_coarse_mesh()
-    except:
-        success = False
+
+    success = make_coarse_mesh()
+    #except:
+    #    success = False
 
     sys.exit(int(success))

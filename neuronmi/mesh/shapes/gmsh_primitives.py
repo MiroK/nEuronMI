@@ -98,7 +98,7 @@ class Cylinder(BaseShape):
         super(BaseShape, self).__init__()  
         assert r > 0
         assert len(A) == len(B) == 3
-        assert np.linalg.norm(B - A) > 0
+        assert np.linalg.norm(B - A) > 0, (A, B, np.linalg.norm(B-A))
         
         axis = unit_vector(B - A)
 

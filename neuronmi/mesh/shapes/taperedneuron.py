@@ -43,6 +43,7 @@ class TaperedNeuron(Neuron):
         
         D0 = C + np.array([0, 0, shift])
         D1 = D0 + np.array([0, 0, params.dendh_len])
+        assert params.dend_len - params.dendh_len > 0
         D2 = D1 + np.array([0, 0, params.dend_len - params.dendh_len])
 
         # Move down
@@ -50,8 +51,9 @@ class TaperedNeuron(Neuron):
         
         A0 = C - np.array([0, 0, shift])
         A1 = A0 - np.array([0, 0, params.axonh_len])
+        assert params.axon_len - params.axonh_len > 0
         A2 = A1 - np.array([0, 0, params.axon_len - params.axonh_len])
-
+        
         self.pieces = OrderedDict(axon=Cylinder(A1, A2, params.axon_rad),
                                   axonh=Cone(A0, A1, params.axonh_rad, params.axon_rad),
                                   soma=Sphere(C, params.soma_rad),
