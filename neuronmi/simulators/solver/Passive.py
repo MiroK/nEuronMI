@@ -72,6 +72,8 @@ class Passive(CardiacCellModel):
         i_leak = g_leak*(-E_leak + V)
         current[0] = (-i_leak - i_stim)/Cm
 
+
+
         # Return results
         return current[0]
 
