@@ -238,8 +238,8 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     array = volume_marking_f.array()
     # Set potential inside neurons ...
     for n_Vtag in n_Vtags:
-        # Rest if inside else 0.
-        u_out_values[:] = np.where(array == n_Vtag, v_rest, 0.)
+        # Rest if inside else the value that was there. So this is like or
+        u_out_values[:] = np.where(array == n_Vtag, v_rest, u_out_values)
     u_out.vector().set_local(u_out_values)
     u_out.vector().apply('insert')
 
@@ -353,5 +353,7 @@ if __name__ == '__main__':
                          'Tstop': 1}
 
     I_out = File('I.pvd')
+    u_out = File('u.pvd')
     for (t, u, I, xx) in neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
+        u_out << u, t
         I_out << I, t
