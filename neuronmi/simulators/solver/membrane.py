@@ -6,7 +6,7 @@ from neuronmi.simulators.solver.Passive import Passive
 
 import cbcbeat as beat
 
-from dolfin import FunctionAssigner, Constant, Expression, FunctionSpace, Function
+from dolfin import FunctionAssigner, Constant, Expression, FunctionSpace, Function, interpolate, File
 import numpy as np
 
 
@@ -21,6 +21,8 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
     # Assign membrane models to soma, axon and dendirite
     soma_model = Hodgkin_Huxley_1952()
     axon_model = Hodgkin_Huxley_1952()
+    # soma_model = Passive()
+    # axon_model = Passive()
     dendrite_model = Passive()
     
     # Adjust parameters of the dendrite model
@@ -102,6 +104,12 @@ def ODESolver(subdomains, soma, axon, dendrite, problem_parameters):
             params_.update({('x%d' % i): X[i] for i in range(3)})
 
             stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
+
+
+    mesh = subdomains.mesh()
+    V = FunctionSpace(mesh, 'CG', 1)
+    f = interpolate(stimul_f, V)
+    File('stimulf.pvd') << f
 
     dendrite_params["g_s"] = stimul_f
     # Update dendrite parameters

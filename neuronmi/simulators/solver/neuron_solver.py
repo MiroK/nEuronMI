@@ -32,6 +32,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     mesh_path = str(mesh_path)
     mesh, volume_marking_f, facet_marking_f = load_h5_mesh(mesh_path, scale_factor)
 
+    #TODO use v_rest to initialize intracellular potential
+    v_rest = -75
+
     num_neurons = emi_map.num_neurons
     # Do we have properties for each one
     neuron_props = [problem_parameters['neuron_%d' % i] for i in range(num_neurons)]
@@ -56,12 +59,13 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # Orient normal so that it is outer normal of neurons
     n = FacetNormal(mesh)('+')
 
+    v_rest = Constant(-75)
     # Everything is driven by membrane response. This will be updated
     # by the ode solver. The ode solver will work on proper space defined
     # only on the neuron. The solution shall then be taked to a facet
     # space Q (think 3rd component of W). Finally W mu
     Q = FunctionSpace(mesh, Qel)  # Everywhere
-    p0 = Function(Q)              # Previous transm potential now 0
+    p0 = Function(Q)            # Previous transm potential now 0
 
     # The weak form
     # kappa**-1 * (sigma, tau)*dx - (div tau, u)*dx + (tau.n, p)*dS = 0
@@ -108,6 +112,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # anything special there. Insulated sites and the stimated site(s) of
     # the probe are Dirichlet. Additional Dirichlet bcs contrain DLT dofs
     insulated_tags = [emi_map.surface_physical_tags('box')[name] for name in ext_props['insulated_bcs']]
+    print("insulated", insulated_tags)
     # NOTE: (0, 0, 0) means that the dof is set based on (0, 0, 0).n
     bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
                     for tag in insulated_tags]
@@ -176,9 +181,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # talk with pde
     Q_neuron = FunctionSpace(neuron_surf_mesh, 'DG', 0)  # P0 on surface <-> DLT on facets
 
-    Q = FunctionSpace(mesh, Qel)  # Everywhere
-    p0 = Function(Q)              # Previous transm potential now 0
-    
     transfer = SubMeshTransfer(mesh, neuron_surf_mesh)
     # The ODE solver talks to the worlk via chain: Q_neuron <-> Q <- W
     p0_neuron = Function(Q_neuron)
@@ -225,7 +227,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
         toQin_fromQns.append(assign_toQin_fromQn)
         toQn_fromQins.append(assign_toQn_fromQin)
         p0is.append(p0i_neuron)
-        
+
     w = Function(W)
     # Finally for postprocessing we return the current time, potential
     # and membrane current
@@ -249,7 +251,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     assign_toQ_neuron_fromQ(current_out, current_aux)
 
     # To get initial state
-    yield 0, u_out, current_out
+    yield 0, u_out, current_out, p0_neuron
 
     neuron_solutions = itertools.izip(*neuron_solutions)
 
@@ -267,14 +269,13 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
                 toQn_fromQins[i](p0_neuron, odes[i][1])
             # Upscale p0_neuron->p0
             assign_toQ_fromQ_neuron(p0, p0_neuron)
-        
+
             # We could have changing in time simulation
             for I in site_currents:
                 if 't' in I:
                     I.t = float(t1)
             # Assemble right-hand side (changes with time, so need to reassemble)                
             assembler.assemble(b)  # Also applies bcs
-      
             # New (sigma, u, p) ...
             print('\tSolving linear system of size %d' % A.size(0))
             la_solver.solve(w.vector(), b)
@@ -286,11 +287,11 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
             toQ_fromW2.assign(current_aux, w_aux.sub(2))
             assign_toQ_neuron_fromQ(current_out, current_aux)
 
-            yield t1, u_out, current_out
-
             # Now transfer the new transm potential down to ode ...
             toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
+
+            yield t1, u_out, current_out, p0_neuron
 
             for i in range(num_neurons):
                 toQin_fromQns[i](p0is[i], p0_neuron)
@@ -339,5 +340,5 @@ if __name__ == '__main__':
                          'Tstop': 1}
 
     I_out = File('I.pvd')
-    for (t, u, I) in neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
+    for (t, u, I, xx) in neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
         I_out << I, t

@@ -48,10 +48,10 @@ def simulate_emi(mesh_folder):
     # todo: split problem params in: neurons, external, stimulation
     problem_parameters = {'neuron_0': {'I_ion': dolfin.Constant(0),
                                        'cond': 7,
-                                       'C_m': 10,
+                                       'C_m': 1,
                                        'stim_strength': 10.0,
                                        'stim_start': 0.01,
-                                       'stim_pos': 100*scale_factor,
+                                       'stim_pos': 150*scale_factor,
                                        'stim_length': 20*scale_factor},
                           #
                           # 'neuron_1': {'I_ion': dolfin.Constant(0),
@@ -63,26 +63,39 @@ def simulate_emi(mesh_folder):
                           #              'stim_length': 0.0},
                           #
                           'external': {'cond': 3,
-                                       'insulated_bcs': ()}, #('max_x', 'max_y'), },
+                                       'insulated_bcs': ('max_x', 'max_y', 'min_x', 'min_y')}, #('max_x', 'max_y'), },
                           #
                           'probe': {} #'stimulated_sites': ('tip',),
                           #           'site_currents': (magnitude,)}
                           }
 
-    solver_parameters = {'dt_fem': 0.01,
+    solver_parameters = {'dt_fem': 0.1,
                          'dt_ode': 0.01,
                          'Tstop': 5}
 
     # TODO extract and save v_mem, v_probe, i_mem
     I_out = dolfin.File(str(mesh_folder / 'I.pvd'))
+    u_out = dolfin.File(str(mesh_folder / 'u.pvd'))
+    p_out = dolfin.File(str(mesh_folder / 'p.pvd'))
+
     v_probe = []
     v_soma = []
+    i = 0
 
+    for (t, u, I, transm_p) in neuron_solver(mesh_h5_path, emi_map, problem_parameters, solver_parameters, scale_factor):
+        print('ITERATION', i)
+        i += 1
 
-    for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_parameters, solver_parameters, scale_factor):
         I_out << I, t
+        u_out << u, t
+        p_out << transm_p, t
+
+        print(u([0, 0, 0]))
+        # print([9.9*scale_factor, 0, 0], [10.1 * scale_factor, 0, 0])
         v_probe.append([u(c) for c in contact_centers])
-        v_soma.append(u([0, 0, 0]))
+        v_t = u([9.9*scale_factor, 0, 0]) - u([10.1*scale_factor, 0, 0])
+        # print(u([10.1*scale_factor, 0, 0]))
+        v_soma.append(v_t)
 
     return v_probe, v_soma
 #
