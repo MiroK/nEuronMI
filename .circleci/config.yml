@@ -9,11 +9,3 @@ jobs:
           name: Test mesh
           command: |
                 python -m unittest discover test/mesh
-      - run:
-          name: What is up with beat
-          command: |
-                python -c "from cbcbeat.dolfinimport import *" 
-      - run:
-          name: Test simulators
-          command: |
-                python -m unittest discover test/simulators/solver                

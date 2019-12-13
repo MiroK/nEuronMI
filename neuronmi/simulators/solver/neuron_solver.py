@@ -4,6 +4,7 @@ from neuronmi.simulators.solver.transferring import SubMeshTransfer
 from neuronmi.simulators.solver.embedding import EmbeddedMesh
 from neuronmi.simulators.solver.membrane import ODESolver
 from neuronmi.mesh.mesh_utils import load_h5_mesh
+import numpy as np
 import itertools
 
 from dolfin import *
@@ -59,7 +60,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # Orient normal so that it is outer normal of neurons
     n = FacetNormal(mesh)('+')
 
-    v_rest = Constant(-75)
     # Everything is driven by membrane response. This will be updated
     # by the ode solver. The ode solver will work on proper space defined
     # only on the neuron. The solution shall then be taked to a facet
@@ -228,11 +228,24 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
         toQn_fromQins.append(assign_toQn_fromQin)
         p0is.append(p0i_neuron)
 
-    w = Function(W)
-    # Finally for postprocessing we return the current time, potential
-    # and membrane current
+
     V = FunctionSpace(mesh, Vel)
+    # Finally for postprocessing we return the current time, potential
+    # and membrane current    
     u_out = Function(V)
+    u_out_values = u_out.vector().get_local()
+
+    array = volume_marking_f.array()
+    # Set potential inside neurons ...
+    for n_Vtag in n_Vtags:
+        # Rest if inside else 0.
+        u_out_values[:] = np.where(array == n_Vtag, v_rest, 0.)
+    u_out.vector().set_local(u_out_values)
+    u_out.vector().apply('insert')
+
+    w = Function(W)
+    FunctionAssigner(W.sub(1), V).assign(w.sub(1), u_out)
+    # Keep the assigner around as we'll go out in the loop
     toV_fromW1 = FunctionAssigner(V, W.sub(1))
     toV_fromW1.assign(u_out, w.sub(1))
 
