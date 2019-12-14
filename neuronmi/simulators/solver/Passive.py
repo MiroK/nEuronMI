@@ -25,10 +25,10 @@ class Passive(CardiacCellModel):
     def default_parameters():
         "Set-up and return default parameters."
         params = OrderedDict([("Cm", 1),
-                              ("E_leak", -75),
+                              ("E_L", -75),
                               ("alpha", 2.0),
-                              ("g_leak", 0.06),
-                              ("g_s", 0.0),
+                              ("g_L", 0.06),
+                              ("g_S", 0.0),
                               ("t0", 0.0),
                               ("v_eq", 0.0)])
         return params
@@ -54,10 +54,12 @@ class Passive(CardiacCellModel):
 
         # Assign parameters
         Cm = self._parameters["Cm"]
-        E_leak = self._parameters["E_leak"]
+        E_L = self._parameters["E_L"]
+        g_L = self._parameters["g_L"]
+
+        # synapse components
         alpha = self._parameters["alpha"]
-        g_leak = self._parameters["g_leak"]
-        g_s = self._parameters["g_s"]
+        g_S = self._parameters["g_S"]
         t0 = self._parameters["t0"]
         v_eq = self._parameters["v_eq"]
 
@@ -65,12 +67,10 @@ class Passive(CardiacCellModel):
         current = [ufl.zero()]*1
 
         # Expressions for the Membrane component
-        i_stim = g_s*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1,\
-            0)*ufl.exp((t0 - time)/alpha)
-        i_leak = g_leak*(-E_leak + V)
-        current[0] = (-i_leak - i_stim)/Cm
-
-
+        # TODO define expression outside?
+        i_Stim = g_S*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1, 0)*ufl.exp((t0 - time)/alpha)
+        i_L = g_L*(-E_L + V)
+        current[0] = (-i_L - i_Stim)/Cm
 
         # Return results
         return current[0]

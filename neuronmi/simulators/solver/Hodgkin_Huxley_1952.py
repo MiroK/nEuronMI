@@ -74,6 +74,7 @@ class Hodgkin_Huxley_1952(CardiacCellModel):
         i_L = g_L*(-E_L + V)
 
         # Expressions for the Membrane component
+        # TODO can be defined outside
         i_Stim = 0.0
         current[0] = (-i_K - i_L - i_Na + i_Stim)/Cm
 

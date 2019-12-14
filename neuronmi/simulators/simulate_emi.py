@@ -1,17 +1,67 @@
 from .solver.neuron_solver import neuron_solver
-from .solver.aux import snap_to_nearest
-# from .solver.probing import probing_locations
 import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
-from neuronmi.simulators.solver.probing import get_geom_centers, Probe
+from .solver.probing import get_geom_centers, Probe
 import numpy as np
+from copy import copy
 from pathlib import Path
-# import yaml
+import time
 
-import subprocess, os, time, sys
-from os.path import join
+_default_problem_parameters = {
+    'neurons':  # List or dict. If list, length must be the same of number of neurons in mesh. If dict, the same
+                # params are used for all neurons in the mesh
+                {
+                 'cond_int': 7,           # float: Intracellular conductivity in mS/cm^2
+                 'Cm': 1.0,               # float: Membrane capacitance in uF/um^2
+                 'models': {},            # dict: Models for neuron domains. Default: {'dendrite': 'pas', 'soma': 'hh',
+                                          #                                             'axon': 'hh'}
+                 'model_args': {},        # dict of tuples: Overwrite model default arguments.
+                                          # E.g. ('dendrite', 'g_L'), ('soma', g_Na)'
+                 'stimulation': {'type': 'syn',           # str: Stimulation type ('syn', 'step', 'pulse')
+                                 'start_time': 0.1,       # float: Start of stimulation in ms
+                                 'stop_time': 1.0,        # float: Stop of stimulation in ms (it type is 'pulse')
+                                 'strength': 10.0,        # float: Stimulation strength in mS/cm^2
+                                 'position': 150,         # float or array: position of stimulation in um. DEPRECATED
+                                 'length': 20             # float: length od stimulated portion in um. DEPRECATED
+                 }
+    },
+    'ext':     {
+                 'cond_ext': 3,           # float: Extracellular conductivity: mS/cm^2
+                 'insulated_bcs': []      # list: Insulated BC for bounding box. It can be: 'max_x', 'min_x', etc.
+    },
+    'probe':   {
+                 'stimulated_sites': None,  # List or tuple: Stimulated electrodes (e.g. [contact_3, contact_22]
+                 'type': None,            # str: Stimulation type ('step', 'pulse')
+                 'start_time': 0.1,       # float: Start of stimulation in ms
+                 'stop_time': 1.0,        # float: Stop of stimulation in ms (it type is 'pulse')
+                 'current': 0             # float: Stimulation current in mA. If list, each value correspond to a stimulated
+                                          #        site
+    },
+    'solver':  {
+                 'dt_fem': 0.1,          # float: dt for fem solver in ms
+                 'dt_ode': 0.01,          # float: dt for ode solver in ms
+                 'sim_duration': 5,      # float: duration od the simulation in ms
+    }
+}
 
-def simulate_emi(mesh_folder):
+
+def get_default_emi_params():
+    return copy(_default_problem_parameters)
+
+
+def simulate_emi(mesh_folder, problem_params=None, verbose=False):
+    '''
+    Simulates the 3d-3d EMI solution given a neuronmi-generated mesh (containing at least one neuron and optionally
+    one probe).
+    The simulation results (currents and potentials) are saved in the 'emi_sim' folder inside the mesh_folder.
+
+    Parameters
+    ----------
+    mesh_folder: str or Path
+        The path to the neuronmi-generated mesh containing .h5 and .json
+    problem_params: dict
+        Dictionary with simulation parameters. To retrieve default parameters, run **neuronmi.get_default_emi_params()**
+    '''
     scale_factor = 1e-4
     mesh_folder = Path(mesh_folder)
 
@@ -39,199 +89,16 @@ def simulate_emi(mesh_folder):
     contact_centers = get_geom_centers(surfaces, contact_tags)
     contact_centers = np.array(contact_centers) * scale_factor
 
-    # Current magnitude for probe tip
-    # TODO add here stimulation expressions for exp, pulse, step
-    magnitude = dolfin.Expression('exp(-1E-2*t)', t=0, degree=1)
-
-
-
-    # todo: split problem params in: neurons, external, stimulation
-    problem_parameters = {'neuron_0': {'I_ion': dolfin.Constant(0),
-                                       'cond': 7,
-                                       'C_m': 1,
-                                       'stim_strength': 10.0,
-                                       'stim_start': 0.01,
-                                       'stim_pos': 150*scale_factor,
-                                       'stim_length': 20*scale_factor},
-                          #
-                          # 'neuron_1': {'I_ion': dolfin.Constant(0),
-                          #              'cond': 1,
-                          #              'C_m': 1,
-                          #              'stim_strength': 0.0,
-                          #              'stim_start': 0.0,
-                          #              'stim_pos': 0.0,
-                          #              'stim_length': 0.0},
-                          #
-                          'external': {'cond': 3,
-                                       'insulated_bcs': ('max_x', 'max_y', 'min_x', 'min_y')}, #('max_x', 'max_y'), },
-                          #
-                          'probe': {} #'stimulated_sites': ('tip',),
-                          #           'site_currents': (magnitude,)}
-                          }
-
-    solver_parameters = {'dt_fem': 0.1,
-                         'dt_ode': 0.01,
-                         'Tstop': 5}
+    if problem_params is None:
+        problem_params = _default_problem_parameters
 
     # TODO extract and save v_mem, v_probe, i_mem
-    I_out = dolfin.File(str(mesh_folder / 'I.pvd'))
-    u_out = dolfin.File(str(mesh_folder / 'u.pvd'))
-    p_out = dolfin.File(str(mesh_folder / 'p.pvd'))
+    I_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'I.pvd'))
+    u_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'u.pvd'))
 
-    v_probe = []
-    v_soma = []
-    i = 0
-
-    for (t, u, I, transm_p) in neuron_solver(mesh_h5_path, emi_map, problem_parameters, solver_parameters, scale_factor):
-        print('ITERATION', i)
-        i += 1
-
+    t_start = time.time()
+    for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
         I_out << I, t
         u_out << u, t
-        p_out << transm_p, t
-
-        print(u([0, 0, 0]))
-        # print([9.9*scale_factor, 0, 0], [10.1 * scale_factor, 0, 0])
-        v_probe.append([u(c) for c in contact_centers])
-        v_t = u([9.9*scale_factor, 0, 0]) - u([10.1*scale_factor, 0, 0])
-        # print(u([10.1*scale_factor, 0, 0]))
-        v_soma.append(v_t)
-
-    return v_probe, v_soma
-#
-# if __name__ == '__main__':
-#     if '-mesh' in sys.argv:
-#         pos = sys.argv.index('-mesh')
-#         mesh_path = sys.argv[pos + 1]
-#     else:
-#         mesh_path='test.h5'
-#     if '-probemesh' in sys.argv:
-#         pos = sys.argv.index('-probemesh')
-#         probe_mesh_path = sys.argv[pos + 1]
-#     else:
-#         probe_mesh_path=mesh_path
-#
-#     mesh_name = os.path.split(mesh_path)[-1]
-#     assert mesh_name[-3:] == '.h5'
-#
-#     mesh_root = mesh_name[:-3]
-#
-#     dolfin.parameters['allow_extrapolation'] = True
-#     conv = 1E-4
-#     t_start = time.time()
-#
-#     problem_params = {'C_m': 1.0,    # uF/um^2
-#                       'stim_strength': 10.0,             # mS/cm^2
-#                       'stim_start': 0.01,                # ms
-#                       'stim_pos': 350*conv,              # [0., 0., 350*conv],    # cm
-#                       'stim_length': 20*conv,            # cm
-#                       'cond_int': 7.0,                   # mS/cm^2
-#                       'cond_ext': 3.0,                   # mS/cm^2
-#                       'I_ion': 0.0,
-#                       'grounded_bottom_only': False,
-#                       'Tstop': 5.}                     # ms
-#     # Spefication of stimulation consists of 2 parts:
-#     # probe tag to be stimulated and the current to be prescribed. The
-#     # current has the form normal*A amplitude where normal is INWARD (wrt to probe)
-#     # surface normal at the site (assuming the site is flat). This is because we set
-#     # bcs on extracellular and use its outward normal. A = A(t) is okay
-#     problem_params.update({'stimulated_site': 41,  # or higher by convention
-#                            'site_current': Expression(('A', '0', '0'), degree=0, A=1, t=0)})
-#
-#     solver_params = {'dt_fem': 1E-2, #1E-3,              # ms
-#                      'dt_ode': 1E-2, #1E-3,               # ms
-#                      'linear_solver': 'direct'}
-#
-#     mesh, surfaces, volumes, aux_tags = load_mesh(mesh_path)
-#     mesh_params = {'path': mesh_path, 'name': mesh_name ,'cells': mesh.num_cells(), 'facets': mesh.num_facets(),
-#                    'vertices': mesh.num_vertices(), 'faces': mesh.num_faces(), 'edges': mesh.num_edges(),}
-#     performance = {}
-#
-#     # Solver setup
-#     stream = neuron_solver(mesh_path=mesh_path,               # Units assuming mesh lengths specified in cm:
-#                            problem_parameters=problem_params,                      # ms
-#                            solver_parameters=solver_params)
-#
-#     if not os.path.isdir('results'):
-#         os.mkdir('results')
-#
-#     if not os.path.isdir(join('results', mesh_root)):
-#         os.mkdir(join('results', mesh_root))
-#
-#     # Get the probes for evary contact surface
-#     rec_sites =  np.array(probing_locations(probe_mesh_path, aux_tags['contact_surfaces']))
-#
-#     # u_file = File(join('results', mesh_root, 'u_sol.pvd'))
-#     # I_file = File(join('results', mesh_root, 'current_sol.pvd'))
-#
-#     u_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'u_sol.xdmf'))
-#     I_file = XDMFFile(mpi_comm_world(), join('results', mesh_root, 'current_sol.xdmf'))
-#
-#     # Compute the areas of neuron subdomains for current normalization
-#     # NOTE: on the first yield the stream returns the subdomain function
-#     # marking the subdomains of the neuron surface
-#     neuron_subdomains = next(stream)
-#     # Dx here because the mesh is embedded
-#     dx_ = Measure('dx', subdomain_data=neuron_subdomains, domain=neuron_subdomains.mesh())
-#     areas = {tag: assemble(1 * dx_(tag)) for tag in range(1, 4)}
-#
-#     I_proxy = None
-#     is_neuron_mesh = False
-#
-#     v_probe = []
-#     v_soma = []
-#     times = []
-#     i_m = []
-#
-#     p_x, p_y, p_z = rec_sites[0]
-#     soma_m = [7.5*conv, 0, 0]
-#
-#     # Do something with the solutions
-#     for n, (t, u, current, system_size) in enumerate(stream):
-#
-#         if I_proxy is None:
-#             I_proxy = snap_to_nearest(current)
-#
-#         # Store the neuron mesh once for post-processing
-#         if not is_neuron_mesh:
-#             with HDF5File(mpi_comm_world(), join('results', mesh_root, 'neuron_mesh.h5'), 'w') as nm_out:
-#                 nm_out.write(current.function_space().mesh(), 'mesh')
-#                 is_neuron_mesh = True
-#
-#         # msg = 'Normalized curent in %s = %g'
-#         # for tag, domain in ((1, 'soma'), (2, 'axon'), (3, 'dendrite')):
-#         #     value = assemble(current * dx_(tag))
-#         #     value /= areas[tag]
-#         #     print msg % (domain, value)
-#
-#         # print 'At t = %g |u|^2= %g  max(u) = %g min(u) = %g' % (t, u.vector().norm('l2'), u.vector().max(), u.vector().min())
-#         print 'Simulation time: ', t , ' v=', u(p_x, p_y, p_z)
-#         # print 'I(proxy)=', I_proxy(soma_m[0], soma_m[1], soma_m[2]), \
-#         #       'using', I_proxy.snaps[(soma_m[0], soma_m[1], soma_m[2])]
-#
-#         u_file.write(u, t)
-#         I_file.write(current, t)
-#         times.append(t)
-#         v_probe.append([u(p[0], p[1], p[2]) for p in rec_sites])
-#         v_soma.append(u(0, 0, 0))
-#         i_m.append(assemble(current * dx_(1))/areas[1])
-#
-#     t_stop = time.time()
-#     processing_time = t_stop - t_start
-#     print 'Elapsed time = ', t_stop - t_start
-#
-#     performance.update({'system size': system_size, 'time': processing_time})
-#     v_probe = np.transpose(np.array(v_probe))
-#
-#     np.save(join('results', mesh_root, 'times'), times)
-#     np.save(join('results', mesh_root, 'v_probe'), v_probe)
-#     np.save(join('results', mesh_root, 'v_soma'), v_soma)
-#     np.save(join('results', mesh_root, 'sites'), rec_sites)
-#     np.save(join('results', mesh_root, 'i_soma'), i_m)
-#     with open(join('results', mesh_root, 'params.yaml'), 'w') as f:
-# 	info = {'problem': problem_params, 'solver': solver_params, 'mesh': mesh_params, 'performance': performance}
-# 	yaml.dump(info, f, default_flow_style=False)
-#
-#     plt.ion()
-#     plt.show()
-
+    print 'Results saved in ' + str(mesh_folder / 'emi_sim')
+    print 'Elapsed time: ' + time.time() - t_start

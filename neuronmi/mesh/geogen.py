@@ -39,7 +39,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         The probe type ('microwire', 'neuronexus', 'neuropixels-24')
         If None, a mesh without probe is generated.
     mesh_resolution: int or dict
-        Resolution of the mesh. It can be 00, 0, 1, 2, 3 (less course to more coarse) or
+        Resolution of the mesh. It can be 00, 0, 1, 2, 3, 4, 5 (less course to more coarse) or
         a dictionary with 'neuron', 'probe', 'rest' fields with cell size in um
     box_size: int or limits
         Size of the bounding box. It can be 1, 2, 3, 4, 5, 6 (smaller to larger) or

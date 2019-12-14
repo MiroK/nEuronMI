@@ -1,7 +1,6 @@
 from linear_algebra import LinearSystemSolver
 from transferring import SubMeshTransfer
 from embedding import EmbeddedMesh
-from membrane import ODESolver
 from aux import load_mesh
 import numpy as np
 from dolfin import *

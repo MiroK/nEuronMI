@@ -2,7 +2,7 @@ from neuronmi.simulators.solver.aux import SiteCurrent, surface_normal
 from neuronmi.simulators.solver.linear_algebra import LinearSystemSolver
 from neuronmi.simulators.solver.transferring import SubMeshTransfer
 from neuronmi.simulators.solver.embedding import EmbeddedMesh
-from neuronmi.simulators.solver.membrane import ODESolver
+from neuronmi.simulators.solver.membrane import MembraneODESolver
 from neuronmi.mesh.mesh_utils import load_h5_mesh
 import numpy as np
 import itertools
@@ -16,7 +16,7 @@ parameters['form_compiler']['cpp_optimize_flags'] = '-O3 -ffast-math -march=nati
 parameters['ghost_mode'] = 'shared_facet'
 
 
-def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, scale_factor=None):
+def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, verbose=False):
     '''
     Solver for the Hdiv formulation of the EMI equations
     
@@ -24,7 +24,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     emi_map: EMIEntityMap of the mesh
     problem_parameters: dict specifying the following
 
-      For each neuron (neuron_i) the I_ion, cond[uctivity], C_m, parameters for stim[_*]ulation params
+      For each neuron (neuron_i) the I_ion, cond[uctivity], Cm, parameters for stim[_*]ulation params
       For exterior (external) cond[uctivity], names of insulated exterior boundaries
       For probe stimulated_sites (named) and their currents
 
@@ -33,13 +33,26 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     mesh_path = str(mesh_path)
     mesh, volume_marking_f, facet_marking_f = load_h5_mesh(mesh_path, scale_factor)
 
-    #TODO use v_rest to initialize intracellular potential
+    solver_parameters = problem_parameters['solver']
+    neurons_parameters = problem_parameters['neurons']
+    ext_parameters = problem_parameters['ext']
+    probe_parameters = problem_parameters['probe']
+
+    # TODO use v_rest to initialize intracellular potential initial condition
     v_rest = -75
+    I_ion = Constant(0)
 
     num_neurons = emi_map.num_neurons
     # Do we have properties for each one
-    neuron_props = [problem_parameters['neuron_%d' % i] for i in range(num_neurons)]
-    ext_props = problem_parameters['external']
+    if isinstance(neurons_parameters, list):
+        assert len(
+            neurons_parameters) == num_neurons, "If 'neurons' parameter is a list, the lentgh must be the same as" \
+                                                "the number of neurons in the mesh"
+    else:
+        neurons_parameters = [neurons_parameters] * num_neurons
+
+    # neuron_props = [problem_parameters['neuron_%d' % i] for i in range(num_neurons)]
+    # ext_props = problem_parameters['external']
 
     cell = mesh.ufl_cell()
     # We have 3 spaces S for sigma = -kappa*grad(u)   [~electric field]
@@ -65,7 +78,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # only on the neuron. The solution shall then be taked to a facet
     # space Q (think 3rd component of W). Finally W mu
     Q = FunctionSpace(mesh, Qel)  # Everywhere
-    p0 = Function(Q)            # Previous transm potential now 0
+    p0 = Function(Q)  # Previous transm potential now 0
 
     # The weak form
     # kappa**-1 * (sigma, tau)*dx - (div tau, u)*dx + (tau.n, p)*dS = 0
@@ -75,15 +88,15 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # Extract volumes tags for volume and neurons
     ext_Vtag = emi_map.volume_physical_tags('external')['all']
     n_Vtags = [emi_map.volume_physical_tags('neuron_%d' % i)['all'] for i in range(num_neurons)]
-    
-    a = ((1/Constant(ext_props['cond']))*inner(sigma, tau)*dx(ext_Vtag)
-         - inner(div(tau), u)*dx(ext_Vtag)
-         - inner(div(sigma), v)*dx(ext_Vtag))
+
+    a = ((1 / Constant(ext_parameters['cond_ext'])) * inner(sigma, tau) * dx(ext_Vtag)
+         - inner(div(tau), u) * dx(ext_Vtag)
+         - inner(div(sigma), v) * dx(ext_Vtag))
     # Add neurons
-    for n_Vtag, n_props in zip(n_Vtags, neuron_props):
-        a += ((1/Constant(n_props['cond']))*inner(sigma, tau)*dx(n_Vtag)+
-              - inner(div(tau), u)*dx(n_Vtag)
-              - inner(div(sigma), v)*dx(n_Vtag))
+    for n_Vtag, n_props in zip(n_Vtags, neurons_parameters):
+        a += ((1 / Constant(n_props['cond_int'])) * inner(sigma, tau) * dx(n_Vtag) +
+              - inner(div(tau), u) * dx(n_Vtag)
+              - inner(div(sigma), v) * dx(n_Vtag))
 
     dt_fem = Constant(solver_parameters['dt_fem'])
     # Extract surface tags for surface contribs of the neurons.
@@ -93,26 +106,25 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
                   [emi_map.surface_physical_tags('neuron_%d' % i).values() for i in range(num_neurons)])
     n_Stags = list(n_Stags)
 
-    for n_Stag, n_props in zip(n_Stags, neuron_props):
-        a += sum(inner(p('+'), dot(tau('+'), n))*dS(i) for i in n_Stag)
-        a += sum(inner(q('+'), dot(sigma('+'), n))*dS(i) for i in n_Stag)
-        a += -sum(Constant(n_props['C_m']/dt_fem)*inner(q('+'), p('+'))*dS(i) for i in n_Stag)
+    for n_Stag, n_props in zip(n_Stags, neurons_parameters):
+        a += sum(inner(p('+'), dot(tau('+'), n)) * dS(i) for i in n_Stag)
+        a += sum(inner(q('+'), dot(sigma('+'), n)) * dS(i) for i in n_Stag)
+        a += -sum(Constant(n_props['Cm'] / dt_fem) * inner(q('+'), p('+')) * dS(i) for i in n_Stag)
 
-    iterator = iter(zip(n_Stags, neuron_props))
+    iterator = iter(zip(n_Stags, neurons_parameters))
     # Rhs contributions
     n_Stag, n_props = next(iterator)
-    L = sum(inner(q('+'), n_props['I_ion']-Constant(n_props['C_m']/dt_fem)*p0('+'))*dS(i)
+    L = sum(inner(q('+'), I_ion - Constant(n_props['Cm'] / dt_fem) * p0('+')) * dS(i)
             for i in n_Stag)
 
     for n_Stag, n_props in iterator:
-        L += sum(inner(q('+'), n_props['I_ion']-Constant(n_props['C_m']/dt_fem)*p0('+'))*dS(i)
+        L += sum(inner(q('+'), I_ion - Constant(n_props['Cm'] / dt_fem) * p0('+')) * dS(i)
                  for i in n_Stag)
 
     # Boundary conditions: grounded surfaces are neumann and we don't do
     # anything special there. Insulated sites and the stimated site(s) of
     # the probe are Dirichlet. Additional Dirichlet bcs contrain DLT dofs
-    insulated_tags = [emi_map.surface_physical_tags('box')[name] for name in ext_props['insulated_bcs']]
-    print("insulated", insulated_tags)
+    insulated_tags = [emi_map.surface_physical_tags('box')[name] for name in ext_parameters['insulated_bcs']]
     # NOTE: (0, 0, 0) means that the dof is set based on (0, 0, 0).n
     bc_insulated = [DirichletBC(W.sub(0), Constant((0, 0, 0)), facet_marking_f, tag)
                     for tag in insulated_tags]
@@ -125,25 +137,34 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     site_currents = []
     # Add the stimulated site
     if 'probe' in emi_map.surfaces:
-        probe_params = problem_parameters['probe']
-
         probe_surfaces = emi_map.surface_physical_tags('probe')  # Dict
         stim_sites = []  # names
-        # Grab the magnitudes
-        if 'stimulated_sites' in probe_params.keys():
-            site_currents = probe_params['site_currents']
-            
-            for name in probe_params['stimulated_sites']:
-                tag = probe_surfaces[name]
-                stim_sites.append(tag)
-            # Construct normal*I expressions for every site
-            site_currents = [SiteCurrent(I=current, n=surface_normal(site, facet_marking_f, inside_point), degree=1)
-                             for site, current in zip(stim_sites, site_currents)]
-            # Now the bcs
-            bc_stimulated = [DirichletBC(W.sub(0), current, facet_marking_f, site)
-                             for site, current in zip(stim_sites, site_currents)]
-            # From the system they are the same
-            bc_insulated.extend(bc_stimulated)
+        # Stimulated sites must be a list of contact_names
+        if 'stimulated_sites' in probe_parameters.keys():
+            if probe_parameters['stimulated_sites'] is not None:
+                if len(probe_parameters['stimulated_sites']) > 0:
+                    site_currents = probe_parameters['current']
+
+                    if isinstance(site_currents, (int, float)):
+                        site_currents = [site_currents] * len(probe_parameters['stimulated_sites'])
+                    else:
+                        assert len(site_currents) == len(probe_parameters['stimulated_sites']), "Length of probe " \
+                                                                                                "'currents' and " \
+                                                                                                "'stimulated_sites' " \
+                                                                                                "should correspond"
+
+                    for name in probe_parameters['stimulated_sites']:
+                        tag = probe_surfaces[name]
+                        stim_sites.append(tag)
+                    # Construct normal*I expressions for every site
+                    site_currents = [SiteCurrent(I=current, n=surface_normal(site, facet_marking_f, inside_point),
+                                                 degree=1)
+                                     for site, current in zip(stim_sites, site_currents)]
+                    # Now the bcs
+                    bc_stimulated = [DirichletBC(W.sub(0), current, facet_marking_f, site)
+                                     for site, current in zip(stim_sites, site_currents)]
+                    # From the system they are the same
+                    bc_insulated.extend(bc_stimulated)
 
         # Sites of the probe that are not stimulated are insulated
         insulated_probe_sites = set(probe_surfaces.values()) - set(stim_sites)
@@ -159,20 +180,20 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # everywhere instead. So the not neuron part should be set to 0
     bc_constrained = [DirichletBC(W.sub(2), Constant(0), facet_marking_f, tag) for tag in not_neuron_surfaces]
 
-    assembler = SystemAssembler(a, L, bcs=bc_insulated+bc_constrained)
+    assembler = SystemAssembler(a, L, bcs=bc_insulated + bc_constrained)
     A, b = Matrix(), Vector()
-    assembler.assemble(A) 
+    assembler.assemble(A)
     assembler.assemble(b)
 
     # Not singular
     # import numpy as np
     # print np.min(np.abs(np.linalg.eigvalsh(A.array())))
     la_solver = LinearSystemSolver(A, W, solver_parameters)
-    
+
     dt_ode = solver_parameters['dt_ode']
     assert dt_ode <= dt_fem(0)
     # Setup neuron
-    fem_ode_sync = int(dt_fem(0)/dt_ode)
+    fem_ode_sync = int(dt_fem(0) / dt_ode)
 
     # Mesh of all neurons; individual are its submesh
     neuron_surf_mesh = EmbeddedMesh(facet_marking_f, list(all_neuron_surfaces))
@@ -198,19 +219,21 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
         ni_mesh = EmbeddedMesh(neurons_subdomains, neuron_surfaces)
         ni_subdomains = ni_mesh.marking_function
 
-        map_ =  emi_map.surface_physical_tags('neuron_%d' % i)
+        map_ = emi_map.surface_physical_tags('neuron_%d' % i)
 
         soma = tuple(map_[k] for k in map_ if 'soma' in k)
         dendrite = tuple(map_[k] for k in map_ if 'dend' in k)
         axon = tuple(map_[k] for k in map_ if 'axon' in k)
-        
-        ode_solver = ODESolver(ni_subdomains,
-                               soma=soma, axon=axon, dendrite=dendrite,
-                               problem_parameters=problem_parameters['neuron_%d' % i])
 
-        Tstop = solver_parameters['Tstop']; assert Tstop > 0.0
-        interval = (0.0, Tstop)
-    
+        ode_solver = MembraneODESolver(ni_subdomains,
+                                       soma=soma, axon=axon, dendrite=dendrite,
+                                       problem_parameters=neurons_parameters[i],
+                                       scale_factor=scale_factor)
+
+        sim_duration = solver_parameters['sim_duration']
+        assert sim_duration > 0.0
+        interval = (0.0, sim_duration)
+
         # NOTE: a generator; nothing is computed so far
         ode_solutions = ode_solver.solve(interval, dt_ode)  # Potentials only
         neuron_solutions.append(ode_solutions)
@@ -227,7 +250,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
         toQin_fromQns.append(assign_toQin_fromQn)
         toQn_fromQins.append(assign_toQn_fromQin)
         p0is.append(p0i_neuron)
-
 
     V = FunctionSpace(mesh, Vel)
     # Finally for postprocessing we return the current time, potential
@@ -252,10 +274,10 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     # One value per cell of the neuron surface mesh
     current_out, current_aux = map(Function, (Q_neuron, Q))
     w_aux = Function(W)
-    current_form = sum(1./FacetArea(mesh)('+')*inner(dot(w.sub(0)('+'), n), q('+'))*dS(i)
+    current_form = sum(1. / FacetArea(mesh)('+') * inner(dot(w.sub(0)('+'), n), q('+')) * dS(i)
                        for i in all_neuron_surfaces)
 
-    current_form += inner(Constant(0), v)*dx(ext_Vtag)  # Fancy zero for orientation
+    current_form += inner(Constant(0), v) * dx(ext_Vtag)  # Fancy zero for orientation
     # The idea here is that assembling the current form gives the right
     # dof values to assign to the DLT space (evals at cell midpoints).
     # Then we reduce as normal to the subcomponent and submesh space
@@ -264,7 +286,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
     assign_toQ_neuron_fromQ(current_out, current_aux)
 
     # To get initial state
-    yield 0, u_out, current_out, p0_neuron
+    yield 0, u_out, current_out
 
     neuron_solutions = itertools.izip(*neuron_solutions)
 
@@ -290,7 +312,8 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
             # Assemble right-hand side (changes with time, so need to reassemble)                
             assembler.assemble(b)  # Also applies bcs
             # New (sigma, u, p) ...
-            print('\tSolving linear system of size %d' % A.size(0))
+            if verbose:
+                print('\tSolving linear system of size %d' % A.size(0))
             la_solver.solve(w.vector(), b)
 
             # Update u_out and current_out for output
@@ -301,59 +324,11 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters, sca
             assign_toQ_neuron_fromQ(current_out, current_aux)
 
             # Now transfer the new transm potential down to ode ...
-            toQ_fromW2.assign(p0, w.sub(2))         # Compt to Q
+            toQ_fromW2.assign(p0, w.sub(2))  # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
 
-            yield t1, u_out, current_out, p0_neuron
+            yield t1, u_out, current_out
 
             for i in range(num_neurons):
                 toQin_fromQns[i](p0is[i], p0_neuron)
-                odes[i][1].assign(p0is[i]) 
-
-# --------------------------------------------------------------------
-
-if __name__ == '__main__':
-    from neuronmi.mesh.mesh_utils import EMIEntityMap
-    mesh_path = '../../../sandbox/test_2neuron.h5'
-
-    emi_map = '../../../sandbox/test_2neuron.json'
-    with open(emi_map) as json_fp:
-        emi_map = EMIEntityMap(json_fp=json_fp)
-
-    # Current magnitude for probe tip
-    magnitude = Expression('exp(-1E-2*t)', t=0, degree=1)
-        
-    problem_parameters = {'neuron_0': {'I_ion': Constant(0),
-                                       'cond': 1,
-                                       'C_m': 1,
-                                       'stim_strength': 0.0,
-                                       'stim_start': 0.0,  
-                                       'stim_pos': 0.0,
-                                       'stim_length': 0.0},
-                          #
-                          'neuron_1': {'I_ion': Constant(0),
-                                       'cond': 1,
-                                       'C_m': 1,
-                                       'stim_strength': 0.0,
-                                       'stim_start': 0.0,  
-                                       'stim_pos': 0.0,
-                                       'stim_length': 0.0},
-                          #
-                          'external': {'cond': 2,
-                          # Box boundaries where zero current should be
-                          # precscribed. If nono, all surface are grounded
-                                       'insulated_bcs': ('max_x', 'max_y'),},
-                          #
-                          'probe': {'stimulated_sites': ('contact_0', ),
-                                    'site_currents': (magnitude, )}
-                          }
-                          
-    solver_parameters = {'dt_fem': 0.1,
-                         'dt_ode': 0.01,
-                         'Tstop': 1}
-
-    I_out = File('I.pvd')
-    u_out = File('u.pvd')
-    for (t, u, I, xx) in neuron_solver(mesh_path, emi_map, problem_parameters, solver_parameters):
-        u_out << u, t
-        I_out << I, t
+                odes[i][1].assign(p0is[i])
