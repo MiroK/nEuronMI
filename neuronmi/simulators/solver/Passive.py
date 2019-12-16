@@ -69,15 +69,14 @@ class Passive(CardiacCellModel):
 
         # Expressions for the Membrane component
         # FIXME: base on stim_type + add to Hodgkin
-        if 
-        i_Stim = g_S*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1, 0)*ufl.exp((t0 - time)/alpha)
-        elif sss:
-            i_Stim = g_S*ufl.conditional(ufl.ge(time, t0), 1, 0)
-        else:
-            i_Stim = g_S*ufl.conditional(ufl.And(ufl.ge(time, t0),
-                                                 ufl.le(time, t1), 1, 0))
-
-            
+        # if
+        # i_Stim = g_S*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1, 0)*ufl.exp((t0 - time)/alpha)
+        # elif sss:
+        #     i_Stim = g_S*ufl.conditional(ufl.ge(time, t0), 1, 0)
+        # else:
+        #     i_Stim = g_S*ufl.conditional(ufl.And(ufl.ge(time, t0),
+        #                                          ufl.le(time, t1), 1, 0))
+        i_Stim = g_S * (-v_eq + V) * ufl.conditional(ufl.ge(time, t0), 1, 0) * ufl.exp((t0 - time) / alpha)
         i_L = g_L*(-E_L + V)
         current[0] = (-i_L - i_Stim)/Cm
 
