@@ -3,7 +3,7 @@ import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
 from .solver.probing import get_geom_centers, Probe
 import numpy as np
-from copy import copy
+from copy import copy, deepcopy
 from pathlib import Path
 import time
 
@@ -46,7 +46,7 @@ _default_problem_parameters = {
 
 
 def get_default_emi_params():
-    return copy(_default_problem_parameters)
+    return deepcopy(_default_problem_parameters)
 
 
 def simulate_emi(mesh_folder, problem_params=None, verbose=False):
@@ -81,13 +81,13 @@ def simulate_emi(mesh_folder, problem_params=None, verbose=False):
     with mesh_json_path.open() as json_fp:
         emi_map = EMIEntityMap(json_fp=json_fp)
 
-    mesh, volumes, surfaces = load_h5_mesh(str(mesh_h5_path))
-
-    probe_surfaces = emi_map.surface_physical_tags('probe')
-    contact_tags = [v for k, v in probe_surfaces.items() if 'contact_' in k]
-
-    contact_centers = get_geom_centers(surfaces, contact_tags)
-    contact_centers = np.array(contact_centers) * scale_factor
+    # mesh, volumes, surfaces = load_h5_mesh(str(mesh_h5_path))
+    #
+    # probe_surfaces = emi_map.surface_physical_tags('probe')
+    # contact_tags = [v for k, v in probe_surfaces.items() if 'contact_' in k]
+    #
+    # contact_centers = get_geom_centers(surfaces, contact_tags)
+    # contact_centers = np.array(contact_centers) * scale_factor
 
     if problem_params is None:
         problem_params = _default_problem_parameters
