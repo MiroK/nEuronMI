@@ -38,7 +38,7 @@ _default_problem_parameters = {
                                           #        site
     },
     'solver':  {
-                 'dt_fem': 0.1,          # float: dt for fem solver in ms
+                 'dt_fem': 0.01,          # float: dt for fem solver in ms
                  'dt_ode': 0.01,          # float: dt for ode solver in ms
                  'sim_duration': 5,      # float: duration od the simulation in ms
     }
@@ -101,4 +101,4 @@ def simulate_emi(mesh_folder, problem_params=None, verbose=False):
         I_out << I, t
         u_out << u, t
     print 'Results saved in ' + str(mesh_folder / 'emi_sim')
-    print 'Elapsed time: ' + time.time() - t_start
+    print 'Elapsed time: ' + str(time.time() - t_start)
