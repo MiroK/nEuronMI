@@ -93,12 +93,13 @@ def simulate_emi(mesh_folder, problem_params=None, verbose=False):
         problem_params = _default_problem_parameters
 
     # TODO extract and save v_mem, v_probe, i_mem
-    I_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'I.pvd'))
-    u_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'u.pvd'))
+    # I_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'I.pvd'))
+    # u_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'u.pvd'))
 
     t_start = time.time()
     for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
-        I_out << I, t
-        u_out << u, t
+        yield t, u, I
+        # I_out << I, t
+        # u_out << u, t
     print 'Results saved in ' + str(mesh_folder / 'emi_sim')
     print 'Elapsed time: ' + str(time.time() - t_start)
