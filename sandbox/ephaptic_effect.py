@@ -103,7 +103,8 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, outpu
         neuron_params=[p1, p2],
         probe_type=None,
         mesh_resolution=mesh_resolution,
-        box_size=box_size
+        box_size=box_size,
+        save_mesh_folder=output_path
     )
     mesh_folder = output_path / Path(mesh_folder)
 
@@ -155,7 +156,7 @@ def main():
 
     if len(sys.argv) < 2:
         print "Expecting 1st command line argument to be output path"
-    output_path = Path(sys.argv[1])
+    output_path = sys.argv[1]
     run(parallel_distance, perpendicular_distance, box_size, resolution, output_path)
 
 
