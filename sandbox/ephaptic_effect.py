@@ -3,6 +3,7 @@ import dolfin as df
 
 import neuronmi
 import shutil
+import sys
 
 from pathlib import Path
 from fenicstools import Probes
@@ -146,61 +147,16 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, outpu
     print "Success!"
 
 
-def create_parser():
-    parser = argparse.ArgumentParser(
-        "Simulate the ephaptic effect in two ball and stick neurons."
-    )
-
-    parser.add_argument(
-        "-pd",
-        "--perpendicular-distance",
-        help="The distance between the neuronal centrelines.",
-        required=True,
-        type=float
-    )
-
-    parser.add_argument(
-        "-pp",
-        "--parallel-distance",
-        help="Distance between the soma projected onto the neuronal centrelines",
-        required=True,
-        type=float
-    )
-
-    parser.add_argument(
-        "--box-size",
-        help="Bounding box size",
-        type=int,
-        required=True
-    )
-
-    parser.add_argument(
-        "--resolution",
-        help="Mesh resolution",
-        required=True,
-        type=int
-    )
-
-    parser.add_argument(
-        "--output-path",
-        help="Output path for simulations",
-        required=True,
-        type=Path
-    )
-
-    return parser
-
-
 def main():
-    parser = create_parser()
-    args = parser.parse_args()
-    run(
-        args.parallal_distance,
-        args.perpendicular_distance,
-        args.box_size,
-        args.mesh_resolution,
-        args.output_path
-    )
+    parallel_distance = 50
+    perpendicular_distance = 1
+    box_size = 5
+    resolution = 3
+
+    if len(sys.argv) < 2:
+        print "Expecting 1st command line argument to be output path"
+    output_path = Path(sys.argv[1])
+    run(parallel_distance, perpendicular_distance, box_size, resolution, output_path)
 
 
 if __name__ == "__main__":
