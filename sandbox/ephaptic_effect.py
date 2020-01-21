@@ -83,7 +83,7 @@ class PointProbe:
             ofh.write(u"\n")
 
 
-def run(parallel_distance, transverse_distance, box_size, mesh_resolution):
+def run(parallel_distance, transverse_distance, box_size, mesh_resolution, output_path):
     p1 = neuronmi.get_neuron_params('bas')      # bas == ball and stick neuron
     p2 = neuronmi.get_neuron_params('bas')
 
@@ -104,7 +104,7 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution):
         mesh_resolution=mesh_resolution,
         box_size=box_size
     )
-    mesh_folder = Path(mesh_folder)
+    mesh_folder = output_path / Path(mesh_folder)
 
     neuron_params_0 = neuronmi.get_default_emi_params()['neurons']
     neuron_params_1 = neuronmi.get_default_emi_params()['neurons']
@@ -127,9 +127,6 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution):
 
     probe_list = [p1_centreline_probe, p1_soma_probe, p2_centreline_probe, p2_soma_probe]
 
-    I_out = df.File(str(mesh_folder / 'emi_sim' / 'I.pvd'))
-    u_out = df.File(str(mesh_folder / 'emi_sim' / 'u.pvd'))
-
     xdmf_I = df.XDMFFile(str(mesh_folder / 'emi_sim' / 'I.xdmf'))
     # hdf5_I = df.HDF5File(df.MPI.comm_world, str(mesh_folder / 'emi_sim' / 'I.xdmf'), "w")
 
@@ -146,9 +143,6 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution):
 
         # hdf5_u.write()
         xdmf_u.write(u, float(t))
-
-        I_out << I, t
-        u_out << u, t
     print "Success!"
 
 
@@ -187,13 +181,26 @@ def create_parser():
         type=int
     )
 
+    parser.add_argument(
+        "--output-path",
+        help="Output path for simulations",
+        required=True,
+        type=Path
+    )
+
     return parser
 
 
 def main():
     parser = create_parser()
     args = parser.parse_args()
-    run(args.parallal_distance, args.perpendicular_distance, args.box_size, args.mesh_resolution)
+    run(
+        args.parallal_distance,
+        args.perpendicular_distance,
+        args.box_size,
+        args.mesh_resolution,
+        args.output_path
+    )
 
 
 if __name__ == "__main__":

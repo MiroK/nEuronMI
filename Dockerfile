@@ -55,7 +55,7 @@ RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 
     pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user
     
 # Get neuronmi
-RUN git clone https://github.com/MiroK/nEuronMI.git
+RUN git clone -b js https://github.com/MiroK/nEuronMI.git
 
 # Generate cell models
 #RUN cd nEuronMI/neuronmi/simulators/solver && \
