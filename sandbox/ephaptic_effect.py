@@ -4,6 +4,7 @@ import dolfin as df
 import neuronmi
 import shutil
 import sys
+import shutil
 
 from pathlib import Path
 from fenicstools import Probes
@@ -104,9 +105,8 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, outpu
         probe_type=None,
         mesh_resolution=mesh_resolution,
         box_size=box_size,
-        save_mesh_folder=output_path
     )
-    mesh_folder = output_path / Path(mesh_folder)
+    mesh_folder = Path(mesh_folder)
 
     neuron_params_0 = neuronmi.get_default_emi_params()['neurons']
     neuron_params_1 = neuronmi.get_default_emi_params()['neurons']
@@ -145,6 +145,7 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, outpu
 
         # hdf5_u.write()
         xdmf_u.write(u, float(t))
+    shutil.copytree(mesh_folder, str(output_path / Path(mesh_folder)))
     print "Success!"
 
 
