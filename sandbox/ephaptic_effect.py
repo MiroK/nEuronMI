@@ -2,7 +2,6 @@ import numpy as np
 import dolfin as df
 
 import neuronmi
-import shutil
 import sys
 import shutil
 
