@@ -3,7 +3,7 @@ import numpy as np
 
 microwire = False
 neuronexus = True
-neurpixels = False
+neuropixels = False
 
 if microwire:
     # Microwire
@@ -17,12 +17,12 @@ if microwire:
 
     centers_microwire = microwire_probe.get_electrode_centers(unit='cm')
 
-    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers)
-    u_without, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers)
+    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers_microwire)
+    u_without, _ = neuronmi.simulate_emi(mesh_without, u_probe_locations=centers_microwire)
 
     np.save(microwire_folder + 'u_with.npy', u_with)
     np.save(microwire_folder + 'u_without.npy', u_without)
-    np.save(microwire_folder + 'centers.npy', centers_neuronexus)
+    np.save(microwire_folder + 'centers.npy', centers_microwire)
 
 if neuronexus:
     # Neuronexus
@@ -36,8 +36,8 @@ if neuronexus:
 
     centers_neuronexus = neuronexus_probe.get_electrode_centers(unit='cm')
 
-    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers)
-    u_without, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers)
+    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers_neuronexus)
+    u_without, _ = neuronmi.simulate_emi(mesh_without, u_probe_locations=centers_neuronexus)
 
     np.save(neuronexus_folder + 'u_with.npy', u_with)
     np.save(neuronexus_folder + 'u_without.npy', u_without)
@@ -55,8 +55,8 @@ if neuropixels:
 
     centers_neuropixels = neuropixels_probe.get_electrode_centers(unit='cm')
 
-    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers)
-    u_without, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers)
+    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers_neuropixels)
+    u_without, _ = neuronmi.simulate_emi(mesh_without, u_probe_locations=centers_neuropixels)
 
     np.save(neuropixels_folder + 'u_with.npy', u_with)
     np.save(neuropixels_folder + 'u_without.npy', u_without)
