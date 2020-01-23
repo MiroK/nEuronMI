@@ -49,7 +49,8 @@ def get_default_emi_params():
     return deepcopy(_default_problem_parameters)
 
 
-def simulate_emi(mesh_folder, problem_params=None, verbose=False):
+def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
+                 i_probe_locations=None, verbose=False):
     '''
     Simulates the 3d-3d EMI solution given a neuronmi-generated mesh (containing at least one neuron and optionally
     one probe).
@@ -81,14 +82,6 @@ def simulate_emi(mesh_folder, problem_params=None, verbose=False):
     with mesh_json_path.open() as json_fp:
         emi_map = EMIEntityMap(json_fp=json_fp)
 
-    # mesh, volumes, surfaces = load_h5_mesh(str(mesh_h5_path))
-    #
-    # probe_surfaces = emi_map.surface_physical_tags('probe')
-    # contact_tags = [v for k, v in probe_surfaces.items() if 'contact_' in k]
-    #
-    # contact_centers = get_geom_centers(surfaces, contact_tags)
-    # contact_centers = np.array(contact_centers) * scale_factor
-
     if problem_params is None:
         problem_params = _default_problem_parameters
 
@@ -97,8 +90,30 @@ def simulate_emi(mesh_folder, problem_params=None, verbose=False):
     u_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'u.pvd'))
 
     t_start = time.time()
+    u_record = []
+    i_record = []
     for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
         I_out << I, t
         u_out << u, t
+
+        if u_probe_locations is not None:
+            u_probe_t = np.zeros(len(u_probe_locations))
+            for i, p in enumerate(u_probe_locations):
+                u_probe_t[i] = u(p)
+            u_record.append(u_probe_t)
+
+        if i_probe_locations is not None:
+            i_probe_t = np.zeros(len(i_probe_locations))
+            for i, p in enumerate(i_probe_locations):
+                i_probe_t[i] = i(p)
+            i_record.append(u_probe_t)
+
+    if u_probe_locations is not None:
+        u_record = np.array(u_record)
+    if i_probe_locations is not None:
+        i_record = np.array(i_record)
+
     print 'Results saved in ' + str(mesh_folder / 'emi_sim')
     print 'Elapsed time: ' + str(time.time() - t_start)
+
+    return u_record, i_record
