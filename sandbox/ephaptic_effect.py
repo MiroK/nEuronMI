@@ -84,19 +84,19 @@ class PointProbe:
             ofh.write(u"\n")
 
 
-def run(parallel_distance, transverse_distance, box_size, mesh_resolution, output_path):
-    p1 = neuronmi.get_neuron_params('bas')      # bas == ball and stick neuron
-    p2 = neuronmi.get_neuron_params('bas')
+def run(parallel_distance, transverse_distance, box_size, mesh_resolution, neuron_parameters):
+    # p1 = neuronmi.get_neuron_params('bas')      # bas == ball and stick neuron
+    # p2 = neuronmi.get_neuron_params('bas')
 
-    p1["soma_y"] = p1["soma_rad"] + transverse_distance / 2
-    p2["soma_y"] = -(p2["soma_rad"] + transverse_distance / 2)
+    # We are using the same basic parameters for both neurons
+    p1 = neuron_params
+    p2 = neuron_params
+
+    p1["soma_y"] = transverse_distance / 2
+    p2["soma_y"] = transverse_distance / 2)
 
     p1["soma_z"] = parallel_distance / 2
     p2["soma_z"] = -parallel_distance / 2
-
-    # p2['soma_x'] = soma_x      # translate p1 neuron
-    # p2['soma_y'] = soma_y      # translate p1 neuron
-    # p2['soma_z'] = soma_z      # translate p1 neuron
 
     mesh_folder = neuronmi.generate_mesh(
         neuron_type=['bas', 'bas'],
@@ -144,20 +144,20 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, outpu
 
         # hdf5_u.write()
         xdmf_u.write(u, float(t))
-    shutil.copytree(mesh_folder, str(output_path / Path(mesh_folder)))
     print "Success!"
 
 
 def main():
+    # neuron_parameters = neuronmi.mesh.shapes.BallStickNeuron._defaults
+    neuron_parameters = neuronmi.get_neuron_params('bas')       # bas == ball and stick
+
     parallel_distance = 50
-    perpendicular_distance = 1
-    box_size = 5
+    d = 1       # distance between neuron geometry
+    perpendicular_distance = neuron_parameters["soma_rad"] + neuron_parameters["dend_rad"] + d
+    box_size = 4
     resolution = 3
 
-    if len(sys.argv) < 2:
-        print "Expecting 1st command line argument to be output path"
-    output_path = sys.argv[1]
-    run(parallel_distance, perpendicular_distance, box_size, resolution, output_path)
+    run(parallel_distance, perpendicular_distance, box_size, resolution, neuron_parameters)
 
 
 if __name__ == "__main__":
