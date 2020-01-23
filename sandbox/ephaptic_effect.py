@@ -89,11 +89,11 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, neuro
     # p2 = neuronmi.get_neuron_params('bas')
 
     # We are using the same basic parameters for both neurons
-    p1 = neuron_params
-    p2 = neuron_params
+    p1 = neuron_parameters
+    p2 = neuron_parameters
 
     p1["soma_y"] = transverse_distance / 2
-    p2["soma_y"] = transverse_distance / 2)
+    p2["soma_y"] = transverse_distance / 2
 
     p1["soma_z"] = parallel_distance / 2
     p2["soma_z"] = -parallel_distance / 2
