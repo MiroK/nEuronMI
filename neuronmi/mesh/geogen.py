@@ -1,9 +1,8 @@
 import numpy as np
-from neuronmi.mesh.shapes import (Box, BallStickNeuron, TaperedNeuron,
-                                  MicrowireProbe,  # , NeuronexusProbe, Neuropixels24Probe
-                                  neuron_list, probe_list)
+from neuronmi.mesh.shapes import (Box, Neuron, Probe, neuron_list, probe_list)
 from neuronmi.mesh.mesh_utils import build_EMI_geometry, mesh_config_EMI_model, msh_to_h5
 import subprocess, os, sys, time
+from pathlib import Path
 from copy import copy
 import gmsh
 
@@ -26,20 +25,24 @@ def get_probe_params(probe_name):
         return copy(probe_list[probe_name]._defaults)
 
 
-def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, box_size=2, neuron_params=None,
+def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=2, neuron_params=None,
                   probe_params=None, save_mesh_folder=None):
     '''
+    Generate mesh with neurons and probes.
+
     Parameters
     ----------
-    neuron_type: str, list, or None
+    neurons: str, list, Neuron object, or None
         The neuron type (['bas' (ball-and-stick) or 'tapered' (tapered dendrite and axon)]).
-        If list, multiple neurons are inserted in the mesh.
+        If list (of str or Neuron objects), multiple neurons are inserted in the mesh.
+        If Neuron object instantiated outside the function, the neuron is inserted in the mesh as is.
         If None, a mesh without neuron is generated.
-    probe_type: str or None
-        The probe type ('microwire', 'neuronexus', 'neuropixels-24')
+    probe: str, Probe object, or None
+        The probe type ('microwire', 'neuronexus', 'neuropixels')
+        If Probe object instantiated outside the function, the probe is inserted in the mesh as is.
         If None, a mesh without probe is generated.
     mesh_resolution: int or dict
-        Resolution of the mesh. It can be 00, 0, 1, 2, 3, 4, 5 (less course to more coarse) or
+        Resolution of the mesh. It can be 0, 1, 2, 3, 4, 5 (less course to more coarse) or
         a dictionary with 'neuron', 'probe', 'rest' fields with cell size in um
     box_size: int or limits
         Size of the bounding box. It can be 1, 2, 3, 4, 5, 6 (smaller to larger) or
@@ -72,7 +75,6 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
         zlim = np.array([zlim, zlim])
 
     box = Box(np.array([xlim[0], ylim[0], zlim[0]]), np.array([xlim[1], ylim[1], zlim[1]]))
-    # box = Box(np.array([-100, -100, -100]), np.array([200, 200, 500]))
 
     if isinstance(mesh_resolution, int):
         mesh_resolution = return_coarseness(mesh_resolution)
@@ -88,33 +90,56 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     # todo handle lists of neurons and neuron_params
 
     neuron_str = None
-    if neuron_type is not None:
-        if isinstance(neuron_type, str):
-            if neuron_type in neuron_list.keys():
-                neurons = neuron_list[neuron_type](neuron_params)
-                neuron_str = neuron_type
-        elif isinstance(neuron_type, list):
-            assert neuron_params is not None and len(neuron_params) == len(neuron_type), "For a list of neurons, " \
+    if neurons is not None:
+        if isinstance(neurons, str):
+            if neurons in neuron_list.keys():
+                neuron_objects = neuron_list[neurons](neuron_params)
+                neuron_str = neurons
+            else:
+                raise AttributeError("'neurons' not in %s" % neuron_list.keys())
+        elif isinstance(neurons, Neuron):
+            neuron_objects = neurons
+        elif isinstance(neurons, list):
+            if isinstance(neurons[0], str):
+                assert neuron_params is not None and len(neuron_params) == len(neurons), "For a list of neurons, " \
                                                                                          "provide a list of neuron_" \
                                                                                          "params!"
-            neurons = []
-            neuron_str = ''
-            for i, (nt, np) in enumerate(zip(neuron_type, neuron_params)):
-                neurons.append(neuron_list[nt](np))
-                if i == 0:
-                    neuron_str += '%s' % nt
-                else:
-                    neuron_str += '-%s' % nt
-
-    if neuron_str is None:
-        neurons = None
+                neuron_objects = []
+                neuron_str = ''
+                for i, (nt, np) in enumerate(zip(neurons, neuron_params)):
+                    neuron_objects.append(neuron_list[nt](np))
+                    if i == 0:
+                        neuron_str += '%s' % nt
+                    else:
+                        neuron_str += '-%s' % nt
+            elif isinstance(neurons[0], Neuron):
+                neuron_objects = neurons
+                neuron_str = ''
+                for i, nt in enumerate(neurons):
+                    if i == 0:
+                        neuron_str += '%s' % nt.get_neuron_type()
+                    else:
+                        neuron_str += '-%s' % nt.get_neuron_type()
+        else:
+            raise AttributeError("'neurons' can be str, Neuron, or list")
+    else:
+        neuron_objects = None
         neuron_str = 'noneuron'
 
-    if probe_type is not None and probe_type in probe_list.keys():
-        probe = probe_list[probe_type](probe_params)
-        probe_str = probe_type
+    if probe is not None:
+        if isinstance(probe, str):
+            if probe in probe_list.keys():
+                probe_object = probe_list[probe](probe_params)
+                probe_str = probe
+            else:
+                raise AttributeError("'probe' not in %s" % probe_list.keys())
+        elif isinstance(probe, Probe):
+            probe_object = probe
+            probe_str = probe.get_probe_type()
+        else:
+            raise AttributeError("'probe' can be str or Probe")
     else:
-        probe = None
+        probe_object = None
         probe_str = 'noprobe'
 
     mesh_sizes = {'neuron': mesh_resolution['neuron'],
@@ -125,12 +150,11 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': mesh_sizes['ext'],
                    'neuron_LcMin': mesh_sizes['neuron'], 'probe_LcMin': mesh_sizes['probe']}
 
+    mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
     if save_mesh_folder is None:
-        mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
         save_mesh_folder = mesh_name
     else:
-        mesh_name = save_mesh_folder
-        save_mesh_folder = save_mesh_folder
+        save_mesh_folder = str(Path(save_mesh_folder) / mesh_name)
 
     if not os.path.isdir(save_mesh_folder):
         os.makedirs(save_mesh_folder)  # FIXME: , exist_ok=True)
@@ -146,7 +170,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
     gmsh.option.setNumber("General.Terminal", 1)
 
     # # Add components to model
-    model, mapping = build_EMI_geometry(model, box, neurons, probe)  # , mapping
+    model, mapping = build_EMI_geometry(model, box, neuron_objects, probe_object)  # , mapping
     # # Config fields and dump the mapping as json
     mesh_config_EMI_model(model, mapping, size_params)
     json_file = os.path.join(save_mesh_folder, '%s.json' % mesh_name)
@@ -175,11 +199,7 @@ def generate_mesh(neuron_type='bas', probe_type='microwire', mesh_resolution=2, 
 
 
 def return_coarseness(coarse):
-    if coarse == 00:
-        nmesh = 2
-        pmesh = 3
-        rmesh = 5
-    elif coarse == 0:
+    if coarse == 0:
         nmesh = 2
         pmesh = 5
         rmesh = 7.5
