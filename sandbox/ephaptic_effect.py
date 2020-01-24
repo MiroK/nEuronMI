@@ -70,14 +70,6 @@ class PointProbe:
         data = self._compute(solution)
 
         with self._filename.open("a") as ofh:
-            # ofh.write(u"%f, " % float(time))
-            # line = ""
-            # for value in data:
-            #     line += "%f, " % value
-            # line.strip(",")     # remove trailing comma
-            # ofh.write(u"%s\n" % line)
-
-            # data_format = "%f, "*(len(data) + 1)
             data_format = ", ".join(("%f",)*(len(data) + 1))
             line = data_format % tuple([time] + list(data))
             ofh.write(u"%s" % line)
@@ -85,15 +77,12 @@ class PointProbe:
 
 
 def run(parallel_distance, transverse_distance, box_size, mesh_resolution, neuron_parameters):
-    # p1 = neuronmi.get_neuron_params('bas')      # bas == ball and stick neuron
-    # p2 = neuronmi.get_neuron_params('bas')
-
     # We are using the same basic parameters for both neurons
-    p1 = neuron_parameters
-    p2 = neuron_parameters
+    p1 = neuron_parameters.copy()
+    p2 = neuron_parameters.copy()
 
     p1["soma_y"] = transverse_distance / 2
-    p2["soma_y"] = transverse_distance / 2
+    p2["soma_y"] = -transverse_distance / 2
 
     p1["soma_z"] = parallel_distance / 2
     p2["soma_z"] = -parallel_distance / 2
@@ -151,11 +140,15 @@ def main():
     # neuron_parameters = neuronmi.mesh.shapes.BallStickNeuron._defaults
     neuron_parameters = neuronmi.get_neuron_params('bas')       # bas == ball and stick
 
-    parallel_distance = 50
-    d = 1       # distance between neuron geometry
+    parallel_distance = -50
+    try:
+        d = int(sys.argv[1])
+    except IndexError:
+        print "No command line arguments, using d = 1"
+        d = 1
     perpendicular_distance = neuron_parameters["soma_rad"] + neuron_parameters["dend_rad"] + d
     box_size = 4
-    resolution = 3
+    resolution = 5
 
     run(parallel_distance, perpendicular_distance, box_size, resolution, neuron_parameters)
 
