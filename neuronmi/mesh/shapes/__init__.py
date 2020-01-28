@@ -5,6 +5,9 @@ from neuronmi.mesh.shapes.microwireprobe import MicrowireProbe
 from neuronmi.mesh.shapes.neuropixels24probe import Neuropixels24Probe
 from neuronmi.mesh.shapes.neuronexusprobe import NeuronexusProbe
 
+from neuronmi.mesh.shapes.baseneuron import Neuron
+from neuronmi.mesh.shapes.baseprobe import Probe
+
 from neuronmi.mesh.shapes.gmsh_primitives import Box, Sphere, Cylinder, Cone
 
 neuron_list = {'bas': BallStickNeuron,

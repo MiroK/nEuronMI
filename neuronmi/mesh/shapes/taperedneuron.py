@@ -78,7 +78,12 @@ class TaperedNeuron(Neuron):
         self._surfaces['axon_base'] = A2
         self._surfaces['dend_base'] = D2
 
-    def check_geometry_parameters(self, params):
+    @staticmethod
+    def get_neuron_type():
+        return "tapered"
+
+    @staticmethod
+    def check_geometry_parameters(params):
         assert set(params.keys()) == set(TaperedNeuron._defaults.keys()), \
             (set(TaperedNeuron._defaults.keys())-set(params.keys()), set(params.keys())-set(TaperedNeuron._defaults.keys()))
         # Ignore center

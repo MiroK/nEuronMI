@@ -12,9 +12,14 @@ class Neuron(BaseShape):
         '''Rely on correspondence of center of mass'''
         return link_surfaces(model, tags, self, links, tol=tol)
 
-    def check_geometry_parameters(self, params):
+    @staticmethod
+    def check_geometry_parameters(params):
         '''
         Params contains all params as given by defaults and their values
         are sane.
         '''
+        raise NotImplementedError
+
+    @staticmethod
+    def get_neuron_type():
         raise NotImplementedError

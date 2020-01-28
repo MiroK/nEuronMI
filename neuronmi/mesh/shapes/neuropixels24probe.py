@@ -82,7 +82,12 @@ class Neuropixels24Probe(Probe):
         self._surfaces['outline_ymin'] = 0.5*(b0 + B0)
         self._surfaces['outline_ymax'] = 0.5*(b1 + B1)
 
-    def check_geometry_parameters(self, params):
+    @staticmethod
+    def get_probe_type():
+        return "neuropixels"
+
+    @staticmethod
+    def check_geometry_parameters(params):
         assert set(params.keys()) == set(Neuropixels24Probe._defaults.keys()), (set(params.keys()), set(Neuropixels24Probe._defaults.keys()))
         # Ignore center
         assert all(params[k] > 0 for k in ('width', 'length', 'contact_rad'))

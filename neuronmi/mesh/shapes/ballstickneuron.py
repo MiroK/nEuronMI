@@ -58,7 +58,12 @@ class BallStickNeuron(Neuron):
         self._surfaces['axon_base'] = A1
         self._surfaces['dend_base'] = D1
 
-    def check_geometry_parameters(self, params):
+    @staticmethod
+    def get_neuron_type():
+        return "bas"
+
+    @staticmethod
+    def check_geometry_parameters(params):
         assert set(params.keys()) == set(BallStickNeuron._defaults.keys())
         # Ignore center
         assert has_positive_values(params,
