@@ -6,7 +6,8 @@ from neuronmi.simulators.solver.Passive import Passive
 
 import cbcbeat as beat
 
-from dolfin import FunctionAssigner, Constant, Expression, FunctionSpace, Function, interpolate, File
+from dolfin import (FunctionAssigner, Constant, Expression, FunctionSpace, Function, interpolate, File,
+                    assemble, dx, cells)
 import numpy as np
 
 
@@ -16,7 +17,8 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     Setup a membrane model and an ODE solver for it.
     '''
     soma, dendrite, axon = map(as_tuple, (soma, dendrite, axon))
-
+    File('foo.pvd') << subdomains
+    
     if scale_factor is None:
         scale_factor = 1
 
@@ -134,6 +136,15 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
         stim_start_z = zmax_soma + problem_parameters["stimulation"]["position"] * scale_factor
         stim_end_z = stim_start_z + problem_parameters["stimulation"]["length"] * scale_factor
 
+        # At this point subdomains.mesh() is the surface mesh of the neuron where the
+        # ODE is going to be defined. We are interested in the stimated area; where chi is 1
+        chi = Expression('(x[2]>=stim_start_z)*(x[2]<=stim_end_z)',
+                         stim_start_z=stim_start_z,
+                         stim_end_z=stim_end_z,
+                         degree=0)
+        stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
+        # This can be used to adjust strength
+        
         stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
                               stim_strength=problem_parameters["stimulation"]["strength"],
                               stim_start_z=stim_start_z,
@@ -145,7 +156,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
         P0 = problem_parameters["stimulation"]['position']
 
         # Get the closest dendrite point
-        X = closest_entity(P0, subdomains, label=dendrite).midpoint()
+        X = closest_entity(P0, subdomains).midpoint()
         try:
             X = X.array()
         except AttributeError:
@@ -166,9 +177,13 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
             norm_code = 'sqrt(%s)' % norm_code
             # NOTE: Points are considered distince if they are > h away
             # from each other
-            params_ = {'h': 1E-10, 'A': problem_parameters["stimulation"]['strength']}
+            params_ = {'h': 1E-10}
             params_.update({('x%d' % i): X[i] for i in range(3)})
 
+            chi = Expression('%s < h' % norm_code, degree=0, **params_)
+            stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
+
+            params_['A'] = problem_parameters["stimulation"]['strength']/stimulated_area
             stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
 
     mesh = subdomains.mesh()

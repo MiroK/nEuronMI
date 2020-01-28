@@ -33,13 +33,16 @@ def subdomain_bbox(subdomains, label=None):
     return list(zip(coords.min(axis=0), coords.max(axis=0)))
 
 
-def closest_entity(x, subdomains, label):
+def closest_entity(x, subdomains, label=None):
     '''
     Return entity with smallest distance to x out of entities marked by label
     in subdomains. The distance is determined by midpoint is it's only 
     approximate.
     '''
     x = df.Point(*x)
+    # Grab all tags
+    if label is None:
+        label = set(subdomains.array())
     label = as_tuple(label)
     sub_iter = itertools.chain(*[df.SubsetIterator(subdomains, l) for l in label])
         

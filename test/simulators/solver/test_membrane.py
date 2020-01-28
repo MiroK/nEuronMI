@@ -1,6 +1,6 @@
 from neuronmi.simulators.solver.transferring import SubMeshTransfer
 from neuronmi.simulators.solver.embedding import EmbeddedMesh
-from neuronmi.simulators.solver.membrane import ODESolver
+from neuronmi.simulators.solver.membrane import MembraneODESolver
 from neuronmi.mesh.mesh_utils import load_h5_mesh
 import itertools, unittest, os, subprocess
 from neuronmi.mesh.mesh_utils import EMIEntityMap
@@ -15,23 +15,43 @@ class TestMembrane(unittest.TestCase):
     def setUpClass(cls):
         not os.path.exists(TestMembrane.mesh_path) and subprocess.call(['python two_neurons.py'], cwd='./sandbox', shell=True)
 
-    problem_parameters = {'neuron_0': {'I_ion': Constant(0),
-                                       'cond': 1,
-                                       'C_m': 1,
-                                       'stim_strength': 0.0,
-                                       'stim_start': 0.0,  
-                                       'stim_pos': 0.0,
-                                       'stim_length': 0.0},
-                          #
-                          'neuron_1': {'I_ion': Constant(0),
-                                       'cond': 1,
-                                       'C_m': 1,
-                                       'stim_strength': 0.0,
-                                       'stim_start': 0.0,  
-                                       'stim_pos': 0.0,
-                                       'stim_length': 0.0},
+    problem_parameters = {
+        'neurons':  # List or dict. If list, length must be the same of number of neurons in mesh. If dict, the same
+        # params are used for all neurons in the mesh
+        {
+            'cond_int': 7,           # float: Intracellular conductivity in mS/cm^2
+            'Cm': 1.0,               # float: Membrane capacitance in uF/um^2
+            'models': {},            # dict: Models for neuron domains. Default: {'dendrite': 'pas', 'soma': 'hh',
+            #                                             'axon': 'hh'}
+            'model_args': {},        # dict of tuples: Overwrite model default arguments.
+            # E.g. ('dendrite', 'g_L'), ('soma', g_Na)'
+            'stimulation': {'type': 'syn',           # str: Stimulation type ('syn', 'step', 'pulse')
+                        'start_time': 0.01,       # float: Start of stimulation in ms
+                            'stop_time': 1.0,        # float: Stop of stimulation in ms (it type is 'pulse')
+                            'strength': 20.0,        # float: Stimulation strength in mS/cm^2
+                            'position': 350,         # float or array: position of stimulation in um. DEPRECATED
+                            'length': 20             # float: length od stimulated portion in um. DEPRECATED
+            }
+        },
+    'ext':     {
+    'cond_ext': 3,           # float: Extracellular conductivity: mS/cm^2
+        'insulated_bcs': []      # list: Insulated BC for bounding box. It can be: 'max_x', 'min_x', etc.
+    },
+    'probe':   {
+        'stimulated_sites': None,  # List or tuple: Stimulated electrodes (e.g. [contact_3, contact_22]
+        'type': None,            # str: Stimulation type ('step', 'pulse')
+        'start_time': 0.1,       # float: Start of stimulation in ms
+        'stop_time': 1.0,        # float: Stop of stimulation in ms (it type is 'pulse')
+        'current': 0             # float: Stimulation current in mA. If list, each value correspond to a stimulated
+    #        site
+    },
+        'solver':  {
+            'dt_fem': 0.01,          # float: dt for fem solver in ms
+            'dt_ode': 0.01,          # float: dt for ode solver in ms
+            'sim_duration': 5,      # float: duration od the simulation in ms
+        }
     }
-    
+
     def test_membrane(self):
         emi_map = './sandbox/test_2neuron.json'
         with open(emi_map) as json_fp:
@@ -52,7 +72,7 @@ def _membrane(mesh_path, emi_map, problem_parameters):
 
     num_neurons = emi_map.num_neurons
     # Do we have properties for each one
-    neuron_props = [problem_parameters['neuron_%d' % i] for i in range(num_neurons)]
+    # neuron_props = [problem_parameters['neuron_%d' % i] for i in range(num_neurons)]
 
     cell = mesh.ufl_cell()
     Qel = FiniteElement('Discontinuous Lagrange Trace', cell, 0)
@@ -100,9 +120,9 @@ def _membrane(mesh_path, emi_map, problem_parameters):
         dendrite = tuple(map_[k] for k in map_ if 'dend' in k)
         axon = tuple(map_[k] for k in map_ if 'axon' in k)
         
-        ode_solver = ODESolver(ni_subdomains,
-                               soma=soma, axon=axon, dendrite=dendrite,
-                               problem_parameters=problem_parameters['neuron_%d' % i])
+        ode_solver = MembraneODESolver(ni_subdomains,
+                                       soma=soma, axon=axon, dendrite=dendrite,
+                                       problem_parameters=problem_parameters['neurons'])
 
         Tstop = 1.0
         interval = (0.0, Tstop)
