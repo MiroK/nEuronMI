@@ -10,6 +10,12 @@ from dolfin import (FunctionAssigner, Constant, Expression, FunctionSpace, Funct
                     assemble, dx, cells)
 import numpy as np
 
+# NOTE: Expression below are defined with degree zero. A consequence of this
+# is that if a point stimulus is applied, we snap to the midpoint of the nearest
+# neuron surface cell and apply constant stimulus on it. In short, the smallest
+# stimulated area is that of the cell. If more localization is needed the
+# Expression degree should be increased (together with the degree of the
+# Expression used for computing the area)
 
 # TODO make it a class
 def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scale_factor=None):
@@ -149,7 +155,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
                               stim_strength=problem_parameters["stimulation"]["strength"],
                               stim_start_z=stim_start_z,
                               stim_end_z=stim_end_z,
-                              degree=1)
+                              degree=0)
     else:
         assert len(problem_parameters["stimulation"]['position']) == 3
 
@@ -169,7 +175,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
                                   stim_strength=problem_parameters["stimulation"]["strength"],
                                   stim_start_z=X[2] - problem_parameters["stimulation"]['length'] * scale_factor / 2,
                                   stim_end_z=X[2] + problem_parameters["stimulation"]['length'] * scale_factor / 2,
-                                  degree=1)
+                                  degree=0)
         else:
             print('Using point stimulus at %r' % list(X))
 
@@ -184,7 +190,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
             stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
 
             params_['A'] = problem_parameters["stimulation"]['strength']/stimulated_area
-            stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=1, **params_)
+            stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=0, **params_)
 
     mesh = subdomains.mesh()
     V = FunctionSpace(mesh, 'CG', 1)
