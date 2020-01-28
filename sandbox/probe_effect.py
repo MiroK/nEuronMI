@@ -20,7 +20,7 @@ problem_parameters = {
                  'stimulation': {'type': 'syn',           # str: Stimulation type ('syn', 'step', 'pulse')
                                  'start_time': 0.01,       # float: Start of stimulation in ms
                                  'stop_time': 1.0,        # float: Stop of stimulation in ms (it type is 'pulse')
-                                 'strength': 20.0,        # float: Stimulation strength in mS/cm^2
+                                 'strength': 10.0,        # float: Stimulation strength in mS/cm^2
                                  'position': 350,         # float or array: position of stimulation in um. DEPRECATED
                                  'length': 20             # float: length od stimulated portion in um. DEPRECATED
                  }
@@ -44,8 +44,8 @@ problem_parameters = {
     }
 }
 
-neuron = neuronmi.mesh.shapes.TaperedNeuron({'dend_len': 420, 'axon_len': 210, 'axon_rad': 2, 'axonh_rad': 4})
-box_size = {'xlim': [-110, 110], 'ylim': [-100, 100], 'zlim': [-250, 460]}
+neuron = neuronmi.mesh.shapes.TaperedNeuron({'dend_len': 420, 'axon_len': 210, 'axon_rad': 1, 'axonh_rad': 2})
+box_size = {'xlim': [-110, 110], 'ylim': [-110, 110], 'zlim': [-260, 480]}
 
 if microwire:
     # Microwire

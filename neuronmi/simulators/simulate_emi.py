@@ -1,4 +1,5 @@
 from .solver.neuron_solver import neuron_solver
+from .solver.aux import snap_to_nearest
 import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
 from .solver.probing import get_geom_centers, Probe
@@ -50,7 +51,8 @@ def get_default_emi_params():
 
 
 def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
-                 i_probe_locations=None, verbose=False):
+                 i_probe_locations=None, v_probe_locations=None,
+                 save_simulation_output=True, save_format='pvd', save_folder=None, verbose=False):
     '''
     Simulates the 3d-3d EMI solution given a neuronmi-generated mesh (containing at least one neuron and optionally
     one probe).
@@ -62,6 +64,19 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
         The path to the neuronmi-generated mesh containing .h5 and .json
     problem_params: dict
         Dictionary with simulation parameters. To retrieve default parameters, run **neuronmi.get_default_emi_params()**
+    u_probe_locations: np.array
+        Array of 3D points to measure potential
+    i_probe_locations: np.array
+        Array of 3D points to measure currents (if not on neuron surface the point is snapped to closest neuron point)
+    v_probe_locations: np.array
+        Array of 3D points to measure membrane potentials (if not on neuron surface the point is snapped
+        to closest neuron point)
+    save_simulation_output: bool
+        If True, simulation output (u: potential, i: current, v: membrane potential) is saved
+    save_format: str
+        'pvd' or 'xdmf'
+    save_folder: str
+        Path to save folder. If None, an 'emi_simulation' folder is created in the mesh folder.
     '''
     scale_factor = 1e-4
     mesh_folder = Path(mesh_folder)
@@ -85,16 +100,39 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
     if problem_params is None:
         problem_params = _default_problem_parameters
 
-    # TODO extract and save v_mem, v_probe, i_mem
-    I_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'I.pvd'))
-    u_out = dolfin.File(str(mesh_folder / 'emi_sim' / 'u.pvd'))
+    #TODO yield membrane potential as well
+    if save_folder is None:
+        save_folder = mesh_folder / 'emi_simulation'
+    else:
+        save_folder = Path(save_folder)
+
+    if save_simulation_output:
+        if save_format == 'pvd':
+            I_out = dolfin.File(str(save_folder / 'I.pvd'))
+            u_out = dolfin.File(str(save_folder / 'u.pvd'))
+        elif save_format == 'xdmf':
+            I_out = dolfin.XDMFFile(str(save_folder / 'I.xdmf'))
+            u_out = dolfin.XDMFFile(str(save_folder / 'u.xdmf'))
+        else:
+            raise AttributError("'save_format' can be 'pvd' or 'xdmf'")
 
     t_start = time.time()
     u_record = []
     i_record = []
+    v_record = []
+    I_proxy = None
+
     for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
-        I_out << I, t
-        u_out << u, t
+        if save_simulation_output:
+            if save_format == 'pvd':
+                I_out << I, t
+                u_out << u, t
+            elif save_format == 'xdmf':
+                I_out.write(I, float(t))
+                u_out.write(u, float(t))
+
+        if I_proxy is None:
+            I_proxy = snap_to_nearest(I)
 
         if u_probe_locations is not None:
             u_probe_t = np.zeros(len(u_probe_locations))
@@ -102,18 +140,22 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
                 u_probe_t[i] = u(p)
             u_record.append(u_probe_t)
 
+        #TODO now I_proxy is in mAcm-2 --> multiply by facet area to obtain current!
         if i_probe_locations is not None:
             i_probe_t = np.zeros(len(i_probe_locations))
             for i, p in enumerate(i_probe_locations):
-                i_probe_t[i] = i(p)
-            i_record.append(u_probe_t)
+                i_probe_t[i] = I_proxy(p)
+            i_record.append(i_probe_t)
+
+        #TODO add membrane potential
 
     if u_probe_locations is not None:
         u_record = np.array(u_record)
     if i_probe_locations is not None:
         i_record = np.array(i_record)
 
-    print 'Results saved in ' + str(mesh_folder / 'emi_sim')
+    if save_simulation_output:
+        print 'Results saved in ' + str(save_folder)
     print 'Elapsed time: ' + str(time.time() - t_start)
 
     return u_record, i_record
