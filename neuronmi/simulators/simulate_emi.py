@@ -103,6 +103,8 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
     #TODO yield membrane potential as well
     if save_folder is None:
         save_folder = mesh_folder / 'emi_simulation'
+    else:
+        save_folder = Path(save_folder)
 
     if save_simulation_output:
         if save_format == 'pvd':
@@ -117,6 +119,7 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
     t_start = time.time()
     u_record = []
     i_record = []
+    v_record = []
     I_proxy = None
 
     for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
@@ -142,7 +145,6 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
             i_probe_t = np.zeros(len(i_probe_locations))
             for i, p in enumerate(i_probe_locations):
                 i_probe_t[i] = I_proxy(p)
-                print(i, p, i_probe_t[i])
             i_record.append(i_probe_t)
 
         #TODO add membrane potential
