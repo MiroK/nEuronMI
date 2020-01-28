@@ -15,7 +15,7 @@ class NeuronexusProbe(Probe):
         'tip_y': 0,
         'tip_z': -100,
         'angle': 0,  # In radians as gmsh want it!
-        'length': 500,
+        'length': 1000,
         'width': 15,
         'contact_rad': 7.5
         }

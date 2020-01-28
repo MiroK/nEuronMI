@@ -46,7 +46,7 @@ def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=
         a dictionary with 'neuron', 'probe', 'rest' fields with cell size in um
     box_size: int or limits
         Size of the bounding box. It can be 1, 2, 3, 4, 5, 6 (smaller to larger) or
-        a dictionary with 'xlim', 'ylim', 'zlim' (scalar or vector of 2), which are the boundaries of the box
+        a dictionary with 'xlim', 'ylim', 'zlim' (vector of 2), which are the boundaries of the box
     neuron_params: dict
         Dictionary with neuron params: 'rad_soma', 'rad_dend', 'rad_axon', 'len_dend', 'len_axon'.
         If the 'neuron_type' is 'tapered', also 'rad_dend_base' and 'rad_axon_base'
@@ -67,12 +67,7 @@ def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=
         xlim = box_size['xlim']
         ylim = box_size['ylim']
         zlim = box_size['zlim']
-    if np.array(xlim).size == 1:
-        xlim = np.array([xlim, xlim])
-    if np.array(ylim).size == 1:
-        ylim = np.array([ylim, ylim])
-    if np.array(zlim).size == 1:
-        zlim = np.array([zlim, zlim])
+    assert len(xlim) == 2 and len(ylim) == 2 and len(zlim) == 2, 'Box dimensions should be 2-dimensional (min-max)'
 
     box = Box(np.array([xlim[0], ylim[0], zlim[0]]), np.array([xlim[1], ylim[1], zlim[1]]))
 
@@ -99,6 +94,7 @@ def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=
                 raise AttributeError("'neurons' not in %s" % neuron_list.keys())
         elif isinstance(neurons, Neuron):
             neuron_objects = neurons
+            neuron_str = neurons.get_neuron_type()
         elif isinstance(neurons, list):
             if isinstance(neurons[0], str):
                 assert neuron_params is not None and len(neuron_params) == len(neurons), "For a list of neurons, " \
@@ -147,7 +143,7 @@ def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=
                   'ext': mesh_resolution['ext']}
 
     # Coarse enough for tests
-    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': mesh_sizes['ext'],
+    size_params = {'DistMax': 40, 'DistMin': 10, 'LcMax': mesh_sizes['ext'],
                    'neuron_LcMin': mesh_sizes['neuron'], 'probe_LcMin': mesh_sizes['probe']}
 
     mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
@@ -224,7 +220,7 @@ def return_coarseness(coarse):
         pmesh = 20
         rmesh = 30
     else:
-        raise Exception('coarseness must be 00, 0, 1, 2, or 3')
+        raise Exception('coarseness must be 0, 1, 2, or 3')
 
     resolution = {'neuron': nmesh,
                   'probe': pmesh,
