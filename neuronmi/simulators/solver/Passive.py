@@ -63,6 +63,15 @@ class Passive(CardiacCellModel):
         current = [ufl.zero()]*1
 
         # Expressions for the Membrane component
+        # Expressions for the Membrane component
+        # FIXME: base on stim_type + add to Hodgkin
+        # if self._parameters["stim"] == 'syn':
+        #     i_stim = g_S*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1, 0)*ufl.exp((t0 - time)/alpha)
+        # elif self._parameters["stim"] == 'step':
+        #     i_stim = g_S*ufl.conditional(ufl.ge(time, t0), 1, 0)
+        # elif self._parameters["stim"] == 'pulse':
+        #     i_stim = g_S*ufl.conditional(ufl.And(ufl.ge(time, t0), ufl.le(time, t1), 1, 0))
+
         i_leak = g_leak*(-E_leak + V)
         i_stim = g_s*exp(-(time-t0)/alpha)*(V-v_eq)*ufl.conditional(ufl.ge(time, t0), 1, 0)
         current[0] = (-i_leak-i_stim)/Cm
