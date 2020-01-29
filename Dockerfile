@@ -54,6 +54,7 @@ RUN pip install --user LFPy
 RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 --user && \
     pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user && \
     pip install cppimport --user && \
+    pip install MEAutlity --user && \
     pip install git+https://github.com/mikaem/fenicstools.git@2016.1 --user
 
 # Get neuronmi

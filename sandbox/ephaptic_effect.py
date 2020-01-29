@@ -11,7 +11,7 @@ from fenicstools import Probes
 import argparse
 
 
-def coordinates(neuron_params, num_centreline_points, num_soma_points):
+def coordinates(neuron_params, num_centreline_points, num_soma_points, perpendicular_distance):
     """Create coordinates for probes."""
     soma_rad = neuron_params["soma_rad"]
     neuronal_centreline = np.zeros((num_centreline_points, 3))
@@ -26,7 +26,12 @@ def coordinates(neuron_params, num_centreline_points, num_soma_points):
     soma_cross_centreline = np.zeros((num_soma_points, 3))
     soma_cross_centreline[:, 0] = neuron_params["soma_x"]
     soma_cross_centreline[:, 2] = neuron_params["soma_z"]
-    soma_cross_centreline[:, 1] = np.linspace(-soma_rad, soma_rad, num_soma_points)
+    # soma_cross_centreline[:, 1] = np.linspace(-soma_rad, soma_rad, num_soma_points)
+    soma_cross_centreline[:, 1] = np.linspace(
+        neuron_params["soma_y"] - perpendicular_distance,
+        neuron_params["soma_y"] + perpendicular_distance,
+        num_soma_points
+    )
 
     neuronal_centreline /= 10000
     soma_cross_centreline /= 10000
@@ -106,8 +111,8 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, neuro
     params['neurons'] = [neuron_params_0, neuron_params_1]
 
     # Set up probes
-    p1_centreline_coordinates, p1_soma_coordinates = coordinates(p1, 30, 10)
-    p2_centreline_coordinates, p2_soma_coordinates = coordinates(p2, 30, 10)
+    p1_centreline_coordinates, p1_soma_coordinates = coordinates(p1, 30, 30, transverse_distance)
+    p2_centreline_coordinates, p2_soma_coordinates = coordinates(p2, 30, 30, transverse_distance)
 
     p1_centreline_probe = PointProbe("p1_centreline", p1_centreline_coordinates, mesh_folder / "probes")
     p1_soma_probe = PointProbe("p1_soma", p1_soma_coordinates, mesh_folder / "probes")
