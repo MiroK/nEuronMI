@@ -17,18 +17,18 @@ import numpy as np
 # Expression degree should be increased (together with the degree of the
 # Expression used for computing the area)
 
-# TODO make it a class
+
 def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scale_factor=None):
     '''
     Setup a membrane model and an ODE solver for it.
     '''
     soma, dendrite, axon = map(as_tuple, (soma, dendrite, axon))
-    File('foo.pvd') << subdomains
-    
+
     if scale_factor is None:
         scale_factor = 1
 
     not_available_model_msg = "Available models are: 'pas' (Passive), 'hh' (Hodgkin-Huxley)"
+    assert problem_parameters["stimulation"]["type"] in ["syn", "step", "pulse"]
 
     if 'dendrite' in problem_parameters['models'].keys():
         assert problem_parameters['models']['dendrite'] in ['pas', 'hh'], not_available_model_msg
@@ -87,9 +87,6 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     soma_params['Cm'] = problem_parameters['Cm']
     axon_params['Cm'] = problem_parameters['Cm']
 
-    # TODO define current outside the Model (so that different stim types can be implemented)
-    dendrite_params["t0"] = problem_parameters["stimulation"]["start_time"]  # (ms)
-
     # Overwrite user-defined params (if any)
     for key, val in problem_parameters['model_args'].items():
         model, param = key
@@ -112,7 +109,6 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
             print("Model " + str(model) + " must be 'dendrite', 'soma', or 'axon'")
 
 
-    # TODO revise stimulation modalities
     # ^z
     # | x + length [END]                   
     # | 
@@ -120,27 +116,39 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     # |
     # | zmax_soma (x - stim_pos)
     # |
-    # We have 3 ways of stimulating the dendrite. If `stim_pos` is a float
-    # it is interpreted as a distance from the soma top where the dendrite
-    # piece of length `stim_length` is stimulated. If `stim_pos` is a
-    # an iterable of len 3 it is interpreted as a source location and the
-    # stimulus location is defined using the dendrite point P closest to it.
-    # If stim_length is not among the parameters only the closest point
-    # will act as a point stimulus. Otherwise dendrite points X such that
-    # their abs(X[2] - P[2]) < stim_length/2 are stimulated - 
-    if isinstance(problem_parameters["stimulation"]['position'], (int, float)):
-        print('Using stimulus based on soma location')
-        # Extract the bounds of the z coordinate to localize stimulation
-        zmin, zmax = subdomain_bbox(subdomains)[-1]
+    # We have 3 ways of stimulating the dendrite given. If problem_parameters["stimulation"]['position'] is a float
+    # it is interpreted as the z position (x and y are set to 0).
+    # The closest neuron facet is found. If problem_parameters["stimulation"]['length'] is not None, a portion of
+    # membrane of that length is stimulated (extending in the z direction by +-length/2).
+    # If 'length' is None, the facets within 'radius' distance from the stimulation facet are selected.
+    # The strength of the stimulation, in case of problem_parameters["stimulation"]['type'] is 'pulse' or 'step',
+    # is adjusted so that it's distributed over the stimulation area.
+    assert len(problem_parameters["stimulation"]['position']) == 3
 
-        # Or just for the dendrite part
-        zmin_dend, zmax_dend = subdomain_bbox(subdomains, dendrite)[-1]
+    P0 = np.array(problem_parameters["stimulation"]['position']) * scale_factor
 
-        # Or just for the soma part
-        zmin_soma, zmax_soma = subdomain_bbox(subdomains, soma)[-1]
-        # Select start and end of the synaptic input area
-        stim_start_z = zmax_soma + problem_parameters["stimulation"]["position"] * scale_factor
-        stim_end_z = stim_start_z + problem_parameters["stimulation"]["length"] * scale_factor
+    # Get the closest dendrite point
+    X = closest_entity(P0, subdomains, dendrite).midpoint()
+    try:
+        X = X.array()
+    except AttributeError:
+        X = np.array([X[i] for i in range(3)])
+
+    print("target", P0 / scale_factor, "closest", X / scale_factor)
+
+    stim = 'point'
+    if 'length' in problem_parameters["stimulation"]:
+        if problem_parameters["stimulation"]['length'] is not None:
+            stim = 'ring'
+            stim_length = problem_parameters["stimulation"]['length']  * scale_factor
+
+    if stim == 'ring':
+        print('Using ring stimulus based on %r' % list(X))
+        # Select start and end of the stimulation input area
+        stim_start_z = X[2] - stim_length / 2
+        stim_end_z = X[2] + stim_length / 2
+
+        print(stim_start_z, stim_end_z)
 
         # At this point subdomains.mesh() is the surface mesh of the neuron where the
         # ODE is going to be defined. We are interested in the stimated area; where chi is 1
@@ -148,55 +156,78 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
                          stim_start_z=stim_start_z,
                          stim_end_z=stim_end_z,
                          degree=0)
-        stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
-        # This can be used to adjust strength
-        
+        stimulated_area = assemble(chi * dx(domain=subdomains.mesh()))
+        stimulated_area_um2 = stimulated_area / (scale_factor ** 2)
+
+        if problem_parameters["stimulation"]["type"] == "syn":
+            assert "syn_weight" in problem_parameters["stimulation"].keys()
+            strength = problem_parameters["stimulation"]["strength"]
+            print("Synaptic conductance:", strength, "mS/cm2")
+        elif problem_parameters["stimulation"]["type"] == "step":
+            assert "stim_current" in problem_parameters["stimulation"].keys()
+            strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
+            print("Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
+                  "nA/um2 over", stimulated_area_um2, "um2")
+        elif problem_parameters["stimulation"]["type"] == "pulse":
+            assert "stim_current" in problem_parameters["stimulation"].keys()
+            strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
+            print("Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
+                  "nA/um2 over", stimulated_area_um2, "um2")
+
         stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
-                              stim_strength=problem_parameters["stimulation"]["strength"],
+                              stim_strength=strength,
                               stim_start_z=stim_start_z,
                               stim_end_z=stim_end_z,
                               degree=0)
     else:
-        assert len(problem_parameters["stimulation"]['position']) == 3
+        assert problem_parameters["stimulation"]["radius"] is not None
+        print('Using point stimulus at %r' % list(X))
 
-        P0 = problem_parameters["stimulation"]['position']
+        norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
+        norm_code = 'sqrt(%s)' % norm_code
+        # NOTE: Points are considered distince if they are > h away
+        # from each other
+        stimulation_radius = problem_parameters["stimulation"]["radius"] * scale_factor
+        params_ = {'h': stimulation_radius}
+        params_.update({('x%d' % i): X[i] for i in range(3)})
 
-        # Get the closest dendrite point
-        X = closest_entity(P0, subdomains).midpoint()
-        try:
-            X = X.array()
-        except AttributeError:
-            X = np.array([X[i] for i in range(3)])
+        chi = Expression('%s < h' % norm_code, degree=0, **params_)
+        stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
+        stimulated_area_um2 = stimulated_area / (scale_factor**2)
 
-        if 'stim_length' in problem_parameters["stimulation"]:
-            print('Using ring stimulus based on %r' % list(X))
+        if problem_parameters["stimulation"]["type"] == "syn":
+            assert "syn_weight" in problem_parameters["stimulation"].keys()
+            strength = problem_parameters["stimulation"]["strength"]
+            print("Synaptic conductance:", strength, "mS/cm2")
+        elif problem_parameters["stimulation"]["type"] == "step":
+            assert "stim_current" in problem_parameters["stimulation"].keys()
+            strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
+            print("Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
+                  "nA/um2 over", stimulated_area_um2, "um2")
+        elif problem_parameters["stimulation"]["type"] == "pulse":
+            assert "stim_current" in problem_parameters["stimulation"].keys()
+            strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
+            print("Stimulation current:",  problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
+                  "nA/um2 over", stimulated_area_um2, "um2")
 
-            stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
-                                  stim_strength=problem_parameters["stimulation"]["strength"],
-                                  stim_start_z=X[2] - problem_parameters["stimulation"]['length'] * scale_factor / 2,
-                                  stim_end_z=X[2] + problem_parameters["stimulation"]['length'] * scale_factor / 2,
-                                  degree=0)
-        else:
-            print('Using point stimulus at %r' % list(X))
-
-            norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
-            norm_code = 'sqrt(%s)' % norm_code
-            # NOTE: Points are considered distince if they are > h away
-            # from each other
-            params_ = {'h': 1E-10}
-            params_.update({('x%d' % i): X[i] for i in range(3)})
-
-            chi = Expression('%s < h' % norm_code, degree=0, **params_)
-            stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
-
-            params_['A'] = problem_parameters["stimulation"]['strength']/stimulated_area
-            stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=0, **params_)
+        params_['A'] = strength
+        stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=0, **params_)
 
     mesh = subdomains.mesh()
     V = FunctionSpace(mesh, 'CG', 1)
-    f = interpolate(stimul_f, V)
+    # f = interpolate(stimul_f, V)
+    # File('foo.pvd') << f
 
+    # find stimulated subdomain (for now only dendrite)
+    dendrite_params["t_start"] = problem_parameters["stimulation"]["start_time"]  # (ms)
+    dendrite_params["t_stop"] = problem_parameters["stimulation"]["stop_time"]  # (ms)
     dendrite_params["g_S"] = stimul_f
+    if problem_parameters["stimulation"]["type"] == "syn":
+        dendrite_params["stim_type"] = 0  # (ms)
+    elif problem_parameters["stimulation"]["type"] == "step":
+        dendrite_params["stim_type"] = 1  # (ms)
+    elif problem_parameters["stimulation"]["type"] == "pulse":
+        dendrite_params["stim_type"] = 2  # (ms)
 
     # Update model parameters
     dendrite_object = dendrite_model(dendrite_params)

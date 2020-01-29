@@ -19,11 +19,13 @@ _default_problem_parameters = {
                  'model_args': {},        # dict of tuples: Overwrite model default arguments.
                                           # E.g. ('dendrite', 'g_L'), ('soma', g_Na)'
                  'stimulation': {'type': 'syn',           # str: Stimulation type ('syn', 'step', 'pulse')
-                                 'start_time': 0.1,       # float: Start of stimulation in ms
+                                 'start_time': 0.01,      # float: Start of stimulation in ms
                                  'stop_time': 1.0,        # float: Stop of stimulation in ms (it type is 'pulse')
-                                 'strength': 10.0,        # float: Stimulation strength in mS/cm^2
-                                 'position': 150,         # float or array: position of stimulation in um. DEPRECATED
-                                 'length': 20             # float: length od stimulated portion in um. DEPRECATED
+                                 'syn_weight': 10.0,      # float: Synaptic weight in in mS/cm^2 (if 'type' is 'syn')
+                                 'stim_current': 10,      # float: Stimulation current in nA (if 'type' is 'step'/'pulse')
+                                 'position': [0, 0, 150], # array: 3D position of stimulation point in um.
+                                 'length': 20,            # float: length of stimulated portion in um.
+                                 'radius': 5,             # float: radius of stimulated area
                  }
     },
     'ext':     {

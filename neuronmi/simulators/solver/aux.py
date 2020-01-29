@@ -45,9 +45,9 @@ def closest_entity(x, subdomains, label=None):
         label = set(subdomains.array())
     label = as_tuple(label)
     sub_iter = itertools.chain(*[df.SubsetIterator(subdomains, l) for l in label])
-        
+
     e = min(sub_iter, key=lambda e, x=x: (x-e.midpoint()).norm())
-    
+
     return df.MeshEntity(subdomains.mesh(), e.dim(), e.index())
 
 

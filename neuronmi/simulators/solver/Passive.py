@@ -29,10 +29,13 @@ class Passive(CardiacCellModel):
         params = OrderedDict([("g_L", 0.06),
                               ("E_L", -75.0),
                               ("Cm", 1.0),
+                              ("stim_type", 0),
                               ("g_S", 0.0),
                               ("alpha", 2.0),
                               ("v_eq", 0.0),
-                              ("t0", 0.0)])
+                              ("t_start", 0.0),
+                              ("t_stop", 1.0)
+                              ])
         return params
 
     @staticmethod
@@ -54,26 +57,25 @@ class Passive(CardiacCellModel):
         g_leak = self._parameters["g_L"]
         Cm = self._parameters["Cm"]
         E_leak = self._parameters["E_L"]
+        stim_type = self._parameters["stim_type"]
         g_s = self._parameters["g_S"]
         alpha = self._parameters["alpha"]
         v_eq = self._parameters["v_eq"]
-        t0 = self._parameters["t0"]
+        t0 = self._parameters["t_start"]
+        t1 = self._parameters["t_stop"]
 
         # Init return args
         current = [ufl.zero()]*1
 
         # Expressions for the Membrane component
-        # Expressions for the Membrane component
-        # FIXME: base on stim_type + add to Hodgkin
-        # if self._parameters["stim"] == 'syn':
-        #     i_stim = g_S*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1, 0)*ufl.exp((t0 - time)/alpha)
-        # elif self._parameters["stim"] == 'step':
-        #     i_stim = g_S*ufl.conditional(ufl.ge(time, t0), 1, 0)
-        # elif self._parameters["stim"] == 'pulse':
-        #     i_stim = g_S*ufl.conditional(ufl.And(ufl.ge(time, t0), ufl.le(time, t1), 1, 0))
+        if stim_type == 0:
+            i_stim = g_s*(-v_eq + V)*ufl.conditional(ufl.ge(time, t0), 1, 0)*ufl.exp((t0 - time)/alpha)
+        elif stim_type == 1:
+            i_stim = -g_s*ufl.conditional(ufl.ge(time, t0), 1, 0)
+        elif stim_type == 2:
+            i_stim = -g_s*ufl.conditional(ufl.And(ufl.ge(time, t0), ufl.le(time, t1)), 1, 0)
 
         i_leak = g_leak*(-E_leak + V)
-        i_stim = g_s*exp(-(time-t0)/alpha)*(V-v_eq)*ufl.conditional(ufl.ge(time, t0), 1, 0)
         current[0] = (-i_leak-i_stim)/Cm
 
         # Return results
