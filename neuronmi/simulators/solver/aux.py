@@ -44,11 +44,15 @@ def closest_entity(x, subdomains, label=None):
     if label is None:
         label = set(subdomains.array())
     label = as_tuple(label)
+
     sub_iter = itertools.chain(*[df.SubsetIterator(subdomains, l) for l in label])
 
-    e = min(sub_iter, key=lambda e, x=x: (x-e.midpoint()).norm())
+    pairs = (((x-e.midpoint()).norm(), e.index()) for e in sub_iter)
+    dist, index = min(pairs, key=lambda p: p[0])
 
-    return df.MeshEntity(subdomains.mesh(), e.dim(), e.index())
+    print('Found y, |x-y|=', dist)
+
+    return df.MeshEntity(subdomains.mesh(), subdomains.dim(), index)
 
 
 def point_source(e, A, h=1E-10):

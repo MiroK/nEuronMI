@@ -25,6 +25,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     soma, dendrite, axon = map(as_tuple, (soma, dendrite, axon))
 
     if scale_factor is None:
+
         scale_factor = 1
 
     not_available_model_msg = "Available models are: 'pas' (Passive), 'hh' (Hodgkin-Huxley)"
@@ -127,6 +128,10 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
 
     P0 = np.array(problem_parameters["stimulation"]['position']) * scale_factor
 
+    m = subdomains.mesh()
+    print m.coordinates().min(axis=0), 'min'
+    print m.coordinates().max(axis=0), 'max'
+    
     # Get the closest dendrite point
     X = closest_entity(P0, subdomains, dendrite).midpoint()
     try:
