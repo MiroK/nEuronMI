@@ -7,7 +7,7 @@ from neuronmi.simulators.solver.Passive import Passive
 import cbcbeat as beat
 
 from dolfin import (FunctionAssigner, Constant, Expression, FunctionSpace, Function, interpolate, File,
-                    assemble, dx, cells)
+                    assemble, Measure, cells)
 import numpy as np
 
 # NOTE: Expression below are defined with degree zero. A consequence of this
@@ -143,6 +143,12 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
             stim = 'ring'
             stim_length = problem_parameters["stimulation"]['length']  * scale_factor
 
+
+    # Measure to get area effected by stimulus
+    dV = Measure('dx', domain=subdomains.mesh(), subdomain_data=subdomains)
+    # See where the stimulus was localized
+    piece_tags = {'soma': set(soma), 'dendrite': set(dendrite), 'axon': set(axon)}
+    
     if stim == 'ring':
         print 'Using ring stimulus based on %r' % list(X)
         # Select start and end of the stimulation input area
@@ -155,7 +161,17 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
                          stim_start_z=stim_start_z,
                          stim_end_z=stim_end_z,
                          degree=0)
-        stimulated_area = assemble(chi * dx(domain=subdomains.mesh()))
+
+        # Total stimated area irrespective of which part we touch
+        stimulated_area = assemble(chi * dV)
+        # Let's break it to piecese
+        for piece, tags in piece_tags.items():
+            # Keep those that are covered by mask
+            tags.intersection_update([tag for tag in tags if assemble(chi * dV(tag)) > 0])
+            if not tags:
+                del piece_tags[piece]
+        print('Stimulated tags', piece_tags)
+        
         stimulated_area_um2 = stimulated_area / (scale_factor ** 2)
 
         if problem_parameters["stimulation"]["type"] == "syn":
@@ -191,7 +207,17 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
         params_.update({('x%d' % i): X[i] for i in range(3)})
 
         chi = Expression('%s < h' % norm_code, degree=0, **params_)
-        stimulated_area = assemble(chi*dx(domain=subdomains.mesh()))
+
+        # Total stimated area irrespective of which part we touch
+        stimulated_area = assemble(chi * dV)
+        # Let's break it to piecese
+        for piece, tags in piece_tags.items():
+            # Keep those that are covered by mask
+            tags.intersection_update([tag for tag in tags if assemble(chi * dV(tag)) > 0])
+            if not tags:
+                del piece_tags[piece]
+        print('Stimulated tags', piece_tags)
+
         stimulated_area_um2 = stimulated_area / (scale_factor**2)
 
         if problem_parameters["stimulation"]["type"] == "syn":
