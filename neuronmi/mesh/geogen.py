@@ -43,7 +43,7 @@ def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=
         If None, a mesh without probe is generated.
     mesh_resolution: int or dict
         Resolution of the mesh. It can be 0, 1, 2, 3, 4, 5 (less course to more coarse) or
-        a dictionary with 'neuron', 'probe', 'rest' fields with cell size in um
+        a dictionary with 'neuron', 'probe', 'ext' fields with cell size in um
     box_size: int or limits
         Size of the bounding box. It can be 1, 2, 3, 4, 5, 6 (smaller to larger) or
         a dictionary with 'xlim', 'ylim', 'zlim' (vector of 2), which are the boundaries of the box
@@ -143,7 +143,7 @@ def generate_mesh(neurons='bas', probe='microwire', mesh_resolution=2, box_size=
                   'ext': mesh_resolution['ext']}
 
     # Coarse enough for tests
-    size_params = {'DistMax': 40, 'DistMin': 10, 'LcMax': mesh_sizes['ext'],
+    size_params = {'DistMax': 20, 'DistMin': 10, 'LcMax': mesh_sizes['ext'],
                    'neuron_LcMin': mesh_sizes['neuron'], 'probe_LcMin': mesh_sizes['probe']}
 
     mesh_name = 'mesh_%s_%s_%s' % (neuron_str, probe_str, time.strftime("%d-%m-%Y_%H-%M"))
