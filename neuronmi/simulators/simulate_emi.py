@@ -116,7 +116,9 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
             I_out = dolfin.XDMFFile(str(save_folder / 'I.xdmf'))
             u_out = dolfin.XDMFFile(str(save_folder / 'u.xdmf'))
         else:
-            raise AttributError("'save_format' can be 'pvd' or 'xdmf'")
+            raise AttributeError("'save_format' can be 'pvd' or 'xdmf'")
+
+    dolfin.parameters['allow_extrapolation'] = True
 
     t_start = time.time()
     u_record = []

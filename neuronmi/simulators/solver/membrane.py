@@ -161,7 +161,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
 
         if problem_parameters["stimulation"]["type"] == "syn":
             assert "syn_weight" in problem_parameters["stimulation"].keys()
-            strength = problem_parameters["stimulation"]["strength"]
+            strength = problem_parameters["stimulation"]["syn_weight"]
             print("Synaptic conductance:", strength, "mS/cm2")
         elif problem_parameters["stimulation"]["type"] == "step":
             assert "stim_current" in problem_parameters["stimulation"].keys()
@@ -197,7 +197,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
 
         if problem_parameters["stimulation"]["type"] == "syn":
             assert "syn_weight" in problem_parameters["stimulation"].keys()
-            strength = problem_parameters["stimulation"]["strength"]
+            strength = problem_parameters["stimulation"]["syn_weight"]
             print("Synaptic conductance:", strength, "mS/cm2")
         elif problem_parameters["stimulation"]["type"] == "step":
             assert "stim_current" in problem_parameters["stimulation"].keys()
