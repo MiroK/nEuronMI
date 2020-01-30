@@ -50,8 +50,6 @@ def closest_entity(x, subdomains, label=None):
     pairs = (((x-e.midpoint()).norm(), e.index()) for e in sub_iter)
     dist, index = min(pairs, key=lambda p: p[0])
 
-    print('Found y, |x-y|=', dist)
-
     return df.MeshEntity(subdomains.mesh(), subdomains.dim(), index)
 
 
