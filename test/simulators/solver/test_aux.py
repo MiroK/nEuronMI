@@ -45,22 +45,21 @@ class TestCases(unittest.TestCase):
         self.assertTrue(subdomain_bbox(cell_f, (1, 0)) == [(0.5, 1.0), (0.0, 1.0)])
         self.assertTrue(subdomain_bbox(cell_f, (1, 3)) == [(0.0, 1.0), (0.0, 1.0)])
 
-    # def test_closest_point(self):
-    #     mesh = df.UnitCubeMesh(10, 10, 10)
-    #     facet_f = df.MeshFunction('size_t', mesh, 2, 0)
-    #     df.CompiledSubDomain('near(x[0], 0)').mark(facet_f, 1)
-    #     df.CompiledSubDomain('near(x[2], 0.5)').mark(facet_f, 2)
+    def test_closest_point(self):
+        mesh = df.UnitCubeMesh(10, 10, 10)
+        facet_f = df.MeshFunction('size_t', mesh, 2, 0)
+        df.CompiledSubDomain('near(x[0], 0)').mark(facet_f, 1)
+        df.CompiledSubDomain('near(x[2], 0.5)').mark(facet_f, 2)
 
-    #     bmesh = EmbeddedMesh(facet_f, [1, 2])
-    #     subdomains = bmesh.marking_function
+        x = np.array([1, 1., 1.])
+        entity = closest_entity(x, facet_f)
+        x0 = entity.midpoint().array()[:3]
 
-    #     x = np.array([1, 1., 1.])
-    #     entity = closest_entity(x, subdomains, (1, 2))
-    #     x0 = entity.midpoint().array()[:3]
+        print x0
 
-    #     f = point_source(entity, A=df.Expression('3', degree=1))
-    #     self.assertTrue(abs(f(x0) - 3) < 1E-15),
-    #     self.assertTrue(abs(f(x0 + 1E-9*np.ones(3))) < 1E-15)
+        #f = point_source(entity, A=df.Expression('3', degree=1))
+        #self.assertTrue(abs(f(x0) - 3) < 1E-15),
+        #self.assertTrue(abs(f(x0 + 1E-9*np.ones(3))) < 1E-15)
 
     def test_surface_normal(self):
         mesh = df.UnitCubeMesh(5, 5, 5)
