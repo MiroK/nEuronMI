@@ -24,7 +24,8 @@ params['neurons']["stimulation"]["type"] = "step"
 params['neurons']["stimulation"]["stim_current"] = 0.1  # nA
 params['neurons']["stimulation"]["syn_weight"] = 10  # mS/um2
 params['neurons']["stimulation"]["position"] = [0, 0, 30]
-params['neurons']["stimulation"]["length"] = 5
+params['neurons']["stimulation"]["length"] = None
+params['neurons']["stimulation"]["radius"] = 5
 params['solver']['sim_duration'] = 0.5
 
 u, i = neuronmi.simulate_emi(mesh_with, u_probe_locations=u_probe, i_probe_locations=i_probe,

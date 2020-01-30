@@ -129,8 +129,6 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     P0 = np.array(problem_parameters["stimulation"]['position']) * scale_factor
 
     m = subdomains.mesh()
-    print m.coordinates().min(axis=0), 'min'
-    print m.coordinates().max(axis=0), 'max'
     
     # Get the closest dendrite point
     X = closest_entity(P0, subdomains, dendrite).midpoint()
@@ -138,8 +136,6 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
         X = X.array()
     except AttributeError:
         X = np.array([X[i] for i in range(3)])
-
-    print("target", P0 / scale_factor, "closest", X / scale_factor)
 
     stim = 'point'
     if 'length' in problem_parameters["stimulation"]:
@@ -154,12 +150,10 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     piece_tags = {'soma': set(soma), 'dendrite': set(dendrite), 'axon': set(axon)}
     
     if stim == 'ring':
-        print('Using ring stimulus based on %r' % list(X))
+        print 'Using ring stimulus based on %r' % list(X)
         # Select start and end of the stimulation input area
         stim_start_z = X[2] - stim_length / 2
         stim_end_z = X[2] + stim_length / 2
-
-        print(stim_start_z, stim_end_z)
 
         # At this point subdomains.mesh() is the surface mesh of the neuron where the
         # ODE is going to be defined. We are interested in the stimated area; where chi is 1
@@ -182,18 +176,18 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
 
         if problem_parameters["stimulation"]["type"] == "syn":
             assert "syn_weight" in problem_parameters["stimulation"].keys()
-            strength = problem_parameters["stimulation"]["strength"]
-            print("Synaptic conductance:", strength, "mS/cm2")
+            strength = problem_parameters["stimulation"]["syn_weight"]
+            print "Synaptic conductance:", strength, "mS/cm2"
         elif problem_parameters["stimulation"]["type"] == "step":
             assert "stim_current" in problem_parameters["stimulation"].keys()
             strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
-            print("Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
-                  "nA/um2 over", stimulated_area_um2, "um2")
+            print "Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2, \
+                  "nA/um2 over", stimulated_area_um2, "um2"
         elif problem_parameters["stimulation"]["type"] == "pulse":
             assert "stim_current" in problem_parameters["stimulation"].keys()
             strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
-            print("Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
-                  "nA/um2 over", stimulated_area_um2, "um2")
+            print "Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2, \
+                  "nA/um2 over", stimulated_area_um2, "um2"
 
         stimul_f = Expression("stim_strength*(x[2]>=stim_start_z)*(x[2]<=stim_end_z)",
                               stim_strength=strength,
@@ -202,7 +196,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
                               degree=0)
     else:
         assert problem_parameters["stimulation"]["radius"] is not None
-        print('Using point stimulus at %r' % list(X))
+        print 'Using point stimulus at %r' % list(X)
 
         norm_code = '+'.join(['pow(x[%d]-x%d, 2)' % (i, i) for i in range(3)])
         norm_code = 'sqrt(%s)' % norm_code
@@ -228,18 +222,18 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
 
         if problem_parameters["stimulation"]["type"] == "syn":
             assert "syn_weight" in problem_parameters["stimulation"].keys()
-            strength = problem_parameters["stimulation"]["strength"]
-            print("Synaptic conductance:", strength, "mS/cm2")
+            strength = problem_parameters["stimulation"]["syn_weight"]
+            print "Synaptic conductance:", strength, "mS/cm2"
         elif problem_parameters["stimulation"]["type"] == "step":
             assert "stim_current" in problem_parameters["stimulation"].keys()
             strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
-            print("Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
-                  "nA/um2 over", stimulated_area_um2, "um2")
+            print "Stimulation current:", problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2, \
+                  "nA/um2 over", stimulated_area_um2, "um2"
         elif problem_parameters["stimulation"]["type"] == "pulse":
             assert "stim_current" in problem_parameters["stimulation"].keys()
             strength = problem_parameters["stimulation"]["stim_current"] * 1e-3 / stimulated_area
-            print("Stimulation current:",  problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2,
-                  "nA/um2 over", stimulated_area_um2, "um2")
+            print "Stimulation current:",  problem_parameters["stimulation"]["stim_current"] / stimulated_area_um2, \
+                  "nA/um2 over", stimulated_area_um2, "um2"
 
         params_['A'] = strength
         stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=0, **params_)
