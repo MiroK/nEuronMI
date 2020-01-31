@@ -36,12 +36,19 @@ class MicrowireProbe(Probe):
         self._surfaces = {'wall': self.cylinder.center_of_mass,
                           'contact_0': A}
 
-    def check_geometry_parameters(self, params):
+        self._contacts = np.array([A])
+
+    @staticmethod
+    def get_probe_type():
+        return "microwire"
+
+    @staticmethod
+    def check_geometry_parameters(params):
         assert set(params.keys()) == set(MicrowireProbe._defaults.keys()) 
         # Ignore center
         assert has_positive_values(params,
                                    set(params.keys()) - set(('tip_x', 'tip_y', 'tip_z')))
-        
+
     def contains(self, point, tol):
         '''Is point inside shape?'''
         return self.cylinder.contains(point, tol)
