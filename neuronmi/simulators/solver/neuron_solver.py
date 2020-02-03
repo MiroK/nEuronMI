@@ -63,6 +63,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     Qel = FiniteElement('Discontinuous Lagrange Trace', cell, 0)
 
     W = FunctionSpace(mesh, MixedElement([Sel, Vel, Qel]))
+    print('PDE part will be solved for %d unknowns' % W.dim())
     sigma, u, p = TrialFunctions(W)
     tau, v, q = TestFunctions(W)
 
