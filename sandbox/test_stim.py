@@ -30,7 +30,7 @@ params['solver']['sim_duration'] = 0.5
 
 u, i = neuronmi.simulate_emi(mesh_with, u_probe_locations=u_probe, i_probe_locations=i_probe,
                              save_folder='test_stim', problem_params=params,
-                             save_format='xdmf')
+                             save_format='xdmf', pde_formulation='pm')
 
 np.save(test_folder + 'u.npy', u)
 np.save(test_folder + 'i.npy', i)

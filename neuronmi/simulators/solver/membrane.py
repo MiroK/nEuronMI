@@ -18,7 +18,9 @@ import numpy as np
 # Expression used for computing the area)
 
 
-def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scale_factor=None):
+def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
+                      scale_factor=None,
+                      solver_parameters={}):
     '''
     Setup a membrane model and an ODE solver for it.
     '''
@@ -212,11 +214,6 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
         params_['A'] = strength
         stimul_f = Expression('%s < h ? A: 0' % norm_code, degree=0, **params_)
 
-    mesh = subdomains.mesh()
-    V = FunctionSpace(mesh, 'CG', 1)
-    # f = interpolate(stimul_f, V)
-    # File('foo.pvd') << f
-
     # find stimulated subdomain (for now only dendrite)
     dendrite_params["t_start"] = problem_parameters["stimulation"]["start_time"]  # (ms)
     dendrite_params["t_stop"] = problem_parameters["stimulation"]["stop_time"]  # (ms)
@@ -240,6 +237,8 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters, scal
     # The timer in adjoint causes trouble so disable for now
     odesolver_params['enable_adjoint'] = False
 
+    odesolver_params.update(solver_parameters)
+    
     ode_solver = SubDomainCardiacODESolver(subdomains,
                                            models={soma: soma_object,
                                                    dendrite: dendrite_object,
@@ -275,7 +274,8 @@ class SubDomainCardiacODESolver(object):
         V_elm = set(solver.VS.sub(0).ufl_element() for solver in solvers)
         assert len(V_elm) == 1
         V_elm = V_elm.pop()
-
+        from IPython import embed
+        embed()
         # What we will show to the world
         mesh = subdomains.mesh()
         V = FunctionSpace(mesh, V_elm)
