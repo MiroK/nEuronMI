@@ -274,8 +274,7 @@ class SubDomainCardiacODESolver(object):
         V_elm = set(solver.VS.sub(0).ufl_element() for solver in solvers)
         assert len(V_elm) == 1
         V_elm = V_elm.pop()
-        from IPython import embed
-        embed()
+
         # What we will show to the world
         mesh = subdomains.mesh()
         V = FunctionSpace(mesh, V_elm)

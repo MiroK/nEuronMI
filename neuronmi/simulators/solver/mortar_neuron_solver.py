@@ -58,6 +58,11 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # And current/Lagrange multiplier on each neuron
     meshes_neuron = [EmbeddedMesh(facet_marking_f, emi_map.surface_physical_tags('neuron_%d' % i).values())
                       for i in range(num_neurons)]
+    
+    # These global functions are
+    u_out = Function(FunctionSpace(mesh, 'DG', 0))      # For global potential
+    v_out = Function(FunctionSpace(mesh, 'DG', 0))
+    current_out = Function(FunctionSpace(mesh, 'DG', 0))
 
     # Cary over surface markers to extracellular mesh
     ext_boundaries = transfer_markers(mesh_ext, facet_marking_f)
@@ -199,8 +204,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
         neuron_solutions.append(ode_solutions)
 
     get_transmembrane_potentials = []
-    # Setup computing the transmembrane potential
-    for Vi, Qi in zip(Vis, Qis):
+    for i, (Vi, Qi) in enumerate(zip(Vis, Qis)):
         
         ext_mat = PETScMatrix(trace_mat_no_restrict(Ve, Qi))
         int_mat = PETScMatrix(trace_mat_no_restrict(Vi, Qi))
@@ -208,46 +212,12 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
         get_transmembrane_potentials.append(
             lambda ue, ui, Te=ext_mat, Ti=int_mat: -Te*ue.vector() + Ti*ui.vector()
         )
-    # V = FunctionSpace(mesh, Vel)
-    # Finally for postprocessing we return the current time, potential
-    # and membrane current    
-    # u_out = Function(V)
-    # u_out_values = u_out.vector().get_local()
-
-    #array = volume_marking_f.array()
-    # Set potential inside neurons ...
-    #for n_Vtag in n_Vtags:
-        # Rest if inside else the value that was there. So this is like or
-    #    u_out_values[:] = np.where(array == n_Vtag, v_rest, u_out_values)
-    #u_out.vector().set_local(u_out_values)
-    #u_out.vector().apply('insert')
 
     wh = ii_Function(W)
+
     for i in range(1, 1+num_neurons):
         wh[i].vector().zero()
         wh[i].vector()[:] += v_rest  # Set resting potential
-
-
-    u_out = Function(FunctionSpace(mesh, 'CG', 1))
-    current_out = Function(FunctionSpace(mesh, 'CG', 1))
-    #FunctionAssigner(W.sub(1), V).assign(w.sub(1), u_out)
-    # Keep the assigner around as we'll go out in the loop
-    #toV_fromW1 = FunctionAssigner(V, W.sub(1))
-    #toV_fromW1.assign(u_out, w.sub(1))
-
-    # One value per cell of the neuron surface mesh
-    #current_out, current_aux = map(Function, (Q_neuron, Q))
-    #w_aux = Function(W)
-    #current_form = sum(1. / FacetArea(mesh)('+') * inner(dot(w.sub(0)('+'), n), q('+')) * dS(i)
-    #                   for i in all_neuron_surfaces)
-
-    #current_form += inner(Constant(0), v) * dx(ext_Vtag)  # Fancy zero for orientation
-    # The idea here is that assembling the current form gives the right
-    # dof values to assign to the DLT space (evals at cell midpoints).
-    # Then we reduce as normal to the subcomponent and submesh space
-    #w_aux.vector()[:] = assemble(current_form)
-    #toQ_fromW2.assign(current_aux, w_aux.sub(2))
-    #assign_toQ_neuron_fromQ(current_out, current_aux)
 
     # To get initial state
     yield 0, u_out, current_out
@@ -285,13 +255,14 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
             # Update transembrane potential
             uh_e = wh[0]
             uh_is = wh[1:(num_neurons+1)]
-            for p0i, uh_i, get_vi in zip(p0is, uhis, get_transmembrane_potentials):
+            Ih_is = wh[num_neurons+1:len(W)]
+            for i, (p0i, uh_i, Ih_i, get_vi) in enumerate(zip(p0is, uh_is, Ih_is, get_transmembrane_potentials), 1):
                 p0i.vector().zero()
-                p0i.vector().axpy(get_vi(uh_e, uh_i))
+                p0i.vector().axpy(1, get_vi(uh_e, uh_i))
 
             yield t1, u_out, current_out
 
             # Get it to ODE for next round
             for i in range(num_neurons):
                 odes[i][1].vector().zero()
-                odes[i][1].vector().axpy(p0is[i].vector())
+                odes[i][1].vector().axpy(1, p0is[i].vector())
