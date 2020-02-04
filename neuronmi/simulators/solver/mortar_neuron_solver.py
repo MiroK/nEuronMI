@@ -8,6 +8,7 @@ import itertools
 
 from dolfin import *
 
+from neuronmi.simulators.solver.union import UnionMesh, UnionFunction
 from xii.assembler.trace_matrix import trace_mat_no_restrict
 from xii.meshing.transfer_markers import transfer_markers
 from block.algebraic.petsc import LU
@@ -59,11 +60,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     meshes_neuron = [EmbeddedMesh(facet_marking_f, emi_map.surface_physical_tags('neuron_%d' % i).values())
                       for i in range(num_neurons)]
     
-    # These global functions are
-    u_out = Function(FunctionSpace(mesh, 'DG', 0))      # For global potential
-    v_out = Function(FunctionSpace(mesh, 'DG', 0))
-    current_out = Function(FunctionSpace(mesh, 'DG', 0))
-
     # Cary over surface markers to extracellular mesh
     ext_boundaries = transfer_markers(mesh_ext, facet_marking_f)
 
@@ -120,8 +116,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # Boundary conditions: grounded surfaces are Dirichlet
     #                      neumann surfaces are part of weak form and
     #                       - insulation means the integral is zero so
-    #                         we only care about stimulated
-    
+    #                         we only care about stimulated    
     grounded_tags = set(emi_map.surface_physical_tags('box').values())  # All
     grounded_tags.difference_update(set(emi_map.surface_physical_tags('box')[name]
                                         for name in ext_parameters['insulated_bcs']))
@@ -165,7 +160,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     
     # FIXME: setup the solver here
     A, b = map(ii_assemble, (a, L))
-    print b
+
     A_bc, b_bc = apply_bc(A, b, W_bcs)
     # Solver is setup based on monolithic
     A_mono = ii_convert(A_bc)
@@ -219,6 +214,23 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
         wh[i].vector().zero()
         wh[i].vector()[:] += v_rest  # Set resting potential
 
+    # To have consisten API we wan to represent
+    # i) the potential by one global P0 function on mesh
+    # ii) transmembrane potential on the union of all neurons
+    # iii) membrane curent as one function on the union of all neurons
+    all_neurons_mesh = UnionMesh(meshes_neuron, no_overlap=True)
+    current_out = UnionFunction(meshes_neuron, wh[(1+num_neurons):len(W)], all_neurons_mesh)
+    v_out = UnionFunction(meshes_neuron, p0is, all_neurons_mesh)
+
+    # NOTE: Get the potentials as P0
+    u_outs = [Function(FunctionSpace(m, 'DG', 0)) for m in [mesh_ext] + meshes_int]
+    # Fill the uouts
+    for i, u_outi in enumerate(u_outs):
+        Xi = u_outi.function_space()
+        u_outi.vector()[:] = assemble((1/CellVolume(Xi.mesh()))*inner(wh[i], TestFunction(Xi))*dx)
+    # And then
+    u_out = UnionFunction([mesh_ext] + meshes_int, u_outs, mesh)    
+    
     # To get initial state
     yield 0, u_out, current_out
 
@@ -260,6 +272,17 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
                 p0i.vector().zero()
                 p0i.vector().axpy(1, get_vi(uh_e, uh_i))
 
+            # Updata global
+            v_out.sync()
+            current_out.sync()
+            # Fill the uouts
+            for i, u_outi in enumerate(u_outs):
+                Xi = u_outi.function_space()
+                u_outi.vector()[:] = assemble((1/CellVolume(Xi.mesh()))*inner(wh[i], TestFunction(Xi))*dx)
+
+            e = lambda x: sqrt(abs(assemble(inner(x, x)*dx)))
+            print e(u_out), e(v_out), e(current_out), '<<<<<'
+                
             yield t1, u_out, current_out
 
             # Get it to ODE for next round
