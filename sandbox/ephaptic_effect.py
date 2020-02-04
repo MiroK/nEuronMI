@@ -86,29 +86,33 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, neuro
     p1 = neuron_parameters.copy()
     p2 = neuron_parameters.copy()
 
-    p1["soma_y"] = transverse_distance / 2
-    p2["soma_y"] = -transverse_distance / 2
+    p1["soma_y"] = -transverse_distance / 2
+    p2["soma_y"] = transverse_distance / 2
 
-    p1["soma_z"] = parallel_distance / 2
-    p2["soma_z"] = -parallel_distance / 2
+    p1["soma_z"] = -parallel_distance / 2
+    p2["soma_z"] = parallel_distance / 2
 
     mesh_folder = neuronmi.generate_mesh(
-        neuron_type=['bas', 'bas'],
+        neurons=['bas', 'bas'],
         neuron_params=[p1, p2],
-        probe_type=None,
+        probe=None,
         mesh_resolution=mesh_resolution,
         box_size=box_size,
     )
     mesh_folder = Path(mesh_folder)
 
-    neuron_params_0 = neuronmi.get_default_emi_params()['neurons']
-    neuron_params_1 = neuronmi.get_default_emi_params()['neurons']
+    neuron_params_0 = neuronmi.get_default_emi_params()['neurons'].copy()
+    neuron_params_1 = neuronmi.get_default_emi_params()['neurons'].copy()
 
-    neuron_params_0['stimulation']['strength'] = 20.0       # defualt = 10
-    neuron_params_1['stimulation']['strength'] = 0
+    neuron_params_0['stimulation']['type'] = "syn"      # defualt = 10
+    neuron_params_1['stimulation']['type'] = "syn"
+
+    neuron_params_0['stimulation']['syn_weight'] = 0.0       # defualt = 10
+    neuron_params_1['stimulation']['syn_weight'] = 20.0
 
     params = neuronmi.get_default_emi_params()
     params['neurons'] = [neuron_params_0, neuron_params_1]
+    params["solver"]["sim_duration"] = 1
 
     # Set up probes
     p1_centreline_coordinates, p1_soma_coordinates = coordinates(p1, 30, 30, transverse_distance)
@@ -128,16 +132,30 @@ def run(parallel_distance, transverse_distance, box_size, mesh_resolution, neuro
     xdmf_u = df.XDMFFile(str(mesh_folder / 'emi_sim' / 'u.xdmf'))
     # hdf5_u = df.HDF5File(df.MPI.comm_world, str(mesh_folder / 'emi_sim' / 'u.xdmf'), "w")
 
-    for t, u, I in neuronmi.simulate_emi(mesh_folder, params):
-        print "%.2f" % float(t)
-        for probe in probe_list:
-            probe.update(t, u)
+    i_probes = [
+        (p2["soma_x"], p2["soma_y"] + 10, p2["soma_z"]),
+        (p2["soma_x"], p2["soma_y"] - 10, p2["soma_z"])
+    ]
 
-        # hdf5_I.write()
-        xdmf_I.write(I, float(t))
+    u_probes = [
+        (p2["soma_x"], p2["soma_y"], p2["soma_z"]),
+        (p1["soma_x"], p1["soma_y"] - p1["soma_rad"], p1["soma_z"])
+    ]
 
-        # hdf5_u.write()
-        xdmf_u.write(u, float(t))
+    u_records, i_records = neuronmi.simulate_emi(mesh_folder, params, i_probe_locations=i_probes, u_probe_locations=u_probes)
+    print u_records, i_records
+    np.savetxt(mesh_folder / "uprobes.txt", u_records, delimiter=",")
+    np.savetxt(mesh_folder / "iprobes.txt", i_records, delimiter=",")
+    # for t, u, I in neuronmi.simulate_emi(mesh_folder, params):
+    #     print "%.2f" % float(t)
+    #     for probe in probe_list:
+    #         probe.update(t, u)
+
+    #     # hdf5_I.write()
+    #     xdmf_I.write(I, float(t))
+
+    #     # hdf5_u.write()
+    #     xdmf_u.write(u, float(t))
     print "Success!"
 
 
