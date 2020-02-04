@@ -2,7 +2,8 @@ import neuronmi
 import numpy as np
 
 microwire = False
-neuronexus = True
+neuronexus = False
+neuronexus_mm = True
 neuropixels = False
 
 #mesh_resolution = {'neuron': 2, 'probe': 10, 'ext': 15}
@@ -88,14 +89,44 @@ if neuronexus:
     centers_neuronexus = neuronexus_probe.get_electrode_centers(unit='cm')
 
     u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers_neuronexus,
-                                      problem_params=problem_parameters)
+                                      problem_params=problem_parameters,
+                                      save_folder=neuronexus_folder, save_format='xdmf')
     u_without, _ = neuronmi.simulate_emi(mesh_without, u_probe_locations=centers_neuronexus,
-                                         problem_params=problem_parameters)
+                                         problem_params=problem_parameters,
+                                         save_folder=neuronexus_folder, save_format='xdmf')
 
     np.save(neuronexus_folder + 'u_with.npy', u_with)
     np.save(neuronexus_folder + 'u_without.npy', u_without)
     np.save(neuronexus_folder + 'centers.npy', centers_neuronexus)
 
+if neuronexus_mm:
+    # Neuronexus
+    neuronexus_folder = 'probe_effect/neuronexus_pm/'
+    neuronexus_probe = neuronmi.mesh.shapes.NeuronexusProbe({'tip_x': 30})
+    mesh_with = neuronmi.generate_mesh(neurons=neuron, probe=neuronexus_probe, mesh_resolution=mesh_resolution,
+                                       box_size=box_size,
+                                       save_mesh_folder=neuronexus_folder)
+
+    mesh_without = neuronmi.generate_mesh(neurons=neuron, probe=None, mesh_resolution=mesh_resolution, box_size=box_size,
+                                          save_mesh_folder=neuronexus_folder)
+
+    centers_neuronexus = neuronexus_probe.get_electrode_centers(unit='cm')
+
+    u_with, _ = neuronmi.simulate_emi(mesh_with, u_probe_locations=centers_neuronexus,
+                                      problem_params=problem_parameters,
+                                      pde_formulation='pm',
+                                      save_folder=neuronexus_folder, save_format='xdmf')
+    
+    u_without, _ = neuronmi.simulate_emi(mesh_without, u_probe_locations=centers_neuronexus,
+                                         problem_params=problem_parameters,
+                                         pde_formulation='pm',
+                                         save_folder=neuronexus_folder, save_format='xdmf')
+
+    np.save(neuronexus_folder + 'u_with.npy', u_with)
+    np.save(neuronexus_folder + 'u_without.npy', u_without)
+    np.save(neuronexus_folder + 'centers.npy', centers_neuronexus)
+
+    
 if neuropixels:
     # Neuropixels
     neuropixels_folder = 'probe_effect/neuropixels/'

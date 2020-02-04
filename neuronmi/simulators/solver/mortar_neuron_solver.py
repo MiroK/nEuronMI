@@ -90,8 +90,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     
     # Now the block operators
     a = block_form(W, 2)
-    # Laplacians
+    # Laplacians - external
     a[0][0] = Constant(ext_parameters['cond_ext'])*inner(grad(ue), grad(ve))*dx
+    # Internal
     for i, (ui, vi) in enumerate(zip(uis, vis), 1):
         cond = neurons_parameters[i-1]['cond_int']
         a[i][i] = Constant(cond)*inner(grad(ui), grad(vi))*dx
@@ -160,7 +161,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     
     # FIXME: setup the solver here
     A, b = map(ii_assemble, (a, L))
-
+    # Apply bcs to the system
     A_bc, b_bc = apply_bc(A, b, W_bcs)
     # Solver is setup based on monolithic
     A_mono = ii_convert(A_bc)
@@ -208,13 +209,14 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
             lambda ue, ui, Te=ext_mat, Ti=int_mat: -Te*ue.vector() + Ti*ui.vector()
         )
 
+    # Solution in Ve x Vi x Q
     wh = ii_Function(W)
-
+    # Set initial intracellular; we don't know about currents
     for i in range(1, 1+num_neurons):
         wh[i].vector().zero()
         wh[i].vector()[:] += v_rest  # Set resting potential
 
-    # To have consisten API we wan to represent
+    # To have consistent API we wan to represent
     # i) the potential by one global P0 function on mesh
     # ii) transmembrane potential on the union of all neurons
     # iii) membrane curent as one function on the union of all neurons
@@ -227,8 +229,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # Fill the uouts
     for i, u_outi in enumerate(u_outs):
         Xi = u_outi.function_space()
+        # Here the P0 is set as an L2 projection of P1 to P0
         u_outi.vector()[:] = assemble((1/CellVolume(Xi.mesh()))*inner(wh[i], TestFunction(Xi))*dx)
-    # And then
+    # And then u_out is on global (mesh)
     u_out = UnionFunction([mesh_ext] + meshes_int, u_outs, mesh)    
     
     # To get initial state
@@ -244,24 +247,24 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
         print('Time is (%g, %g)' % (t0, t1))
         if step_count == fem_ode_sync:
             step_count = 0
-            # From individual neuron to collection
+            # Set transmemebrane potentials for PDE based on ODE
             for i in range(num_neurons):
-                # Set transmemebrane potentials for PDE based on ODE
                 p0is[i].vector().zero()
                 p0is[i].vector().axpy(1, odes[i][1].vector())
 
             # We could have changing in time simulation
-            for _, I in stimulated_map.values():  # FIXME: update?
+            for _, I in stimulated_map.values():  
                 if 't' in I:
                     I.t = float(t1)
 
-            # Reassemble
+            # FIXME: Reassemble
             aux, b = map(ii_assemble, (a, L))
-            _, b = apply_bc(aux, b, W_bcs)
+            _, b = apply_bc(aux, b, W_bcs)  # Apply updated bcs
 
             # New solution
             if verbose:
                 print('\tSolving linear system of size %d' % A.size(0))
+            # Solve with new rhs
             wh.vector()[:] = A_inv*ii_convert(b)  # With monolithic
 
             # Update transembrane potential
@@ -272,20 +275,23 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
                 p0i.vector().zero()
                 p0i.vector().axpy(1, get_vi(uh_e, uh_i))
 
-            # Updata global
+            # Update global
             v_out.sync()
             current_out.sync()
             # Fill the uouts
             for i, u_outi in enumerate(u_outs):
                 Xi = u_outi.function_space()
+                # L2 locally
                 u_outi.vector()[:] = assemble((1/CellVolume(Xi.mesh()))*inner(wh[i], TestFunction(Xi))*dx)
-
+            # Global sync
+            u_out.sync()
+            
             e = lambda x: sqrt(abs(assemble(inner(x, x)*dx)))
             print e(u_out), e(v_out), e(current_out), '<<<<<'
                 
             yield t1, u_out, current_out
 
-            # Get it to ODE for next round
+            # Get transmembrane potential to ODE for next round
             for i in range(num_neurons):
                 odes[i][1].vector().zero()
                 odes[i][1].vector().axpy(1, p0is[i].vector())
