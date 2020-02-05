@@ -1,5 +1,6 @@
-import neuronmi
 import numpy as np
+import neuronmi
+
 
 problem_parameters = {
     'neurons':  # List or dict. If list, length must be the same of number of neurons in mesh. If dict, the same
@@ -40,18 +41,23 @@ problem_parameters = {
     }
 }
 
-# Neuronexus
-neuronexus_probe = neuronmi.mesh.shapes.NeuronexusProbe({'tip_x': 30})
+mesh_without = './rat_6mesh/RatS1-6-39.CNG.c2_tagged.h5'
+scale_factor = 1E-4
+mesh, _, _ = load_h5_mesh(mesh_without, scale_factor)
 
-centers_neuronexus = neuronexus_probe.get_electrode_centers(unit='cm')
-print centers_neuronexus
-mesh_without = './rat_6mesh'
-folder = mesh_without
-u_without, _ = neuronmi.simulate_emi(mesh_without, u_probe_locations=centers_neuronexus,
+p_min, p_max = mesh.coordinates().min(axis=0), mesh.coordinates().max(axis=0)
+dx = p_max - p_min
+r = min(dx[0], dx[1])
+probes = np.c_[0.4*r*np.ones(30),
+               0.4*r*np.ones(30),
+               np.linspace(p_min[2], p_max[2], 32)[1:-1]]
+
+
+folder = os.path.dirname(mesh_without)
+u_without, _ = neuronmi.simulate_emi(folder, u_probe_locations=probes,
                                      problem_params=problem_parameters,
                                      pde_formulation='pm',
                                      save_folder=folder, save_format='xdmf')
 
-#np.save(neuronexus_folder + 'u_with.npy', u_with)
-#np.save(neuronexus_folder + 'u_without.npy', u_without)
-#np.save(neuronexus_folder + 'centers.npy', centers_neuronexus)#
+np.save(folder + 'u_without.npy', u_without)
+np.save(folder + 'centers.npy', probes)
