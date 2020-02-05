@@ -55,10 +55,14 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     n_Vtags = [emi_map.volume_physical_tags('neuron_%d' % i)['all'] for i in range(num_neurons)]
 
     mesh_ext = EmbeddedMesh(volume_marking_f, ext_Vtag)
+
     meshes_int = [EmbeddedMesh(volume_marking_f, n_Vtag) for n_Vtag in n_Vtags]
+
     # And current/Lagrange multiplier on each neuron
     meshes_neuron = [EmbeddedMesh(facet_marking_f, emi_map.surface_physical_tags('neuron_%d' % i).values())
                       for i in range(num_neurons)]
+
+    x = meshes_neuron[0]
     
     # Cary over surface markers to extracellular mesh
     ext_boundaries = transfer_markers(mesh_ext, facet_marking_f)
@@ -71,7 +75,8 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
 
     # The total space is
     W = [Ve] + Vis + Qis
-    
+    print 'W dim is', sum(Wi.dim() for Wi in W)
+
     # Build the block operator
     ue, uis, pis = TrialFunction(Ve), map(TrialFunction, Vis), map(TrialFunction, Qis)
     ve, vis, qis = TestFunction(Ve), map(TestFunction, Vis), map(TestFunction, Qis)
@@ -165,8 +170,11 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     A_bc, b_bc = apply_bc(A, b, W_bcs)
     # Solver is setup based on monolithic
     A_mono = ii_convert(A_bc)
+    print('Setting up solver')
+    time_Ainv = Timer('Ainv')
     A_inv = LU(A_mono)  # Setup once
-
+    print('Done in %g s' % time_Ainv.stop())
+    
     dt_ode = solver_parameters['dt_ode']
     assert dt_ode <= dt_fem(0)
     # Setup neuron

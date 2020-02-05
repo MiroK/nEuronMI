@@ -139,7 +139,6 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
     except AttributeError:
         X = np.array([X[i] for i in range(3)])
 
-    stim = 'point'
     if 'length' in problem_parameters["stimulation"]:
         if problem_parameters["stimulation"]['length'] is not None:
             stim = 'ring'
@@ -157,6 +156,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
                          stim_start_z=stim_start_z,
                          stim_end_z=stim_end_z,
                          degree=0)
+
         stimulated_area = assemble(chi * dx(domain=subdomains.mesh()))
         stimulated_area_um2 = stimulated_area / (scale_factor ** 2)
 
@@ -259,7 +259,8 @@ class SubDomainCardiacODESolver(object):
     def __init__(self, subdomains, models, ode_solver, params):
         time = Constant(0)
         # The subdomain solver instances
-        tags, models = zip(*models.items())
+        # We might have neurons without e.g. axon
+        tags, models = zip(*[(tag, model) for (tag, model) in models.items() if tag])
 
         submeshes = [EmbeddedMesh(subdomains, tag) for tag in tags]
         solvers = [ode_solver(submesh, time, model, params=params)

@@ -15,3 +15,14 @@ results/
 neuronmi.egg-info/
 
 *.geo_unrolled
+
+*.swc
+*.stl
+*.obj
+
+*.swc
+*.stl
+*.obj
+
+/build
+/dist
