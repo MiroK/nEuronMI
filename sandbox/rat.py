@@ -1,5 +1,7 @@
+from neuronmi.mesh.mesh_utils import load_h5_mesh
 import numpy as np
 import neuronmi
+import os
 
 
 problem_parameters = {
@@ -41,6 +43,8 @@ problem_parameters = {
     }
 }
 
+pde_formulation = 'ps'
+
 mesh_without = './rat_6mesh/RatS1-6-39.CNG.c2_tagged.h5'
 scale_factor = 1E-4
 mesh, _, _ = load_h5_mesh(mesh_without, scale_factor)
@@ -56,7 +60,7 @@ probes = np.c_[0.4*r*np.ones(30),
 folder = os.path.dirname(mesh_without)
 u_without, _ = neuronmi.simulate_emi(folder, u_probe_locations=probes,
                                      problem_params=problem_parameters,
-                                     pde_formulation='pm',
+                                     pde_formulation=pde_formulation,
                                      save_folder=folder, save_format='xdmf')
 
 np.save(folder + 'u_without.npy', u_without)

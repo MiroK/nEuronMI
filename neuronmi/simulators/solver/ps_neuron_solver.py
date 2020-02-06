@@ -18,7 +18,7 @@ from xii import *
 
 def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, verbose=False):
     '''
-    Solver for the Primal multiscale formulation of the EMI equations
+    Solver for the Primal Single-dimensional formulation of the EMI equations
     
     mesh_path: str that is the path to HDF5File containing mesh, ...
     emi_map: EMIEntityMap of the mesh
@@ -69,16 +69,13 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # Then there is space for each potential
     Ve = FunctionSpace(mesh_ext, 'CG', 1)
     Vis = [FunctionSpace(mesh_int, 'CG', 1) for mesh_int in meshes_int]
-    # And current
-    Qis = [FunctionSpace(mesh_neuron, 'CG', 1) for mesh_neuron in meshes_neuron]
-
     # The total space is
-    W = [Ve] + Vis + Qis
+    W = [Ve] + Vis
     print 'W dim is', sum(Wi.dim() for Wi in W)
 
     # Build the block operator
-    ue, uis, pis = TrialFunction(Ve), map(TrialFunction, Vis), map(TrialFunction, Qis)
-    ve, vis, qis = TestFunction(Ve), map(TestFunction, Vis), map(TestFunction, Qis)
+    ue, uis = TrialFunction(Ve), map(TrialFunction, Vis)
+    ve, vis = TestFunction(Ve), map(TestFunction, Vis)
     # We will need trace operators
     # Rectricting ext to each neuron
     Tues = [Trace(ue, neuron) for neuron in meshes_neuron]
@@ -91,33 +88,32 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     dx_ = [Measure('dx', domain=neuron) for neuron in meshes_neuron]
     # For setting up Nuemann bcs on extrac. potential we need
     ds_ = Measure('ds', domain=mesh_ext, subdomain_data=ext_boundaries)
-    
+
+    dt_fem = Constant(solver_parameters['dt_fem'])    
     # Now the block operators
     a = block_form(W, 2)
     # Laplacians - external
     a[0][0] = Constant(ext_parameters['cond_ext'])*inner(grad(ue), grad(ve))*dx
+    # Coupling contrib to diagonal of external
+    for i, (Tue_i, Tve_i, dx_i) in enumerate(zip(Tues, Tves, dx_)):
+        scale = Constant(neurons_parameters[i]['Cm']/dt_fem)
+        a[0][0] += scale*inner(Tue_i, Tve_i)*dx_i
     # Internal
-    for i, (ui, vi) in enumerate(zip(uis, vis), 1):
-        cond = neurons_parameters[i-1]['cond_int']
-        a[i][i] = Constant(cond)*inner(grad(ui), grad(vi))*dx
-    # Coupling
-    for i, (Tve_i, Tue_i, p_i, q_i, dx_i) in enumerate(zip(Tves, Tues, pis, qis, dx_), 1 + num_neurons):
-        a[0][i] = -inner(Tve_i, p_i)*dx_i
-        # Do the symmetric block while here
-        a[i][0] = -inner(Tue_i, q_i)*dx_i
+    for i, (ui, vi, Tui, Tvi, dx_i) in enumerate(zip(uis, vis, Tuis, Tvis, dx_), 1):
+        cond = Constant(neurons_parameters[i-1]['cond_int'])
+        scale = Constant(neurons_parameters[i-1]['Cm']/dt_fem)
+        a[i][i] = (cond*inner(grad(ui), grad(vi))*dx +
+                   scale*inner(Tui, Tvi)*dx_i)
 
-    for (i, (pi, qi, dx_i)), (j, (Tui_j, Tvi_j)) in zip(enumerate(zip(pis, qis, dx_), 1+num_neurons),
-                                                        enumerate(zip(Tuis, Tvis), 1)):
-        a[j][i] = inner(Tvi_j, p_i)*dx_i
-        a[i][j] = inner(Tui_j, q_i)*dx_i
+    # Offdiagonal 
+    for i, (Tve_i, Tui, dx_i) in enumerate(zip(Tves, Tuis, dx_), 1):
+        scale = Constant(neurons_parameters[i-1]['Cm']/dt_fem)        
+        a[0][i] = -inner(Tve_i, Tui)*dx_i
 
-    dt_fem = Constant(solver_parameters['dt_fem'])
-
-    # Time step term
-    for i, (p_i, q_i, n_props) in enumerate(zip(qis, pis, neurons_parameters), 1 + num_neurons):
-        Cm = n_props['Cm']
-        a[i][i] = -Constant(dt_fem/Cm)*inner(p_i, q_i)*dx 
-
+    for i, (Tue_i, Tvi, dx_i) in enumerate(zip(Tues, Tvis, dx_), 1):
+        scale = Constant(neurons_parameters[i-1]['Cm']/dt_fem)        
+        a[i][0] = -inner(Tue_i, Tvi)*dx_i
+        
     # Boundary conditions: grounded surfaces are Dirichlet
     #                      neumann surfaces are part of weak form and
     #                       - insulation means the integral is zero so
@@ -130,7 +126,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     Ve_bcs = [DirichletBC(Ve, Constant(0), ext_boundaries, tag)
               for tag in grounded_tags]
     # No other subspace has bcs; Vis, Qis
-    W_bcs = [Ve_bcs] + [list() for _ in range(2*num_neurons)]
+    W_bcs = [Ve_bcs] + [list() for _ in range(num_neurons)]
 
     # Right hand side is formed by Neuumann nonzero terms on stimulated
     stimulated_map = {}
@@ -155,13 +151,16 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
                         stimulated_map[tag] = current
 
     # And the time stepping for the current; Let p0i be a transmemebrane
-    # potential on the i-th neuron; They all s
+    # potential on the i-th neuron
+    Qis = [FunctionSpace(mesh_neuron, 'CG', 1) for mesh_neuron in meshes_neuron]
     p0is = [interpolate(Constant(v_rest), Qi) for Qi in Qis]
 
     L = block_form(W, 1)
     L[0] = inner(Constant(0), ve)*dx + sum(inner(current, ve)*ds_(tag) for tag, current in stimulated_map.items())
-    for i, (p0i, qi) in enumerate(zip(p0is, qis), 1+num_neurons):
-        L[i] = inner(p0i, qi)*dx
+    for i, (p0i, Tve_i, Tvi, dx_i) in enumerate(zip(p0is, Tves, Tvis, dx_), 1):
+        scale = Constant(neurons_parameters[i-1]['Cm']/dt_fem)        
+        L[0] += -scale*inner(p0i, Tve_i)*dx_i
+        L[i] = scale*inner(p0i, Tvi)*dx_i
     
     # FIXME: setup the solver here
     A, b = map(ii_assemble, (a, L))

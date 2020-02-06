@@ -1,5 +1,7 @@
 import neuronmi.simulators.solver.neuron_solver as emi_mixed_multi
 import neuronmi.simulators.solver.mortar_neuron_solver as emi_primal_multi
+import neuronmi.simulators.solver.ps_neuron_solver as emi_primal_single
+
 from .solver.aux import snap_to_nearest
 import dolfin
 from ..mesh.mesh_utils import EMIEntityMap, load_h5_mesh
@@ -82,7 +84,9 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
     save_folder: str
         Path to save folder. If None, an 'emi_simulation' folder is created in the mesh folder.
     pde_formulation: str
-        'mm' or 'pm' (for mixed multiscale or primal multiscale)
+        'mm' is m(ixed)m(ultidimensional)
+        'pm' is p(rimal)m(ultidimensional)
+        'ps' is p(rimal)s(ingledimensional)
     '''
     scale_factor = 1e-4
     mesh_folder = Path(mesh_folder)
@@ -130,11 +134,9 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
     v_record = []
     I_proxy = None
 
-    if pde_formulation == 'mm':
-        neuron_solver = emi_mixed_multi.neuron_solver
-    else:
-        assert pde_formulation == 'pm'
-        neuron_solver = emi_primal_multi.neuron_solver
+    neuron_solver = {'mm': emi_mixed_multi,
+                     'pm': emi_primal_multi,
+                     'ps': emi_primal_single}[pde_formulation].neuron_solver
 
     for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
         if save_simulation_output:
