@@ -38,12 +38,12 @@ problem_parameters = {
     },
     'solver': {
         'dt_fem': 0.01,  # float: dt for fem solver in ms
-        'dt_ode': 0.01,  # float: dt for ode solver in ms
+        'dt_ode': 0.001,  # float: dt for ode solver in ms
         'sim_duration': 5,  # float: duration od the simulation in ms
     }
 }
 
-pde_formulation = 'ps'
+pde_formulation = 'pm'
 
 mesh_without = './rat_6mesh/RatS1-6-39.CNG.c2_tagged.h5'
 scale_factor = 1E-4

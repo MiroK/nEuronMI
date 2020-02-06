@@ -154,7 +154,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # potential on the i-th neuron
     Qis = [FunctionSpace(mesh_neuron, 'CG', 1) for mesh_neuron in meshes_neuron]
     p0is = [interpolate(Constant(v_rest), Qi) for Qi in Qis]
-
+    # Membrane current; we want to update these using C_m*dv/dt = I_m
+    Ims = [Function(Qi) for Qi in Qis]
+    
     L = block_form(W, 1)
     L[0] = inner(Constant(0), ve)*dx + sum(inner(current, ve)*ds_(tag) for tag, current in stimulated_map.items())
     for i, (p0i, Tve_i, Tvi, dx_i) in enumerate(zip(p0is, Tves, Tvis, dx_), 1):
@@ -229,7 +231,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # ii) transmembrane potential on the union of all neurons
     # iii) membrane curent as one function on the union of all neurons
     all_neurons_mesh = UnionMesh(meshes_neuron, no_overlap=True)
-    current_out = UnionFunction(meshes_neuron, wh[(1+num_neurons):len(W)], all_neurons_mesh)
+    current_out = UnionFunction(meshes_neuron, Ims, all_neurons_mesh)
     v_out = UnionFunction(meshes_neuron, p0is, all_neurons_mesh)
 
     # NOTE: Get the potentials as P0
@@ -282,10 +284,18 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
             # Update transembrane potential
             uh_e = wh[0]
             uh_is = wh[1:(num_neurons+1)]
-            Ih_is = wh[num_neurons+1:len(W)]
-            for i, (p0i, uh_i, Ih_i, get_vi) in enumerate(zip(p0is, uh_is, Ih_is, get_transmembrane_potentials), 1):
+            for i, (p0i, uh_i, Im_i, get_vi) in enumerate(zip(p0is, uh_is, Ims, get_transmembrane_potentials), 1):
+                # Remember previous potential
+                Im_i.vector().zero()
+                Im_i.vector().axpy(-1, p0i.vector())
+                # Update the transmembrane potential with current
                 p0i.vector().zero()
                 p0i.vector().axpy(1, get_vi(uh_e, uh_i))
+
+                scale = neurons_parameters[i-1]['Cm']/dt_fem(0)
+                # Using Cm/dt(v-v0) = Im
+                Im_i.vector().axpy(1, p0i.vector())
+                Im_i.vector()[:] *= scale
 
             # Update global
             v_out.sync()

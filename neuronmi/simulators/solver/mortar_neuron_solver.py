@@ -283,8 +283,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
             # Update transembrane potential
             uh_e = wh[0]
             uh_is = wh[1:(num_neurons+1)]
-            Ih_is = wh[num_neurons+1:len(W)]
-            for i, (p0i, uh_i, Ih_i, get_vi) in enumerate(zip(p0is, uh_is, Ih_is, get_transmembrane_potentials), 1):
+            for i, (p0i, uh_i, get_vi) in enumerate(zip(p0is, uh_is, get_transmembrane_potentials), 1):
                 p0i.vector().zero()
                 p0i.vector().axpy(1, get_vi(uh_e, uh_i))
 
