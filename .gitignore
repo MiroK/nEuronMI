@@ -26,3 +26,6 @@ neuronmi.egg-info/
 
 /build
 /dist
+*.npy
+
+/sandbox/*
