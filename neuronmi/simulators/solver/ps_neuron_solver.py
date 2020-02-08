@@ -108,11 +108,11 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     # Offdiagonal 
     for i, (Tve_i, Tui, dx_i) in enumerate(zip(Tves, Tuis, dx_), 1):
         scale = Constant(neurons_parameters[i-1]['Cm']/dt_fem)        
-        a[0][i] = -inner(Tve_i, Tui)*dx_i
+        a[0][i] = -scale*inner(Tve_i, Tui)*dx_i
 
     for i, (Tue_i, Tvi, dx_i) in enumerate(zip(Tues, Tvis, dx_), 1):
         scale = Constant(neurons_parameters[i-1]['Cm']/dt_fem)        
-        a[i][0] = -inner(Tue_i, Tvi)*dx_i
+        a[i][0] = -scale*inner(Tue_i, Tvi)*dx_i
         
     # Boundary conditions: grounded surfaces are Dirichlet
     #                      neumann surfaces are part of weak form and

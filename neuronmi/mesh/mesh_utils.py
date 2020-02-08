@@ -66,6 +66,12 @@ def load_h5_mesh(h5_file, scale_factor=None):
     volumes = MeshFunction('size_t', mesh, mesh.topology().dim())
     h5.read(volumes, 'volumes')
 
+    if h5.has_dataset('/curves'):
+        curves = MeshFunction('size_t', mesh, 1, 0)
+        h5.read(curves, 'curves')
+
+        return mesh, volumes, surfaces, curves
+    
     return mesh, volumes, surfaces
 
 
@@ -326,3 +332,78 @@ class EMIEntityMap(object):
             return {k: access(v) for k, v in entities[shape].items()}
         else:
             return {}
+
+
+class ReducedEMIEntityMap(EMIEntityMap):
+    '''
+    In EMI model we tags curves(1), surfaces(2) and volumes(3). For each we then
+    have a mapping of shape name to named surfaces/volumes with their
+    geometrical and physical tags. For curves(1d neurons) there is a mapping 
+    from the physical tag of segment to radius and type(i.e. soma, radius, ...)
+    '''
+
+    def __init__(self, tagged_volumes=None, tagged_surfaces=None, tagged_curves=None, json_fp=None):
+
+        
+        if json_fp is not None:
+            d = json.load(json_fp)
+            tagged_volumes, tagged_surfaces, tagged_curves = d['3'], d['2'], d['1']
+
+        self.curves = tagged_curves
+
+        EMIEntityMap.__init__(self, tagged_volumes, tagged_surfaces, json_fp=None)
+        
+        self._nn = sum(1 for k in self.curves.keys() if 'neuron_' in k)
+
+    @property
+    def num_neurons(self):
+        return self._nn
+
+    # FIXME
+    #def dump(self, fp):
+    #    '''JSON dump'''
+    #    return json.dump({'3': self.volumes, '2': self.surfaces}, fp)
+
+    def curve_entity_tags(self, shape):
+        '''Entity tags of `shape`'s curves'''
+        return self.entity_tags(self.curves, first, shape)
+
+    def curve_physical_tags(self, shape):
+        '''Physical tags of `shape`'s curves'''
+        return self.entity_tags(self.curves, second, shape)
+
+    def curve_radii(self, shape):
+        '''Physical tag to radius for every piece of `shape` neuron'''
+        shape = '_'.join(['radius', shape.split('_')[-1]])
+        return {int(k): v for k, v in self.curves[shape].items()}
+
+    def curve_types(self, shape):
+        '''Physical tag to neuron type for every piece of `shape` neuron'''        
+        shape = '_'.join(['tags', shape.split('_')[-1]])
+        return {int(k): v for k, v in self.curves[shape].items()}
+
+
+def find_soma(neuron, type_map, radius_map):
+    '''Center and radius of the soma'''
+    assert neuron.topology().dim() == 1
+
+    types = np.array([type_map[c_idx] for c_idx in neuron.marking_function])
+    soma_cells,  = np.where(types == 1)
+    
+    x = neuron.coordinates()
+    neuron.init(0, 1)
+    c2v, v2c = neuron.topology()(1, 0), neuron.topology()(0, 1)
+    # The way we trim the neuron, center is a terminal vertex (with one
+    # connection)
+    soma_cells = iter(soma_cells)
+
+    found = False
+    while not found:
+        c = next(soma_cells)
+        for v in c2v(c):
+            found = len(v2c(v)) == 1
+            radius = radius_map[neuron.marking_function[c]]
+            if found:
+                break
+
+    return neuron.coordinates()[v], radius
