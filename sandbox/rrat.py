@@ -54,5 +54,5 @@ if __name__ == '__main__':
                                               problem_params=problem_parameters,
                                               save_folder=folder, save_format='xdmf')
     
-    np.save(folder + 'u_without.npy', u_without)
-    np.save(folder + 'centers.npy', u_probes)
+    np.save(os.path.join(folder, 'u_without.npy'), u_without)
+    np.save(os.paht.join(folder, 'centers.npy'), u_probes)

@@ -219,7 +219,9 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
                                        soma=(1, ), axon=(2,) if 2 in neurons_tags[i] else (), dendrite=(3, ),
                                        problem_parameters=neurons_parameters[i],
                                        scale_factor=scale_factor,
-                                       # In mortar we want ODE in vertices
+                                       # Radii - not that these have been scaled
+                                       radius=neurons_radii[i],  
+                                       # Put them in a space natural for Pi P1
                                        solver_parameters={'V_polynomial_family': 'Discontinuous Lagrange',
                                                           'V_polynomial_degree': 0,
                                                           'S_polynomial_family': 'Discontinuous Lagrange',

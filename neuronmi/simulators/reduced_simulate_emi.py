@@ -72,9 +72,20 @@ def reduced_simulate_emi(mesh_folder, problem_params=None, u_probe_locations=Non
     else:
         save_folder = Path(save_folder)
 
-
     dolfin.parameters['allow_extrapolation'] = True
 
+    # FIXME: here we grap the scaling radius as mean radiues of denrite
+    radii = []
+    for i in range(emi_map.num_neurons):
+        rad_map = emi_map.curve_radii('neuron_%d' % i)
+        radii.extend([rad_map[idx] for idx, typ in emi_map.curve_types('neuron_%d' % i).items()
+                      if typ == 3])
+    radius = np.mean(radii)  # In original mesh units
+    # Scale the stimulation
+    syn_weight = problem_params['neurons']['stimulation']['syn_weight']
+    syn_weight *= 2*np.pi*(radius*scale_factor)
+    problem_params['neurons']['stimulation']['syn_weight'] = syn_weight
+    
     t_start = time.time()
     # We probe ith neuron at ith probe points but ue is probed
     # at all locations

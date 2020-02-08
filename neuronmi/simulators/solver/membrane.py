@@ -7,7 +7,7 @@ from neuronmi.simulators.solver.Passive import Passive
 import cbcbeat as beat
 
 from dolfin import (FunctionAssigner, Constant, Expression, FunctionSpace, Function, interpolate, File,
-                    assemble, dx, cells)
+                    assemble, dx, cells, pi)
 import numpy as np
 
 # NOTE: Expression below are defined with degree zero. A consequence of this
@@ -20,6 +20,7 @@ import numpy as np
 
 def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
                       scale_factor=None,
+                      radius=None,
                       solver_parameters={}):
     '''
     Setup a membrane model and an ODE solver for it.
@@ -27,8 +28,13 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
     soma, dendrite, axon = map(as_tuple, (soma, dendrite, axon))
 
     if scale_factor is None:
-
         scale_factor = 1
+        
+    if subdomains.dim() == 1:
+        assert radius is not None, 'Need radius to scale the ODEs'
+        is_reduced = True
+    else:
+        is_reduced = False
 
     not_available_model_msg = "Available models are: 'pas' (Passive), 'hh' (Hodgkin-Huxley)"
     assert problem_parameters["stimulation"]["type"] in ["syn", "step", "pulse"]
@@ -111,7 +117,7 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
         else:
             print("Model " + str(model) + " must be 'dendrite', 'soma', or 'axon'")
 
-
+    # FIXME: reduction of stimulus
     # ^z
     # | x + length [END]                   
     # | 
@@ -226,9 +232,10 @@ def MembraneODESolver(subdomains, soma, axon, dendrite, problem_parameters,
         dendrite_params["stim_type"] = 2  # (ms)
 
     # Update model parameters
-    dendrite_object = dendrite_model(dendrite_params)
-    soma_object = soma_model(soma_params)
-    axon_object = axon_model(axon_params)
+    if is_reduced:
+        dendrite_object = dendrite_model(reduce_ODE_params(dendrite_params, dendrite_model, radius))
+        soma_object = soma_model(reduce_ODE_params(soma_params, soma_model, radius))
+        axon_object = axon_model(reduce_ODE_params(axon_params, axon_model, radius))
 
     # Set up ode solver parameters - to be used for all the subdomain
     Solver = beat.BasicCardiacODESolver
@@ -336,3 +343,17 @@ class SubDomainCardiacODESolver(object):
 
             # They either all be true or all be False
             assert len(set(stopped)) == 1
+
+            
+def reduce_ODE_params(params, model, radius):
+    '''Account for ODE now living on 1d surface instead of 2d.'''
+    # We grap parameters that have units of surface dentity
+    if model is Passive:
+        densities = ('Cm', 'g_S', 'g_L')
+    elif model is Hodgkin_Huxley_1952:
+        densities = ('g_Na', 'g_K', 'g_L', 'Cm')
+    else:
+        raise ValueError('Model not supported')
+    # Or something else?
+    for d in densities:
+        params[d] = params[d]*2*pi*radius

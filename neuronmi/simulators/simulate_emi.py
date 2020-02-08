@@ -131,6 +131,7 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
     t_start = time.time()
     u_record = []
     i_record = []
+
     v_record = []
     I_proxy = None
 
