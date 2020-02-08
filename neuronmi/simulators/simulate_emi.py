@@ -138,7 +138,28 @@ def simulate_emi(mesh_folder, problem_params=None, u_probe_locations=None,
                      'pm': emi_primal_multi,
                      'ps': emi_primal_single}[pde_formulation].neuron_solver
 
+    w_out = []
     for (t, u, I) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
+        if isinstance(u, list):
+            u, wh = u
+            # More saving
+            names = ['ue'] + ['ui%d' % i for i in range(emi_map.num_neurons)]
+            if save_simulation_output:
+                if not w_out:
+                    for name in names:
+                        if save_format == 'pvd':
+                            w_out.append(dolfin.File(str(save_folder / ('%s.pvd' % name))))
+                        elif save_format == 'xdmf':
+                            w_out.append(dolfin.XDMFFile(str(save_folder / ('%s.xdmf' % name))))
+                        else:
+                            raise AttributeError("'save_format' can be 'pvd' or 'xdmf'")
+                else:
+                    for i, (name, wi) in enumerate(zip(names, wh)):
+                        if save_format == 'pvd':
+                            w_out[i] << wi, t
+                        else:
+                            w_out[i].write(wi, float(t))
+                            
         if save_simulation_output:
             if save_format == 'pvd':
                 I_out << I, t

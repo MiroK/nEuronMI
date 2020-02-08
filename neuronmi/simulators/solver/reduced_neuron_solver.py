@@ -214,8 +214,6 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     neuron_solutions = []
     for i, neuron in enumerate(meshes_neuron):
         # Pick the nueuron from neuron collection
-        map_ = emi_map.curve_types('neuron_%d' % i)
-
         ode_solver = MembraneODESolver(neurons_tags[i],
                                        # SWC
                                        soma=(1, ), axon=(2,) if 2 in neurons_tags[i] else (), dendrite=(3, ),

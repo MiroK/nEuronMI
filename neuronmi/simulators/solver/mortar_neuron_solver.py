@@ -244,7 +244,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     u_out = UnionFunction([mesh_ext] + meshes_int, u_outs, mesh)    
     
     # To get initial state
-    yield 0, u_out, current_out
+    yield 0, [u_out, wh], current_out
 
     neuron_solutions = itertools.izip(*neuron_solutions)
 
@@ -301,7 +301,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
             e = lambda x: sqrt(abs(assemble(inner(x, x)*dx)))
             print e(u_out), e(v_out), e(current_out), '<<<<<'
                 
-            yield t1, u_out, current_out
+            yield t1, [u_out, wh], current_out
 
             # Get transmembrane potential to ODE for next round
             for i in range(num_neurons):

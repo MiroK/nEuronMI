@@ -72,13 +72,13 @@ def reduced_simulate_emi(mesh_folder, problem_params=None, u_probe_locations=Non
     else:
         save_folder = Path(save_folder)
 
-    u_out = []
+
     dolfin.parameters['allow_extrapolation'] = True
 
     t_start = time.time()
     # We probe ith neuron at ith probe points but ue is probed
     # at all locations
-    u_record = []
+    u_record, u_out = [], []
 
     for (t, u) in neuron_solver(mesh_h5_path, emi_map, problem_params, scale_factor, verbose):
         names = ['ue'] + ['ui%d' % i for i in range(len(u)-1)]
@@ -86,9 +86,9 @@ def reduced_simulate_emi(mesh_folder, problem_params=None, u_probe_locations=Non
             if not u_out:
                 for name in names:
                     if save_format == 'pvd':
-                        u_out.append(dolfin.File(str(save_folder / '%s.pvd' % name)))
+                        u_out.append(dolfin.File(str(save_folder / ('%s.pvd' % name))))
                     elif save_format == 'xdmf':
-                        u_out.append(dolfin.XDMFFile(str(save_folder / 'ue.xdmf')))
+                        u_out.append(dolfin.XDMFFile(str(save_folder / ('%s.xdmf' % name))))
                     else:
                         raise AttributeError("'save_format' can be 'pvd' or 'xdmf'")
             else:
@@ -97,7 +97,7 @@ def reduced_simulate_emi(mesh_folder, problem_params=None, u_probe_locations=Non
                         u_out[i] << ui, t
                     else:
                         u_out[i].write(ui, float(t))
-            
+
         if u_probe_locations is not None:
             ue_probes, ui_probes = u_probe_locations[0], u_probe_locations[1:]
 

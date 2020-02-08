@@ -93,4 +93,4 @@ if __name__ == '__main__':
                                          save_folder=folder, save_format='xdmf')
 
     np.save(folder + 'u_without.npy', u_without)
-    np.save(folder + 'centers.npy', probes)
+    np.save(folder + 'centers.npy', u_probes)
