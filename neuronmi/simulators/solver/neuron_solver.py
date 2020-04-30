@@ -63,6 +63,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     Qel = FiniteElement('Discontinuous Lagrange Trace', cell, 0)
 
     W = FunctionSpace(mesh, MixedElement([Sel, Vel, Qel]))
+    print('PDE part will be solved for %d unknowns' % W.dim())
     sigma, u, p = TrialFunctions(W)
     tau, v, q = TestFunctions(W)
 
@@ -286,7 +287,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
     assign_toQ_neuron_fromQ(current_out, current_aux)
 
     # To get initial state
-    yield 0, u_out, current_out
+    yield 0, u_out, current_out, p0_neuron
 
     neuron_solutions = itertools.izip(*neuron_solutions)
 
@@ -327,7 +328,7 @@ def neuron_solver(mesh_path, emi_map, problem_parameters, scale_factor=None, ver
             toQ_fromW2.assign(p0, w.sub(2))  # Compt to Q
             assign_toQ_neuron_fromQ(p0_neuron, p0)  # To membrane space
 
-            yield t1, u_out, current_out
+            yield t1, u_out, current_out, p0_neuron
 
             for i in range(num_neurons):
                 toQin_fromQns[i](p0is[i], p0_neuron)
