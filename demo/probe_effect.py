@@ -1,9 +1,13 @@
 import neuronmi
 import numpy as np
+import MEAutility as mu
+import matplotlib.pylab as plt
 
 microwire = False
 neuronexus = True
 neuropixels = False
+
+plot_figures = True
 
 # mesh_resolution = {'neuron': 2, 'probe': 10, 'ext': 15}
 mesh_resolution = 5
@@ -75,6 +79,12 @@ if microwire:
     np.save(microwire_folder + 'u_without.npy', u_without)
     np.save(microwire_folder + 'centers.npy', centers_microwire)
 
+    if plot_figures:
+        probe = mu.return_mea(info={'pos': centers_microwire})
+        vscale = np.max(np.abs(u_with))
+        ax = mu.plot_mea_recording(u_without, probe, vscale=vscale, colors='C0', lw=1.5)
+        ax = mu.plot_mea_recording(u_with, probe, vscale=vscale, colors='C1', ax=ax, lw=1.5)
+
 if neuronexus:
     # Neuronexus
     neuronexus_folder = 'probe_effect/neuronexus/'
@@ -98,6 +108,12 @@ if neuronexus:
     np.save(neuronexus_folder + 'u_without.npy', u_without)
     np.save(neuronexus_folder + 'centers.npy', centers_neuronexus)
 
+    if plot_figures:
+        probe = mu.return_mea(info={'pos': centers_neuronexus})
+        vscale = np.max(np.abs(u_with))
+        ax = mu.plot_mea_recording(u_without, probe, vscale=vscale, colors='C0', lw=1.5)
+        ax = mu.plot_mea_recording(u_with, probe, vscale=vscale, colors='C1', ax=ax, lw=1.5)
+
 if neuropixels:
     # Neuropixels
     neuropixels_folder = 'probe_effect/neuropixels/'
@@ -120,3 +136,9 @@ if neuropixels:
     np.save(neuropixels_folder + 'u_with.npy', u_with)
     np.save(neuropixels_folder + 'u_without.npy', u_without)
     np.save(neuropixels_folder + 'centers.npy', centers_neuropixels)
+
+    if plot_figures:
+        probe = mu.return_mea(info={'pos': centers_neuropixels})
+        vscale = np.max(np.abs(u_with))
+        ax = mu.plot_mea_recording(u_without, probe, vscale=vscale, colors='C0', lw=1.5)
+        ax = mu.plot_mea_recording(u_with, probe, vscale=vscale, colors='C1', ax=ax, lw=1.5)
