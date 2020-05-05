@@ -81,7 +81,6 @@ if microwire:
     np.save(microwire_folder + 'centers.npy', centers_microwire)
 
     if plot_figures:
-        vscale = np.max(np.abs(u_with))
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(u_without, color='C0', lw=1.5)
