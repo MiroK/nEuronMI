@@ -50,6 +50,9 @@ RUN mkdir neuron && \
 # install LFPy
 RUN pip install --user LFPy
 
+# install MEAutility
+RUN pip install --user MEAutility
+
 # Install cbcbeat
 RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 --user && \
     pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user
