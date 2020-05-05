@@ -81,12 +81,12 @@ if microwire:
     np.save(microwire_folder + 'centers.npy', centers_microwire)
 
     if plot_figures:
-        probe = mu.return_mea(info={'pos': centers_microwire})
         vscale = np.max(np.abs(u_with))
-        ax = mu.plot_mea_recording(u_without, probe, vscale=vscale, colors='C0', lw=1.5)
-        ax = mu.plot_mea_recording(u_with, probe, vscale=vscale, colors='C1', ax=ax, lw=1.5)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(u_without, color='C0', lw=1.5)
+        ax.plot(u_with, color='C1', lw=1.5)
         if save_figures:
-            fig = ax.get_figure()
             fig.savefig(microwire_folder + 'microwire.pdf')
 
 if neuronexus:
