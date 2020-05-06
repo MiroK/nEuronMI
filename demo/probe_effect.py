@@ -83,8 +83,9 @@ if microwire:
     if plot_figures:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(u_without, color='C0', lw=1.5)
-        ax.plot(u_with, color='C1', lw=1.5)
+        ax.plot(u_without, color='C0', lw=1.5, label='no probe')
+        ax.plot(u_with, color='C1', lw=1.5, label='with probe')
+        ax.legend(loc=3)
         if save_figures:
             fig.savefig(microwire_folder + 'microwire.pdf')
 
