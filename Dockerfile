@@ -55,17 +55,19 @@ RUN pip install --user MEAutility
 
 # Install cbcbeat
 RUN pip install git+https://bitbucket.org/dolfin-adjoint/pyadjoint.git@2019.1.0 --user && \
-    pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user
-    
+    pip install hg+https://bitbucket.org/meg/cbcbeat@2017.2.0 --user && \
+    pip install cppimport --user && \
+    pip install git+https://github.com/mikaem/fenicstools.git@2016.1 --user
+
 # Get neuronmi
-RUN git clone https://github.com/MiroK/nEuronMI.git
+RUN git clone -b js https://github.com/MiroK/nEuronMI.git
 
 # Generate cell models
 #RUN cd nEuronMI/neuronmi/simulators/solver && \
 #    /home/fenics/.local/bin/gotran2beat Hodgkin_Huxley_1952.ode && \
 #    /home/fenics/.local/bin/gotran2beat Passive.ode && \    
 #    cd
-    
+
 # Install neuronmi
 RUN cd nEuronMI && \
     python setup.py develop --user && \
